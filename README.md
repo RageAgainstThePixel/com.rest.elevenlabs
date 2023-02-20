@@ -15,7 +15,7 @@ I am not affiliated with Eleven Labs and an account with api access is required.
 
 - Open your Unity project settings
 - Select the `Package Manager`
-![scoped-registries](ElevenLabs.Voice\Packages\com.rest.elevenlabs.voice\Documentation~\images\package-manager-scopes.png)
+![scoped-registries](ElevenLabs.Voice/Packages/com.rest.elevenlabs.voice/Documentation~/images/package-manager-scopes.png)
 - Add the OpenUPM package registry:
   - `Name: OpenUPM`
   - `URL: https://package.openupm.com`
