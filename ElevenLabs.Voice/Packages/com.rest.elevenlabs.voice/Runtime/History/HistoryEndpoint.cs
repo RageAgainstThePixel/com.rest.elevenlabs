@@ -35,7 +35,7 @@ namespace ElevenLabs.History
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public async Task DeleteHistoryItem(string id)
+        public async Task DeleteHistoryItemAsync(string id)
         {
             await Task.CompletedTask;
         }
