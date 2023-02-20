@@ -2,7 +2,7 @@
 
 using System.Threading.Tasks;
 
-namespace ElevenLabs
+namespace ElevenLabs.History
 {
     /// <summary>
     /// Access to your history. Your history is a list of all your created audio including its metadata.

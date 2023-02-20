@@ -2,7 +2,7 @@
 
 using System.Threading.Tasks;
 
-namespace ElevenLabs
+namespace ElevenLabs.TextToSpeech
 {
     /// <summary>
     /// Access to convert text to synthesized speech.

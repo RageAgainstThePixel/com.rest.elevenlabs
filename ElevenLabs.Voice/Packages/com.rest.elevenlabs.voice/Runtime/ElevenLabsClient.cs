@@ -4,6 +4,8 @@ using Newtonsoft.Json;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Authentication;
+using ElevenLabs.History;
+using ElevenLabs.TextToSpeech;
 using ElevenLabs.User;
 using ElevenLabs.Voices;
 
