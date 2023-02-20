@@ -1,12 +1,8 @@
 {
-    "name": "ElevenLabs.Voice.Editor",
-    "rootNamespace": "ElevenLabs.Voice.Editor",
-    "references": [
-        "GUID:85797d0f100db6c43bf118660781167b"
-    ],
-    "includePlatforms": [
-        "Editor"
-    ],
+    "name": "ElevenLabs",
+    "rootNamespace": "ElevenLabs",
+    "references": [],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,

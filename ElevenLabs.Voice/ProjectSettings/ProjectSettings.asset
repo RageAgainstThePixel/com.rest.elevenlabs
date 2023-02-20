@@ -12,8 +12,8 @@ PlayerSettings:
   targetDevice: 2
   useOnDemandResources: 0
   accelerometerFrequency: 60
-  companyName: StephenHodgson
-  productName: ElevenLabs.Voice
+  companyName: RageAgainstThePixel
+  productName: elevenlabs
   defaultCursor: {fileID: 0}
   cursorHotspot: {x: 0, y: 0}
   m_SplashScreenBackgroundColor: {r: 0.13725491, g: 0.12156863, b: 0.1254902, a: 1}
@@ -155,10 +155,10 @@ PlayerSettings:
   androidSupportedAspectRatio: 1
   androidMaxAspectRatio: 2.1
   applicationIdentifier:
-    Android: com.rest.elevenlabs.voice
-    Lumin: com.Rest.ElevenLabs.Voice
-    Standalone: com.rest.elevenlabs.voice
-    iPhone: com.rest.elevenlabs.voice
+    Android: com.rest.elevenlabs
+    Lumin: com.Rest.elevenlabs
+    Standalone: com.rest.elevenlabs
+    iPhone: com.rest.elevenlabs
   buildNumber:
     Standalone: 0
     iPhone: 0
@@ -762,14 +762,14 @@ PlayerSettings:
     Windows Store Apps: 6
   m_RenderingPath: 1
   m_MobileRenderingPath: 1
-  metroPackageName: com.Rest.ElevenLabs.Voice
+  metroPackageName: com.Rest.elevenlabs
   metroPackageVersion: 0.1.0.0
   metroCertificatePath: 
   metroCertificatePassword: 
   metroCertificateSubject: 
   metroCertificateIssuer: 
   metroCertificateNotAfter: 0000000000000000
-  metroApplicationDescription: com.Rest.ElevenLabs.Voice
+  metroApplicationDescription: com.Rest.elevenlabs
   wsaImages: {}
   metroTileShortName: 
   metroTileShowName: 0
@@ -785,7 +785,6 @@ PlayerSettings:
   metroSplashScreenUseBackgroundColor: 0
   platformCapabilities:
     WindowsStoreApps:
-      EnterpriseAuthentication: False
       OfflineMapsManagement: False
       HumanInterfaceDevice: False
       Location: False
@@ -797,6 +796,7 @@ PlayerSettings:
       PrivateNetworkClientServer: False
       InternetClientServer: False
       VideosLibrary: False
+      BackgroundMediaPlayback: False
       Objects3D: False
       RemoteSystem: False
       BlockedChatMessages: False
@@ -820,9 +820,9 @@ PlayerSettings:
       RecordedCallsFolder: False
       Contacts: False
       InternetClient: False
-      CodeGeneration: False
-      BackgroundMediaPlayback: False
       Proximity: False
+      CodeGeneration: False
+      EnterpriseAuthentication: False
   metroTargetDeviceFamilies:
     Desktop: False
     Holographic: False

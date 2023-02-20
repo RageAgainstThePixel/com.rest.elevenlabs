@@ -1,8 +1,13 @@
-# com.rest.elevenlabs.voice
+# com.rest.elevenlabs
 
-[![openupm](https://img.shields.io/npm/v/com.rest.elevenlabs.voice?label=openupm&registry_uri=https://package.openupm.com)](https://openupm.com/packages/com.rest.elevenlabs.voice/)
+[![Discord](https://img.shields.io/discord/855294214065487932.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/xQgMW9ufN4)
+[![openupm](https://img.shields.io/npm/v/com.rest.elevenlabs?label=openupm&registry_uri=https://package.openupm.com)](https://openupm.com/packages/com.rest.elevenlabs/)
 
-A Rest.ElevenLabs.Voice package for the [Unity](https://unity.com/) Game Engine.
+A non-official [Eleven Labs](https://elevenlabs.io) voice synthesis RESTful client for the [Unity](https://unity.com/) Game Engine.
+
+I am not affiliated with Eleven Labs and an account with api access is required.
+
+***All copyrights, trademarks, logos, and assets are the property of their respective owners.***
 
 ## Installing
 
@@ -10,20 +15,20 @@ A Rest.ElevenLabs.Voice package for the [Unity](https://unity.com/) Game Engine.
 
 - Open your Unity project settings
 - Select the `Package Manager`
-![scoped-registries](https://github.com/StephenHodgson/com.rest.elevenlabs.voice/raw/main/Rest.ElevenLabs.Voice/Packages/com.rest.elevenlabs.voice/Documentation~/images/package-manager-scopes.png)
+![scoped-registries](https://github.com/StephenHodgson/com.rest.elevenlabs/raw/main/Rest.elevenlabs/Packages/com.rest.elevenlabs/Documentation~/images/package-manager-scopes.png)
 - Add the OpenUPM package registry:
   - `Name: OpenUPM`
   - `URL: https://package.openupm.com`
   - `Scope(s):`
-    - `com.rest.elevenlabs.voice`
+    - `com.rest.elevenlabs`
 - Open the Unity Package Manager window
 - Change the Registry from Unity to `My Registries`
-- Add the `Rest.ElevenLabs.Voice` package
+- Add the `Elevenlabs` package
 
 ### Via Unity Package Manager and Git url
 
 - Open your Unity Package Manager
-- Add package from git url: `https://github.com/StephenHodgson/com.rest.elevenlabs.voice.git#upm`
+- Add package from git url: `https://github.com/StephenHodgson/com.rest.elevenlabs.git#upm`
 
 ## Documentation
 

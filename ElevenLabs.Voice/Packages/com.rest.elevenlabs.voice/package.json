@@ -1,20 +1,23 @@
 {
-  "name": "com.rest.elevenlabs.voice",
-  "displayName": "ElevenLabs.Voice",
-  "description": "Rest.ElevenLabs.Voice description goes here.",
+  "name": "com.rest.elevenlabs",
+  "displayName": "ElevenLabs",
+  "description": "A non-official Eleven Labs voice synthesis RESTful client.",
   "keywords": [],
   "version": "1.0.0-preview.1",
   "unity": "2021.3",
-  "documentationUrl": "https://github.com/StephenHodgson/com.rest.elevenlabs.voice#documentation",
-  "changelogUrl": "https://github.com/StephenHodgson/com.rest.elevenlabs.voice/releases",
+  "documentationUrl": "https://github.com/StephenHodgson/com.rest.elevenlabs#documentation",
+  "changelogUrl": "https://github.com/StephenHodgson/com.rest.elevenlabs/releases",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "repository": "https://github.com/StephenHodgson/com.rest.elevenlabs.voice.git"
+    "repository": "https://github.com/StephenHodgson/com.rest.elevenlabs.git"
   },
   "author": {
     "name": "StephenHodgson",
     "url": "https://github.com/StephenHodgson"
+  },
+  "dependencies": {
+    "com.unity.nuget.newtonsoft-json": "3.0.2"
   },
   "publishConfig": {
     "registry": "https://package.openupm.com"

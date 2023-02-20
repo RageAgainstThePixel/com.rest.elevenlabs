@@ -30,6 +30,7 @@ TextMesh Pro.meta
 TextMesh Pro/
 UIElementsSchema/
 *packages-lock.json
+ProjectSettings/SceneTemplateSettings.json
 
 # ============ #
 # Certificates #
@@ -86,3 +87,5 @@ StreamingAssets.meta
 # ====================== #
 # Project Specific Links #
 # ====================== #
+Resources/
+Resources.meta
