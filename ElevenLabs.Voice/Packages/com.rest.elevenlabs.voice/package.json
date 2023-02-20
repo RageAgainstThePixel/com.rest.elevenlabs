@@ -1,0 +1,22 @@
+{
+  "name": "com.rest.elevenlabs.voice",
+  "displayName": "ElevenLabs.Voice",
+  "description": "Rest.ElevenLabs.Voice description goes here.",
+  "keywords": [],
+  "version": "1.0.0-preview.1",
+  "unity": "2021.3",
+  "documentationUrl": "https://github.com/StephenHodgson/com.rest.elevenlabs.voice#documentation",
+  "changelogUrl": "https://github.com/StephenHodgson/com.rest.elevenlabs.voice/releases",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "repository": "https://github.com/StephenHodgson/com.rest.elevenlabs.voice.git"
+  },
+  "author": {
+    "name": "StephenHodgson",
+    "url": "https://github.com/StephenHodgson"
+  },
+  "publishConfig": {
+    "registry": "https://package.openupm.com"
+  }
+}
