@@ -1,0 +1,88 @@
+# ============ #
+# System Files #
+# ============ #
+.DS_Store
+._*
+
+# =============== #
+# Unity generated #
+# =============== #
+[Aa]pp/
+[Aa]pp.meta
+[Bb]in/
+[Bb]uilds/
+[Bb]uild/
+[Ll]ibrary/
+[Ll]ogs/
+[Oo]bj/
+[Tt]emp/
+UserSettings/
+UWP/
+WindowsStoreApp/
+UnityGenerated/
+UnityPackageManager/
+.out/
+.gradle/
+project.json
+project.lock.json
+*.package
+TextMesh Pro.meta
+TextMesh Pro/
+UIElementsSchema/
+*packages-lock.json
+
+# ============ #
+# Certificates #
+# ============ #
+*.cert
+*.privkey
+*.pfx
+*.pfx.meta
+
+# ===================================== #
+# Visual Studio / MonoDevelop generated #
+# ===================================== #
+.vs/
+ExportedObj/
+obj/
+*.svd
+*.userprefs
+/*.csproj
+*.csproj
+*.pidb
+*.suo
+/*.sln
+*.sln
+*.user
+*.unityproj
+*.ipch
+*.opensdf
+*.sdf
+*.tlog
+*.log
+*.idb
+*.opendb
+*.vsconfig
+
+# ============================ #
+# Visual Studio Code Generated #
+# ============================ #
+.vscode/
+
+# ========================= #
+# Jetbrains Rider Generated #
+# ========================= #
+.idea/
+_ReSharper.Caches
+
+# ===================== #
+# Project Specific List #
+# ===================== #
+--Version/
+artifacts/
+StreamingAssets/
+StreamingAssets.meta
+
+# ====================== #
+# Project Specific Links #
+# ====================== #
