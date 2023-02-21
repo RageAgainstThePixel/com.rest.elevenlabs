@@ -1,13 +1,12 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using Newtonsoft.Json;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Security.Authentication;
 using ElevenLabs.History;
 using ElevenLabs.TextToSpeech;
 using ElevenLabs.User;
 using ElevenLabs.Voices;
+using Newtonsoft.Json;
+using System.Net.Http;
+using System.Security.Authentication;
 
 namespace ElevenLabs
 {
@@ -30,8 +29,8 @@ namespace ElevenLabs
             }
 
             Client = new HttpClient();
-            Client.DefaultRequestHeaders.Add("User-Agent", "com.openai.unity");
-            Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", ElevenLabsAuthentication.ApiKey);
+            Client.DefaultRequestHeaders.Add("User-Agent", "com.rest.elevenlabs");
+            Client.DefaultRequestHeaders.Add("xi-api-key", ElevenLabsAuthentication.ApiKey);
 
             Version = 1;
             JsonSerializationOptions = new JsonSerializerSettings
@@ -71,7 +70,7 @@ namespace ElevenLabs
             set
             {
                 version = value;
-                BaseUrl = $"https://api.openai.com/v{version}/";
+                BaseUrl = $"https://api.elevenlabs.io/v{version}/";
             }
         }
 
