@@ -7,7 +7,7 @@ namespace ElevenLabs.TextToSpeech
     /// <summary>
     /// Access to convert text to synthesized speech.
     /// </summary>
-    public class TextToSpeechEndpoint : BaseEndPoint
+    public sealed class TextToSpeechEndpoint : BaseEndPoint
     {
         public TextToSpeechEndpoint(ElevenLabsClient api) : base(api) { }
 

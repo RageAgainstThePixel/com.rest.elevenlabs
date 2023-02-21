@@ -1,5 +1,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using Newtonsoft.Json;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace ElevenLabs.Voices
@@ -7,8 +9,22 @@ namespace ElevenLabs.Voices
     /// <summary>
     /// Access to voices created either by you or us.
     /// </summary>
-    public class VoicesEndpoint : BaseEndPoint
+    public sealed class VoicesEndpoint : BaseEndPoint
     {
+        private class VoiceList
+        {
+            [JsonConstructor]
+            public VoiceList(
+                [JsonProperty("voices")] List<Voice> voices
+            )
+            {
+                Voices = voices;
+            }
+
+            [JsonProperty("voices")]
+            public IReadOnlyList<Voice> Voices { get; }
+        }
+
         public VoicesEndpoint(ElevenLabsClient api) : base(api) { }
 
         protected override string GetEndpoint()
