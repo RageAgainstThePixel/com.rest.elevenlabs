@@ -9,7 +9,7 @@ namespace Rest.ElevenLabs.Voice.Tests
     internal class Test_Fixture_04_TextToSpeechEndpoint
     {
         [UnityTest]
-        public IEnumerator Test_O1_TextToSpeech()
+        public IEnumerator Test_01_TextToSpeech()
         {
             yield return AwaitTestUtilities.Await(async () =>
             {
@@ -18,7 +18,7 @@ namespace Rest.ElevenLabs.Voice.Tests
         }
 
         [UnityTest]
-        public IEnumerator Test_O2_TextToSpeechStream()
+        public IEnumerator Test_02_TextToSpeechStream()
         {
             yield return AwaitTestUtilities.Await(async () =>
             {

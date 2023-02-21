@@ -1,7 +1,10 @@
 {
     "name": "ElevenLabs",
     "rootNamespace": "ElevenLabs",
-    "references": [],
+    "references": [
+        "GUID:a6609af893242c7438d701ddd4cce46a",
+        "GUID:7958db66189566541a6363568aee1575"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

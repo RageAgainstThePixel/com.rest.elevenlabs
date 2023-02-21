@@ -9,7 +9,7 @@ namespace Rest.ElevenLabs.Voice.Tests
     internal class Test_Fixture_02_VoicesEndpoint
     {
         [UnityTest]
-        public IEnumerator Test_O1_GetVoices()
+        public IEnumerator Test_01_GetVoices()
         {
             yield return AwaitTestUtilities.Await(async () =>
             {
@@ -18,7 +18,7 @@ namespace Rest.ElevenLabs.Voice.Tests
         }
 
         [UnityTest]
-        public IEnumerator Test_O2_GetDefaultVoiceSettings()
+        public IEnumerator Test_02_GetDefaultVoiceSettings()
         {
             yield return AwaitTestUtilities.Await(async () =>
             {
@@ -27,7 +27,7 @@ namespace Rest.ElevenLabs.Voice.Tests
         }
 
         [UnityTest]
-        public IEnumerator Test_O3_GetVoiceSettings()
+        public IEnumerator Test_03_GetVoiceSettings()
         {
             yield return AwaitTestUtilities.Await(async () =>
             {
@@ -36,7 +36,7 @@ namespace Rest.ElevenLabs.Voice.Tests
         }
 
         [UnityTest]
-        public IEnumerator Test_O4_GetVoice()
+        public IEnumerator Test_04_GetVoice()
         {
             yield return AwaitTestUtilities.Await(async () =>
             {
@@ -45,7 +45,7 @@ namespace Rest.ElevenLabs.Voice.Tests
         }
 
         [UnityTest]
-        public IEnumerator Test_O5_DeleteVoice()
+        public IEnumerator Test_05_DeleteVoice()
         {
             yield return AwaitTestUtilities.Await(async () =>
             {
@@ -54,7 +54,7 @@ namespace Rest.ElevenLabs.Voice.Tests
         }
 
         [UnityTest]
-        public IEnumerator Test_O6_EditVoiceSettings()
+        public IEnumerator Test_06_EditVoiceSettings()
         {
             yield return AwaitTestUtilities.Await(async () =>
             {
@@ -63,7 +63,7 @@ namespace Rest.ElevenLabs.Voice.Tests
         }
 
         [UnityTest]
-        public IEnumerator Test_O7_AddVoice()
+        public IEnumerator Test_07_AddVoice()
         {
             yield return AwaitTestUtilities.Await(async () =>
             {
@@ -72,7 +72,7 @@ namespace Rest.ElevenLabs.Voice.Tests
         }
 
         [UnityTest]
-        public IEnumerator Test_O8_EditVoice()
+        public IEnumerator Test_08_EditVoice()
         {
             yield return AwaitTestUtilities.Await(async () =>
             {
@@ -81,7 +81,7 @@ namespace Rest.ElevenLabs.Voice.Tests
         }
 
         [UnityTest]
-        public IEnumerator Test_O9_GetVoiceSample()
+        public IEnumerator Test_09_GetVoiceSample()
         {
             yield return AwaitTestUtilities.Await(async () =>
             {

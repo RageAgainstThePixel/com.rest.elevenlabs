@@ -1,8 +1,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System.Threading.Tasks;
 using Newtonsoft.Json;
-using UnityEngine;
+using System.Threading.Tasks;
 
 namespace ElevenLabs.User
 {
