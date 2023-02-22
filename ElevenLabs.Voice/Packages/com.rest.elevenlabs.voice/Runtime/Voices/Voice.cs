@@ -7,6 +7,8 @@ namespace ElevenLabs.Voices
 {
     public sealed class Voice
     {
+        public static implicit operator string(Voice voice) => voice.VoiceId;
+
         [JsonConstructor]
         public Voice(
             [JsonProperty("voice_id")] string voiceId,
@@ -50,6 +52,6 @@ namespace ElevenLabs.Voices
         public IReadOnlyList<string> AvailableForTiers { get; }
 
         [JsonProperty("settings")]
-        public VoiceSettings Settings { get; }
+        public VoiceSettings Settings { get; internal set; }
     }
 }
