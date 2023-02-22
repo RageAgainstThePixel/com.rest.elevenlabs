@@ -6,7 +6,7 @@ using UnityEngine.TestTools;
 
 namespace Rest.ElevenLabs.Voice.Tests
 {
-    internal class Test_Fixture_04_TextToSpeechEndpoint
+    internal class Test_Fixture_03_TextToSpeechEndpoint
     {
         [UnityTest]
         public IEnumerator Test_01_TextToSpeech()

@@ -59,7 +59,6 @@ namespace ElevenLabs.Voices
             return voices.ToList();
         }
 
-
         /// <summary>
         /// Gets the default settings for voices.
         /// </summary>
@@ -100,19 +99,6 @@ namespace ElevenLabs.Voices
         }
 
         /// <summary>
-        /// Delete a voice by its <see cref="voiceId"/>.
-        /// </summary>
-        /// <param name="voiceId"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
-        public async Task<bool> DeleteVoiceAsync(string voiceId, CancellationToken cancellationToken = default)
-        {
-            var response = await Api.Client.DeleteAsync($"{GetEndpoint()}/{voiceId}", cancellationToken);
-            await response.ReadAsStringAsync(true);
-            return response.IsSuccessStatusCode;
-        }
-
-        /// <summary>
         /// Edit your settings for a specific voice.
         /// </summary>
         /// <param name="voiceId"></param>
@@ -123,7 +109,7 @@ namespace ElevenLabs.Voices
         {
             var payload = JsonConvert.SerializeObject(voiceSettings).ToJsonStringContent();
             var response = await Api.Client.PostAsync($"{GetEndpoint()}/{voiceId}/settings/edit", payload, cancellationToken);
-            await response.ReadAsStringAsync(true);
+            await response.ReadAsStringAsync();
             return response.IsSuccessStatusCode;
         }
 
@@ -142,6 +128,21 @@ namespace ElevenLabs.Voices
         {
             throw new NotImplementedException();
         }
+
+        /// <summary>
+        /// Delete a voice by its <see cref="Voice.VoiceId"/>.
+        /// </summary>
+        /// <param name="voiceId"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        public async Task<bool> DeleteVoiceAsync(string voiceId, CancellationToken cancellationToken = default)
+        {
+            var response = await Api.Client.DeleteAsync($"{GetEndpoint()}/{voiceId}", cancellationToken);
+            await response.ReadAsStringAsync(true);
+            return response.IsSuccessStatusCode;
+        }
+
+        #region Samples
 
         /// <summary>
         /// Get the audio corresponding to a sample attached to a voice.
@@ -168,5 +169,7 @@ namespace ElevenLabs.Voices
             await response.ReadAsStringAsync(true);
             return response.IsSuccessStatusCode;
         }
+
+        #endregion Samples
     }
 }

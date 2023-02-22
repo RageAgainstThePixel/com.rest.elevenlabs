@@ -9,7 +9,7 @@ namespace ElevenLabs.User
     {
         [JsonConstructor]
         public NextInvoice(
-            [JsonProperty("amount_due_cents")] int amountDueCents,
+            [JsonProperty("amount_due_cents")] double amountDueCents,
             [JsonProperty("next_payment_attempt_unix")] int nextPaymentAttemptUnix)
         {
             AmountDueCents = amountDueCents;
@@ -17,7 +17,7 @@ namespace ElevenLabs.User
         }
 
         [JsonProperty("amount_due_cents")]
-        public int AmountDueCents { get; }
+        public double AmountDueCents { get; }
 
         [JsonProperty("next_payment_attempt_unix")]
         public int NextPaymentAttemptUnix { get; }

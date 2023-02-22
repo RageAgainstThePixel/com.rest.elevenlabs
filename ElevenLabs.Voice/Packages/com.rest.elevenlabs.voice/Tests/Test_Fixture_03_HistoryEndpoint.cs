@@ -8,7 +8,7 @@ using UnityEngine.TestTools;
 
 namespace Rest.ElevenLabs.Voice.Tests
 {
-    internal class Test_Fixture_03_HistoryEndpoint
+    internal class Test_Fixture_04_HistoryEndpoint
     {
         [UnityTest]
         public IEnumerator Test_01_GetHistory()

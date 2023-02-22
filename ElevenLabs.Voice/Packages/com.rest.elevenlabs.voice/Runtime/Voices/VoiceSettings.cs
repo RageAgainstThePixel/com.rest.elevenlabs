@@ -8,17 +8,17 @@ namespace ElevenLabs.Voices
     {
         [JsonConstructor]
         public VoiceSettings(
-            [JsonProperty("stability")] int stability,
-            [JsonProperty("similarity_boost")] int similarityBoost)
+            [JsonProperty("stability")] double stability,
+            [JsonProperty("similarity_boost")] double similarityBoost)
         {
             Stability = stability;
             SimilarityBoost = similarityBoost;
         }
 
         [JsonProperty("stability")]
-        public int Stability { get; }
+        public double Stability { get; }
 
         [JsonProperty("similarity_boost")]
-        public int SimilarityBoost { get; }
+        public double SimilarityBoost { get; }
     }
 }

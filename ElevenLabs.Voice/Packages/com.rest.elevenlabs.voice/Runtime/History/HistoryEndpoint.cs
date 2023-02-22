@@ -78,9 +78,10 @@ namespace ElevenLabs.History
         /// If more than one history item IDs are provided multiple audio files will be downloaded.
         /// </summary>
         /// <param name="historyItemIds">One or more history item ids queued for download.</param>
+        /// <param name="saveDirectory">Optional, directory path to save the history in.</param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         /// <returns>A list of Audio Clips downloaded by the request.</returns>
-        public async Task<IReadOnlyList<AudioClip>> DownloadHistoryItemsAsync(List<string> historyItemIds, CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<AudioClip>> DownloadHistoryItemsAsync(List<string> historyItemIds, string saveDirectory = null, CancellationToken cancellationToken = default)
         {
             if (historyItemIds is not { Count: not 0 })
             {
@@ -98,15 +99,19 @@ namespace ElevenLabs.History
                 var jsonContent = $"{{\"history_item_ids\":[\"{string.Join("\",\"", historyItemIds)}\"]}}".ToJsonStringContent();
                 var response = await Api.Client.PostAsync($"{GetEndpoint()}/download", jsonContent, cancellationToken);
                 await response.CheckResponseAsync(cancellationToken);
-                var zipTasks = new List<Task>();
-                var stream = await response.Content.ReadAsStreamAsync();
+                var unZipTasks = new List<Task>();
+                var responseStream = await response.Content.ReadAsStreamAsync();
 
                 try
                 {
-                    var zipFile = new ZipFile(stream);
-                    Rest.ValidateCacheDirectory();
+                    var zipFile = new ZipFile(responseStream);
 
-                    var rootDirectory = Path.Combine(Rest.DownloadCacheDirectory, nameof(ElevenLabs));
+                    if (saveDirectory == null)
+                    {
+                        Rest.ValidateCacheDirectory();
+                    }
+
+                    var rootDirectory = Path.Combine(saveDirectory ?? Rest.DownloadCacheDirectory, nameof(ElevenLabs));
 
                     if (!Directory.Exists(rootDirectory))
                     {
@@ -117,7 +122,7 @@ namespace ElevenLabs.History
 
                     foreach (ZipEntry entry in zipFile)
                     {
-                        zipTasks.Add(Task.Run(UnZipAudioClipAsync, cancellationToken));
+                        unZipTasks.Add(Task.Run(UnZipAudioClipAsync, cancellationToken));
 
                         async Task UnZipAudioClipAsync()
                         {
@@ -153,12 +158,12 @@ namespace ElevenLabs.History
                                 await itemStream.DisposeAsync();
                             }
 
-                            var audioClip = await Rest.DownloadAudioClipAsync(filePath, AudioType.MPEG, cancellationToken: cancellationToken);
+                            var audioClip = await Rest.DownloadAudioClipAsync($"file://{filePath}", AudioType.MPEG, cancellationToken: cancellationToken);
                             audioClips.Add(audioClip);
                         }
                     }
 
-                    await Task.WhenAll(zipTasks);
+                    await Task.WhenAll(unZipTasks);
                 }
                 catch (Exception e)
                 {
@@ -166,7 +171,7 @@ namespace ElevenLabs.History
                 }
                 finally
                 {
-                    await stream.DisposeAsync();
+                    await responseStream.DisposeAsync();
                 }
             }
 
