@@ -7,11 +7,11 @@ namespace ElevenLabs.Voices
 {
     public sealed class Voice
     {
-        public static implicit operator string(Voice voice) => voice.VoiceId;
+        public static implicit operator string(Voice voice) => voice.Id;
 
         [JsonConstructor]
         public Voice(
-            [JsonProperty("voice_id")] string voiceId,
+            [JsonProperty("voice_id")] string id,
             [JsonProperty("name")] string name,
             [JsonProperty("samples")] List<Sample> samples,
             [JsonProperty("category")] string category,
@@ -20,7 +20,7 @@ namespace ElevenLabs.Voices
             [JsonProperty("available_for_tiers")] List<string> availableForTiers,
             [JsonProperty("settings")] VoiceSettings settings)
         {
-            VoiceId = voiceId;
+            Id = id;
             Name = name;
             Samples = samples;
             Category = category;
@@ -31,7 +31,7 @@ namespace ElevenLabs.Voices
         }
 
         [JsonProperty("voice_id")]
-        public string VoiceId { get; }
+        public string Id { get; }
 
         [JsonProperty("name")]
         public string Name { get; }

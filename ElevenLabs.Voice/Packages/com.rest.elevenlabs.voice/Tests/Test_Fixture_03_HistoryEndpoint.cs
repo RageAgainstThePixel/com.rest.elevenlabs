@@ -3,7 +3,8 @@
 using ElevenLabs;
 using NUnit.Framework;
 using System.Collections;
-using System.Threading.Tasks;
+using System.Linq;
+using UnityEngine;
 using UnityEngine.TestTools;
 
 namespace Rest.ElevenLabs.Voice.Tests
@@ -17,8 +18,14 @@ namespace Rest.ElevenLabs.Voice.Tests
             {
                 var api = new ElevenLabsClient();
                 Assert.NotNull(api.HistoryEndpoint);
-                var result = await api.HistoryEndpoint.GetHistoryAsync();
-                Assert.NotNull(result);
+                var results = await api.HistoryEndpoint.GetHistoryAsync();
+                Assert.NotNull(results);
+                Assert.IsNotEmpty(results);
+
+                foreach (var item in results.OrderBy(item => item.Date))
+                {
+                    Debug.Log($"{item.State} {item.Date} | {item.Id} | {item.Text.Length} | {item.Text}");
+                }
             });
         }
 
@@ -27,7 +34,16 @@ namespace Rest.ElevenLabs.Voice.Tests
         {
             yield return AwaitTestUtilities.Await(async () =>
             {
-                await Task.CompletedTask;
+                var api = new ElevenLabsClient();
+                Assert.NotNull(api.HistoryEndpoint);
+                var historyItems = await api.HistoryEndpoint.GetHistoryAsync();
+                Assert.NotNull(historyItems);
+                Assert.IsNotEmpty(historyItems);
+                var downloadItem = historyItems.OrderByDescending(item => item.Date).FirstOrDefault();
+                Assert.NotNull(downloadItem);
+                Debug.Log($"Downloading {downloadItem.Id}...");
+                var result = await api.HistoryEndpoint.GetHistoryAudioAsync(downloadItem);
+                Assert.NotNull(result);
             });
         }
 
@@ -36,7 +52,29 @@ namespace Rest.ElevenLabs.Voice.Tests
         {
             yield return AwaitTestUtilities.Await(async () =>
             {
-                await Task.CompletedTask;
+                var api = new ElevenLabsClient();
+                Assert.NotNull(api.HistoryEndpoint);
+                var historyItems = await api.HistoryEndpoint.GetHistoryAsync();
+                Assert.NotNull(historyItems);
+                Assert.IsNotEmpty(historyItems);
+                var itemToDelete = historyItems
+                    .OrderBy(item => item.Date)
+                    .FirstOrDefault();
+                Assert.NotNull(itemToDelete);
+                Debug.Log($"Deleting {itemToDelete.Id}...");
+                var result = await api.HistoryEndpoint.DeleteHistoryItemAsync(itemToDelete);
+                Assert.NotNull(result);
+                Assert.IsTrue(result);
+                var updatedItems = await api.HistoryEndpoint.GetHistoryAsync();
+                Assert.NotNull(updatedItems);
+                Assert.IsNotEmpty(updatedItems);
+                var isDeleted = updatedItems.All(item => item.Id != itemToDelete.Id);
+                Assert.IsTrue(isDeleted);
+
+                foreach (var item in updatedItems.OrderBy(item => item.Date))
+                {
+                    Debug.Log($"{item.State} {item.Date} | {item.Id} | {item.Text}");
+                }
             });
         }
 
@@ -45,7 +83,15 @@ namespace Rest.ElevenLabs.Voice.Tests
         {
             yield return AwaitTestUtilities.Await(async () =>
             {
-                await Task.CompletedTask;
+                var api = new ElevenLabsClient();
+                Assert.NotNull(api.HistoryEndpoint);
+                var historyItems = await api.HistoryEndpoint.GetHistoryAsync();
+                Assert.NotNull(historyItems);
+                Assert.IsNotEmpty(historyItems);
+                var downloadItems = historyItems.Select(item => item.Id).ToList();
+                var results = await api.HistoryEndpoint.DownloadHistoryItemsAsync(downloadItems);
+                Assert.NotNull(results);
+                Assert.IsNotEmpty(results);
             });
         }
     }

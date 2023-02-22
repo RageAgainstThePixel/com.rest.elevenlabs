@@ -26,7 +26,7 @@ namespace Rest.ElevenLabs.Voice.Tests
 
                 foreach (var voice in results)
                 {
-                    Debug.Log($"{voice.VoiceId} | {voice.Name} | similarity boost: {voice.Settings?.SimilarityBoost} | stability: {voice.Settings?.Stability}");
+                    Debug.Log($"{voice.Id} | {voice.Name} | similarity boost: {voice.Settings?.SimilarityBoost} | stability: {voice.Settings?.Stability}");
                 }
             });
         }
@@ -54,10 +54,10 @@ namespace Rest.ElevenLabs.Voice.Tests
                 var results = await api.VoicesEndpoint.GetVoicesAsync();
                 Assert.NotNull(results);
                 Assert.IsNotEmpty(results);
-                var voice = results.FirstOrDefault();
-                var result = await api.VoicesEndpoint.GetVoiceAsync(voice);
+                var voiceToGet = results.OrderBy(voice => voice.Name).FirstOrDefault();
+                var result = await api.VoicesEndpoint.GetVoiceAsync(voiceToGet);
                 Assert.NotNull(result);
-                Debug.Log($"{result.VoiceId} | {result.Name} | {result.PreviewUrl}");
+                Debug.Log($"{result.Id} | {result.Name} | {result.PreviewUrl}");
             });
         }
 
@@ -76,7 +76,7 @@ namespace Rest.ElevenLabs.Voice.Tests
                 Assert.IsTrue(result);
                 var updatedVoice = await api.VoicesEndpoint.GetVoiceAsync(voice);
                 Assert.NotNull(updatedVoice);
-                Debug.Log($"{updatedVoice.VoiceId} | similarity boost: {updatedVoice.Settings?.SimilarityBoost} | stability: {updatedVoice.Settings?.Stability}");
+                Debug.Log($"{updatedVoice.Id} | similarity boost: {updatedVoice.Settings?.SimilarityBoost} | stability: {updatedVoice.Settings?.Stability}");
                 var defaultVoiceSettings = await api.VoicesEndpoint.GetDefaultVoiceSettingsAsync();
                 Assert.NotNull(defaultVoiceSettings);
                 var defaultResult = await api.VoicesEndpoint.EditVoiceSettingsAsync(voice, defaultVoiceSettings);

@@ -130,7 +130,7 @@ namespace ElevenLabs.Voices
         }
 
         /// <summary>
-        /// Delete a voice by its <see cref="Voice.VoiceId"/>.
+        /// Delete a voice by its <see cref="Voice.Id"/>.
         /// </summary>
         /// <param name="voiceId"></param>
         /// <param name="cancellationToken"></param>

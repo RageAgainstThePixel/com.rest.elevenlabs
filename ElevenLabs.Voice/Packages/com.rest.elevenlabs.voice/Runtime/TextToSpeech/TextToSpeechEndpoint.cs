@@ -65,7 +65,7 @@ namespace ElevenLabs.TextToSpeech
             {
                 var defaultVoiceSettings = voiceSettings ?? voice.Settings ?? await Api.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken);
                 var payload = JsonConvert.SerializeObject(new TextToSpeechRequest(text, defaultVoiceSettings)).ToJsonStringContent();
-                var response = await Api.Client.PostAsync($"{GetEndpoint()}/{voice.VoiceId}", payload, cancellationToken);
+                var response = await Api.Client.PostAsync($"{GetEndpoint()}/{voice.Id}", payload, cancellationToken);
                 await response.CheckResponseAsync(cancellationToken);
                 var responseStream = await response.Content.ReadAsStreamAsync();
 

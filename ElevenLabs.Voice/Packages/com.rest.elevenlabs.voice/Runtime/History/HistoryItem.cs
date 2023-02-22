@@ -7,9 +7,11 @@ namespace ElevenLabs.History
 {
     public sealed class HistoryItem
     {
+        public static implicit operator string(HistoryItem historyItem) => historyItem.Id;
+
         [JsonConstructor]
         public HistoryItem(
-            [JsonProperty("history_item_id")] string historyItemId,
+            [JsonProperty("history_item_id")] string id,
             [JsonProperty("voice_id")] string voiceId,
             [JsonProperty("voice_name")] string voiceName,
             [JsonProperty("text")] string text,
@@ -19,7 +21,7 @@ namespace ElevenLabs.History
             [JsonProperty("content_type")] string contentType,
             [JsonProperty("state")] string state)
         {
-            HistoryItemId = historyItemId;
+            Id = id;
             VoiceId = voiceId;
             VoiceName = voiceName;
             Text = text;
@@ -31,7 +33,7 @@ namespace ElevenLabs.History
         }
 
         [JsonProperty("history_item_id")]
-        public string HistoryItemId { get; }
+        public string Id { get; }
 
         [JsonProperty("voice_id")]
         public string VoiceId { get; }

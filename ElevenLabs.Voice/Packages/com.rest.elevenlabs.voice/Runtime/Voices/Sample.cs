@@ -6,15 +6,17 @@ namespace ElevenLabs.Voices
 {
     public sealed class Sample
     {
+        public static implicit operator string(Sample sample) => sample.Id;
+
         [JsonConstructor]
         public Sample(
-            [JsonProperty("sample_id")] string sampleId,
+            [JsonProperty("sample_id")] string id,
             [JsonProperty("file_name")] string fileName,
             [JsonProperty("mime_type")] string mimeType,
             [JsonProperty("size_bytes")] int sizeBytes,
             [JsonProperty("hash")] string hash)
         {
-            SampleId = sampleId;
+            Id = id;
             FileName = fileName;
             MimeType = mimeType;
             SizeBytes = sizeBytes;
@@ -22,7 +24,7 @@ namespace ElevenLabs.Voices
         }
 
         [JsonProperty("sample_id")]
-        public string SampleId { get; }
+        public string Id { get; }
 
         [JsonProperty("file_name")]
         public string FileName { get; }

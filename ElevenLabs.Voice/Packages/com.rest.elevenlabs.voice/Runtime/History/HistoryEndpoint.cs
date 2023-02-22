@@ -51,19 +51,19 @@ namespace ElevenLabs.History
         /// <summary>
         /// Get audio of a history item.
         /// </summary>
-        /// <param name="historyId"><see cref="HistoryItem.HistoryItemId"/></param>
+        /// <param name="historyId"><see cref="HistoryItem.Id"/></param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         /// <returns><see cref="AudioClip"/>.</returns>
         public async Task<AudioClip> GetHistoryAudioAsync(string historyId, CancellationToken cancellationToken = default)
         {
             var headers = Api.Client.DefaultRequestHeaders.ToDictionary(pair => pair.Key, pair => string.Join(" ", pair.Value));
-            return await Rest.DownloadAudioClipAsync($"{GetEndpoint()}/{historyId}/audio", AudioType.MPEG, headers: headers, cancellationToken: cancellationToken);
+            return await Rest.DownloadAudioClipAsync($"{GetEndpoint()}/{historyId}/audio", AudioType.MPEG, fileName: $"{historyId}.mp3", headers: headers, cancellationToken: cancellationToken);
         }
 
         /// <summary>
         /// Delete a history item by its id.
         /// </summary>
-        /// <param name="historyId"><see cref="HistoryItem.HistoryItemId"/></param>
+        /// <param name="historyId"><see cref="HistoryItem.Id"/></param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         /// <returns>True, if history item was successfully deleted.</returns>
         public async Task<bool> DeleteHistoryItemAsync(string historyId, CancellationToken cancellationToken = default)
@@ -118,7 +118,9 @@ namespace ElevenLabs.History
                         Directory.CreateDirectory(rootDirectory);
                     }
 
-                    var downloadDirectory = Path.Combine(rootDirectory, $"AudioHistory_{DateTime.Now:yyyyMMddTHHmmss}");
+                    var downloadDirectory = Path.Combine(rootDirectory, "AudioHistory");
+
+                    Directory.CreateDirectory(downloadDirectory);
 
                     foreach (ZipEntry entry in zipFile)
                     {
@@ -127,6 +129,19 @@ namespace ElevenLabs.History
                         async Task UnZipAudioClipAsync()
                         {
                             var filePath = Path.Combine(downloadDirectory, entry.Name);
+
+                            if (File.Exists(filePath))
+                            {
+                                return;
+                            }
+
+                            var parentDirectory = Directory.GetParent(filePath)!;
+
+                            if (!parentDirectory.Exists)
+                            {
+                                Directory.CreateDirectory(parentDirectory.FullName);
+                            }
+
                             var itemStream = zipFile.GetInputStream(entry);
 
                             try
