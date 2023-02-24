@@ -159,8 +159,12 @@ namespace ElevenLabs.Voices
                     throw new ArgumentNullException(nameof(sample));
                 }
 
-                var data = await File.ReadAllBytesAsync(sample, cancellationToken);
-                form.Add(new ByteArrayContent(data), Path.GetFileNameWithoutExtension(sample), Path.GetFileName(sample));
+                var fileStream = File.OpenRead(sample);
+                var stream = new MemoryStream();
+                await fileStream.CopyToAsync(stream, cancellationToken);
+                form.Add(new ByteArrayContent(stream.ToArray()), "files", Path.GetFileName(sample));
+                await fileStream.DisposeAsync();
+                await stream.DisposeAsync();
             }
 
             if (labels != null)
@@ -209,8 +213,12 @@ namespace ElevenLabs.Voices
                     throw new ArgumentNullException(nameof(sample));
                 }
 
-                var data = await File.ReadAllBytesAsync(sample, cancellationToken);
-                form.Add(new ByteArrayContent(data), Path.GetFileNameWithoutExtension(sample), Path.GetFileName(sample));
+                var fileStream = File.OpenRead(sample);
+                var stream = new MemoryStream();
+                await fileStream.CopyToAsync(stream, cancellationToken);
+                form.Add(new ByteArrayContent(stream.ToArray()), "files", Path.GetFileName(sample));
+                await fileStream.DisposeAsync();
+                await stream.DisposeAsync();
             }
 
             if (labels != null)
