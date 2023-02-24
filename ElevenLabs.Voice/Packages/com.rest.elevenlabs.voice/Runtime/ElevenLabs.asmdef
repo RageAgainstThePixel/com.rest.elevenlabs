@@ -2,9 +2,9 @@
     "name": "ElevenLabs",
     "rootNamespace": "ElevenLabs",
     "references": [
+        "GUID:8c1b5e158961445498f8a66188fbb2e3",
         "GUID:a6609af893242c7438d701ddd4cce46a",
-        "GUID:7958db66189566541a6363568aee1575",
-        "GUID:8c1b5e158961445498f8a66188fbb2e3"
+        "GUID:7958db66189566541a6363568aee1575"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

@@ -3,7 +3,9 @@
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -26,6 +28,18 @@ namespace ElevenLabs.Voices
 
             [JsonProperty("voices")]
             public IReadOnlyList<Voice> Voices { get; }
+        }
+
+        private class VoiceResponse
+        {
+            [JsonConstructor]
+            public VoiceResponse([JsonProperty("voice_id")] string voiceId)
+            {
+                VoiceId = voiceId;
+            }
+
+            [JsonProperty("voice_id")]
+            public string VoiceId { get; }
         }
 
         public VoicesEndpoint(ElevenLabsClient api) : base(api) { }
@@ -116,17 +130,97 @@ namespace ElevenLabs.Voices
         /// <summary>
         /// Add a new voice to your collection of voices in VoiceLab.
         /// </summary>
-        public Task AddVoiceAsync(CancellationToken cancellationToken = default)
+        /// <param name="name">Name of the voice you want to add.</param>
+        /// <param name="samplePaths">Collection of file paths to use as samples for the new voice.</param>
+        /// <param name="labels">Optional, labels for the new voice.</param>
+        /// <param name="cancellationToken"></param>
+        public async Task<Voice> AddVoiceAsync(string name, IEnumerable<string> samplePaths, Dictionary<string, string> labels = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            var form = new MultipartFormDataContent();
+
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
+            form.Add(new StringContent(name), "name");
+
+            samplePaths = samplePaths.ToList();
+
+            if (!samplePaths.Any())
+            {
+                throw new ArgumentException(nameof(samplePaths));
+            }
+
+            foreach (var sample in samplePaths)
+            {
+                if (string.IsNullOrWhiteSpace(sample))
+                {
+                    throw new ArgumentNullException(nameof(sample));
+                }
+
+                var data = await File.ReadAllBytesAsync(sample, cancellationToken);
+                form.Add(new ByteArrayContent(data), Path.GetFileNameWithoutExtension(sample), Path.GetFileName(sample));
+            }
+
+            if (labels != null)
+            {
+                form.Add(new StringContent(JsonConvert.SerializeObject(labels)), "labels");
+            }
+
+            var response = await Api.Client.PostAsync($"{GetEndpoint()}/add", form, cancellationToken);
+            var responseAsString = await response.ReadAsStringAsync(true);
+            var voiceResponse = JsonConvert.DeserializeObject<VoiceResponse>(responseAsString, Api.JsonSerializationOptions);
+            var voice = await GetVoiceAsync(voiceResponse.VoiceId, cancellationToken: cancellationToken);
+            return voice;
         }
 
         /// <summary>
         /// Edit a voice created by you.
         /// </summary>
-        public Task EditVoiceAsync(CancellationToken cancellationToken = default)
+        /// <param name="voice"></param>
+        /// <param name="samplePaths"></param>
+        /// <param name="labels"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public async Task<bool> EditVoiceAsync(Voice voice, IEnumerable<string> samplePaths, Dictionary<string, string> labels, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            var form = new MultipartFormDataContent();
+
+            if (voice == null)
+            {
+                throw new ArgumentNullException(nameof(voice));
+            }
+
+            form.Add(new StringContent(voice.Name), "name");
+
+            samplePaths = samplePaths.ToList();
+
+            if (!samplePaths.Any())
+            {
+                throw new ArgumentException(nameof(samplePaths));
+            }
+
+            foreach (var sample in samplePaths)
+            {
+                if (string.IsNullOrWhiteSpace(sample))
+                {
+                    throw new ArgumentNullException(nameof(sample));
+                }
+
+                var data = await File.ReadAllBytesAsync(sample, cancellationToken);
+                form.Add(new ByteArrayContent(data), Path.GetFileNameWithoutExtension(sample), Path.GetFileName(sample));
+            }
+
+            if (labels != null)
+            {
+                form.Add(new StringContent(JsonConvert.SerializeObject(labels)), "labels");
+            }
+
+            var response = await Api.Client.PostAsync($"{GetEndpoint()}/{voice.Id}/edit", form, cancellationToken);
+            await response.CheckResponseAsync(cancellationToken);
+            return response.IsSuccessStatusCode;
         }
 
         /// <summary>
@@ -138,7 +232,7 @@ namespace ElevenLabs.Voices
         public async Task<bool> DeleteVoiceAsync(string voiceId, CancellationToken cancellationToken = default)
         {
             var response = await Api.Client.DeleteAsync($"{GetEndpoint()}/{voiceId}", cancellationToken);
-            await response.ReadAsStringAsync(true);
+            await response.CheckResponseAsync(cancellationToken);
             return response.IsSuccessStatusCode;
         }
 
@@ -153,7 +247,7 @@ namespace ElevenLabs.Voices
         public async Task<AudioClip> GetVoiceSampleAsync(string voiceId, string sampleId, CancellationToken cancellationToken = default)
         {
             var headers = Api.Client.DefaultRequestHeaders.ToDictionary(pair => pair.Key, pair => string.Join(" ", pair.Value));
-            return await Rest.DownloadAudioClipAsync($"{GetEndpoint()}/{voiceId}/samples/{sampleId}/audio", AudioType.UNKNOWN, headers: headers, cancellationToken: cancellationToken);
+            return await Rest.DownloadAudioClipAsync($"{GetEndpoint()}/{voiceId}/samples/{sampleId}/audio", AudioType.MPEG, headers: headers, cancellationToken: cancellationToken);
         }
 
         /// <summary>
@@ -166,7 +260,7 @@ namespace ElevenLabs.Voices
         public async Task<bool> DeleteVoiceSampleAsync(string voiceId, string sampleId, CancellationToken cancellationToken = default)
         {
             var response = await Api.Client.DeleteAsync($"{GetEndpoint()}/{voiceId}/samples/{sampleId}", cancellationToken);
-            await response.ReadAsStringAsync(true);
+            await response.CheckResponseAsync(cancellationToken);
             return response.IsSuccessStatusCode;
         }
 
