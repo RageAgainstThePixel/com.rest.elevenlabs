@@ -52,7 +52,7 @@ namespace ElevenLabs.Voices
         /// </summary>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        public async Task<IReadOnlyList<Voice>> GetVoicesAsync(CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<Voice>> GetAllVoicesAsync(CancellationToken cancellationToken = default)
         {
             var response = await Api.Client.GetAsync(GetEndpoint(), cancellationToken);
             var responseAsString = await response.ReadAsStringAsync();

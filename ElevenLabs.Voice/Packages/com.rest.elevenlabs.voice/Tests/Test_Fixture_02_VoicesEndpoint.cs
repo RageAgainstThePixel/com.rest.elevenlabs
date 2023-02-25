@@ -21,7 +21,7 @@ namespace Rest.ElevenLabs.Voice.Tests
             {
                 var api = new ElevenLabsClient();
                 Assert.NotNull(api.VoicesEndpoint);
-                var results = await api.VoicesEndpoint.GetVoicesAsync();
+                var results = await api.VoicesEndpoint.GetAllVoicesAsync();
                 Assert.NotNull(results);
                 Assert.IsNotEmpty(results);
 
@@ -52,7 +52,7 @@ namespace Rest.ElevenLabs.Voice.Tests
             {
                 var api = new ElevenLabsClient();
                 Assert.NotNull(api.VoicesEndpoint);
-                var results = await api.VoicesEndpoint.GetVoicesAsync();
+                var results = await api.VoicesEndpoint.GetAllVoicesAsync();
                 Assert.NotNull(results);
                 Assert.IsNotEmpty(results);
                 var voiceToGet = results.OrderBy(voice => voice.Name).FirstOrDefault();
@@ -69,7 +69,7 @@ namespace Rest.ElevenLabs.Voice.Tests
             {
                 var api = new ElevenLabsClient();
                 Assert.NotNull(api.VoicesEndpoint);
-                var results = await api.VoicesEndpoint.GetVoicesAsync();
+                var results = await api.VoicesEndpoint.GetAllVoicesAsync();
                 Assert.NotNull(results);
                 Assert.IsNotEmpty(results);
                 var voice = results.FirstOrDefault();
@@ -113,7 +113,7 @@ namespace Rest.ElevenLabs.Voice.Tests
             {
                 var api = new ElevenLabsClient();
                 Assert.NotNull(api.VoicesEndpoint);
-                var results = await api.VoicesEndpoint.GetVoicesAsync();
+                var results = await api.VoicesEndpoint.GetAllVoicesAsync();
                 Assert.NotNull(results);
                 Assert.IsNotEmpty(results);
                 var voiceToEdit = results.FirstOrDefault(voice => voice.Name.Contains("Test Voice"));
@@ -137,7 +137,7 @@ namespace Rest.ElevenLabs.Voice.Tests
             {
                 var api = new ElevenLabsClient();
                 Assert.NotNull(api.VoicesEndpoint);
-                var results = await api.VoicesEndpoint.GetVoicesAsync();
+                var results = await api.VoicesEndpoint.GetAllVoicesAsync();
                 Assert.NotNull(results);
                 Assert.IsNotEmpty(results);
                 var voice = results.FirstOrDefault(voice => voice.Name.Contains("Test Voice"));
@@ -159,7 +159,7 @@ namespace Rest.ElevenLabs.Voice.Tests
             {
                 var api = new ElevenLabsClient();
                 Assert.NotNull(api.VoicesEndpoint);
-                var results = await api.VoicesEndpoint.GetVoicesAsync();
+                var results = await api.VoicesEndpoint.GetAllVoicesAsync();
                 Assert.NotNull(results);
                 Assert.IsNotEmpty(results);
                 var voice = results.FirstOrDefault(voice => voice.Name.Contains("Test Voice"));
@@ -182,7 +182,7 @@ namespace Rest.ElevenLabs.Voice.Tests
             {
                 var api = new ElevenLabsClient();
                 Assert.NotNull(api.VoicesEndpoint);
-                var results = await api.VoicesEndpoint.GetVoicesAsync();
+                var results = await api.VoicesEndpoint.GetAllVoicesAsync();
                 Assert.NotNull(results);
                 Assert.IsNotEmpty(results);
                 var voicesToDelete = results.Where(voice => voice.Name.Contains("Test Voice")).ToList();
