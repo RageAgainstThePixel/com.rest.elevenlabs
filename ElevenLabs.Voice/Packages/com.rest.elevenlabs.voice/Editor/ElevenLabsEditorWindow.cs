@@ -3,7 +3,10 @@
 using ElevenLabs.Voices;
 using System;
 using System.Collections.Generic;
+using System.Drawing.Text;
+using System.IO;
 using System.Linq;
+using ElevenLabs.User;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -53,15 +56,22 @@ namespace ElevenLabs.Editor
 
         private static GUIStyle rightMiddleAlignedLabel;
 
-        private static GUIStyle RightMiddleAlignedLabel
-            => rightMiddleAlignedLabel ??= new GUIStyle(EditorStyles.label)
+        private static GUIStyle RightMiddleAlignedLabel => rightMiddleAlignedLabel ??= new GUIStyle(EditorStyles.label)
         {
             alignment = TextAnchor.MiddleRight,
         };
 
+        private float settingsLabelWidth = 1.56f;
+        private float innerLabelWidth = 1.9f;
+        private int indentLevel = 6;
+
         private static Vector2 scrollPosition = Vector2.zero;
 
         private static ElevenLabsClient api;
+
+        private static bool hasFetchedUserInfo;
+
+        private static bool isFetchingUserInfo;
 
         private static bool hasFetchedVoices;
 
@@ -75,6 +85,8 @@ namespace ElevenLabs.Editor
 
         private static GUIContent[] voiceOptions = Array.Empty<GUIContent>();
 
+        private SubscriptionInfo userInfo;
+
         private static Voice currentVoiceOption;
 
         private static VoiceSettings currentVoiceSettings;
@@ -82,10 +94,15 @@ namespace ElevenLabs.Editor
         [SerializeField]
         private int tab;
 
+        private string speechSynthesisDownloadDirectory = $"{Application.streamingAssetsPath}/{nameof(ElevenLabs)}";
+
+        [SerializeField]
+        private string currentVoiceId;
+
         [SerializeField]
         private Vector2 voiceSettingsSliderValues = Vector2.zero;
 
-        private float localLabelWidth = 100;
+        private string speechSynthesisTextInput;
 
         [MenuItem("ElevenLabs/Dashboard")]
         private static void OpenWindow()
@@ -105,6 +122,12 @@ namespace ElevenLabs.Editor
         private void OnFocus()
         {
             api ??= new ElevenLabsClient();
+
+            if (!hasFetchedUserInfo)
+            {
+                hasFetchedUserInfo = true;
+                FetchUserInfo();
+            }
 
             if (!hasFetchedVoices)
             {
@@ -157,6 +180,25 @@ namespace ElevenLabs.Editor
             EditorGUILayout.EndVertical();
         }
 
+        private async void FetchUserInfo()
+        {
+            if (isFetchingUserInfo) { return; }
+            isFetchingUserInfo = true;
+
+            try
+            {
+                userInfo = await api.UserEndpoint.GetSubscriptionInfoAsync();
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(e);
+            }
+            finally
+            {
+                isFetchingUserInfo = false;
+            }
+        }
+
         private async void FetchVoices()
         {
             if (isFetchingVoices) { return; }
@@ -164,8 +206,6 @@ namespace ElevenLabs.Editor
 
             try
             {
-                currentVoiceSettings = await api.VoicesEndpoint.GetDefaultVoiceSettingsAsync();
-                voiceSettingsSliderValues = new Vector2(currentVoiceSettings.Stability, currentVoiceSettings.SimilarityBoost);
                 voices = await api.VoicesEndpoint.GetAllVoicesAsync();
                 voiceOptions = voices.OrderBy(voice => voice.Name).Select(voice => new GUIContent($"{voice.Category}/{voice.Name}")).ToArray();
             }
@@ -181,97 +221,247 @@ namespace ElevenLabs.Editor
 
         private void RenderSpeechSynthesis()
         {
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-
-            GUI.enabled = !isFetchingVoices;
-
-            if (GUILayout.Button("Refresh"))
-            {
-                EditorApplication.delayCall += FetchVoices;
-            }
-
-            EditorGUILayout.Space(10);
-            GUI.enabled = true;
-            EditorGUILayout.EndHorizontal();
-            EditorGUILayout.Space(10);
             EditorGUI.indentLevel++;
 
+            { //Header
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("Settings", EditorStyles.boldLabel);
+                GUILayout.FlexibleSpace();
+
+                GUI.enabled = !isFetchingVoices;
+
+                if (GUILayout.Button("Refresh"))
+                {
+                    EditorApplication.delayCall += FetchVoices;
+                }
+
+                EditorGUILayout.Space(10);
+                GUI.enabled = true;
+                EditorGUILayout.EndHorizontal();
+            }
+
+            EditorGUILayout.Space(10);
             GUILayout.BeginHorizontal();
             GUILayout.BeginVertical();
+            { // Body
+                var prevLabelWidth = EditorGUIUtility.labelWidth;
+                EditorGUIUtility.labelWidth = 128 * settingsLabelWidth;
 
-            var prevLabelWidth = EditorGUIUtility.labelWidth;
-            EditorGUIUtility.labelWidth = EditorGUI.indentLevel;
+                EditorGUILayout.LabelField(new GUIContent("Save Directory"));
+                EditorGUILayout.TextField(speechSynthesisDownloadDirectory);
 
-            var voiceIndex = -1;
-
-            if (currentVoiceOption != null)
-            {
-                for (var i = 0; i < voiceOptions.Length; i++)
+                EditorGUILayout.BeginHorizontal();
                 {
-                    if (voiceOptions[i].text.Contains(currentVoiceOption.Name))
+                    GUILayout.Space(20);
+
+                    if (GUILayout.Button("Change Save Directory", GUILayout.ExpandWidth(true)))
                     {
-                        voiceIndex = i;
-                        break;
+                        EditorApplication.delayCall += () =>
+                        {
+                            speechSynthesisDownloadDirectory = EditorUtility.OpenFolderPanel("Save Directory", speechSynthesisDownloadDirectory, "");
+                        };
                     }
                 }
+                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.Space();
+
+                EditorGUILayout.BeginHorizontal();
+                { // voice dropdown
+                    var voiceIndex = -1;
+
+                    currentVoiceOption ??= !string.IsNullOrWhiteSpace(currentVoiceId)
+                        ? voices?.FirstOrDefault(voice => voice.Id == currentVoiceId)
+                        : voices?.FirstOrDefault();
+
+                    if (currentVoiceOption != null)
+                    {
+                        for (var i = 0; i < voiceOptions.Length; i++)
+                        {
+                            if (voiceOptions[i].text.Contains(currentVoiceOption.Name))
+                            {
+                                voiceIndex = i;
+                                break;
+                            }
+                        }
+
+                        if (currentVoiceSettings == null)
+                        {
+                            GetDefaultVoiceSettings(currentVoiceOption);
+                        }
+                    }
+
+                    EditorGUI.BeginChangeCheck();
+                    voiceIndex = EditorGUILayout.Popup(voiceModelContent, voiceIndex, voiceOptions);
+
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        currentVoiceOption = voices?.FirstOrDefault(voice => voiceOptions[voiceIndex].text.Contains(voice.Name));
+                        currentVoiceId = currentVoiceOption!.Id;
+                        EditorApplication.delayCall += () => GetDefaultVoiceSettings(currentVoiceOption);
+                    }
+                }
+                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.Space();
+
+                GUI.enabled = currentVoiceSettings != null && !isGettingDefaultVoiceSettings;
+                EditorGUI.BeginChangeCheck();
+
+                voiceSettingsSliderValues.x = EditorGUILayout.Slider(stabilityContent, voiceSettingsSliderValues.x, 0f, 1f);
+                EditorGUILayout.BeginHorizontal();
+                {
+                    StartIndent(indentLevel);
+                    EditorGUIUtility.labelWidth = 128 * innerLabelWidth;
+                    EditorGUILayout.LabelField(moreVariableContent, GUILayout.ExpandWidth(true));
+                    GUILayout.FlexibleSpace();
+                    EditorGUILayout.LabelField(moreStableContent, RightMiddleAlignedLabel, GUILayout.ExpandWidth(true));
+                    EditorGUIUtility.labelWidth = 128 * settingsLabelWidth;
+                    EndIndent(indentLevel);
+                }
+                EditorGUILayout.EndHorizontal();
+
+                voiceSettingsSliderValues.y = EditorGUILayout.Slider(clarityContent, voiceSettingsSliderValues.y, 0f, 1f);
+                EditorGUILayout.BeginHorizontal();
+                {
+                    StartIndent(indentLevel);
+                    EditorGUIUtility.labelWidth = 128 * innerLabelWidth;
+                    EditorGUILayout.LabelField(moreVariableContent, GUILayout.ExpandWidth(true));
+                    GUILayout.FlexibleSpace();
+                    EditorGUILayout.LabelField(moreStableContent, RightMiddleAlignedLabel, GUILayout.ExpandWidth(true));
+                    EditorGUIUtility.labelWidth = 128 * settingsLabelWidth;
+                    EndIndent(indentLevel);
+                }
+                EditorGUILayout.EndHorizontal();
+
+                GUILayout.Space(10);
+                EditorGUILayout.BeginVertical();
+                EditorGUILayout.BeginHorizontal();
+                { // Text Area Header
+                    EditorGUILayout.LabelField("Text", EditorStyles.boldLabel, GUILayout.ExpandWidth(true));
+                    GUILayout.FlexibleSpace();
+
+                    if (GUILayout.Button("To Default", GUILayout.Width(128)))
+                    {
+                        EditorApplication.delayCall += () => GetDefaultVoiceSettings(currentVoiceOption);
+                    }
+                    else
+                    {
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            currentVoiceSettings = new VoiceSettings(voiceSettingsSliderValues.x, voiceSettingsSliderValues.y);
+                        }
+                    }
+                }
+                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.EndVertical();
+
+                GUI.enabled = true;
+                EditorGUIUtility.labelWidth = prevLabelWidth;
+                GUILayout.Space(10);
+
+                EditorGUI.BeginChangeCheck();
+                EditorStyles.textField.wordWrap = true;
+                speechSynthesisTextInput = EditorGUILayout.TextArea(speechSynthesisTextInput, GUILayout.ExpandHeight(true));
+
+                if (EditorGUI.EndChangeCheck())
+                {
+                    if (speechSynthesisTextInput.Length > 5000)
+                    {
+                        speechSynthesisTextInput = speechSynthesisTextInput[..5000];
+                    }
+                }
+
+                GUILayout.Space(10);
+                EditorGUILayout.BeginHorizontal();
+                { // Text area footer
+                    EditorGUILayout.LabelField(new GUIContent($"{speechSynthesisTextInput.Length} / 5000"), GUILayout.ExpandWidth(true));
+                    GUILayout.FlexibleSpace();
+                    var remainingCharacters = 0;
+
+                    if (userInfo != null)
+                    {
+                        remainingCharacters = userInfo.CharacterLimit - userInfo.CharacterCount;
+                    }
+
+                    EditorGUILayout.LabelField(new GUIContent($"Total quota remaining: {remainingCharacters}"), RightMiddleAlignedLabel, GUILayout.ExpandWidth(true));
+                }
+                EditorGUILayout.EndHorizontal();
+                GUILayout.Space(10);
+
+                EditorGUILayout.BeginHorizontal();
+                {
+                    GUI.enabled = !isSynthesisRunning;
+                    GUILayout.Space(20);
+                    if (GUILayout.Button("Generate", GUILayout.ExpandWidth(true)))
+                    {
+                        EditorApplication.delayCall += GenerateSynthesizedText;
+                    }
+                    GUI.enabled = true;
+                }
+                EditorGUILayout.EndHorizontal();
             }
-
-            EditorGUILayout.BeginHorizontal();
-            EditorGUI.BeginChangeCheck();
-            voiceIndex = EditorGUILayout.Popup(voiceModelContent, voiceIndex, voiceOptions);
-
-            if (EditorGUI.EndChangeCheck())
-            {
-                currentVoiceOption = voices.FirstOrDefault(voice => voiceOptions[voiceIndex].text.Contains(voice.Name));
-                EditorApplication.delayCall += () => GetVoiceSettings(currentVoiceOption);
-            }
-
-            EditorGUILayout.EndHorizontal();
-            EditorGUILayout.Space();
-
-            EditorGUILayout.BeginVertical();
-            localLabelWidth = EditorGUILayout.Slider(new GUIContent("Width"), localLabelWidth, 0f, 100f);
-            GUI.enabled = currentVoiceSettings != null;
-            EditorGUI.BeginChangeCheck();
-
-            voiceSettingsSliderValues.x = EditorGUILayout.Slider(stabilityContent, voiceSettingsSliderValues.x, 0f, 1f);
-            EditorGUILayout.BeginHorizontal();
-                //EditorGUI.indentLevel++;
-                //EditorGUILayout.Space(localLabelWidth);
-                EditorGUILayout.LabelField(moreVariableContent, GUILayout.Width(localLabelWidth));
-                GUILayout.FlexibleSpace();
-                EditorGUILayout.LabelField(moreStableContent, RightMiddleAlignedLabel, GUILayout.Width(localLabelWidth));
-                //EditorGUI.indentLevel--;
-            EditorGUILayout.EndHorizontal();
-
-            voiceSettingsSliderValues.y = EditorGUILayout.Slider(clarityContent, voiceSettingsSliderValues.y, 0f, 1f);
-            EditorGUILayout.BeginHorizontal();
-                //EditorGUILayout.Space(localLabelWidth);
-                EditorGUILayout.LabelField(moreVariableContent, GUILayout.Width(localLabelWidth));
-                GUILayout.FlexibleSpace();
-                EditorGUILayout.LabelField(moreStableContent, RightMiddleAlignedLabel, GUILayout.Width(localLabelWidth));
-            EditorGUILayout.EndHorizontal();
-
-            if (EditorGUI.EndChangeCheck())
-            {
-                currentVoiceSettings = new VoiceSettings(voiceSettingsSliderValues.x, voiceSettingsSliderValues.y);
-            }
-
-            EditorGUILayout.EndVertical();
-
-            GUI.enabled = true;
-
-            EditorGUIUtility.labelWidth = prevLabelWidth;
-            GUILayout.FlexibleSpace();
+            GUILayout.Space(10);
             GUILayout.EndVertical();
             GUILayout.Space(10);
             GUILayout.EndHorizontal();
+
             EditorGUI.indentLevel--;
         }
 
-        private async void GetVoiceSettings(Voice voice)
+        private static bool isSynthesisRunning;
+
+        private async void GenerateSynthesizedText()
         {
+            if (isSynthesisRunning) { return; }
+            isSynthesisRunning = true;
+
+            try
+            {
+                if (string.IsNullOrWhiteSpace(speechSynthesisTextInput))
+                {
+                    throw new ArgumentNullException(nameof(speechSynthesisTextInput));
+                }
+
+                if (currentVoiceOption == null)
+                {
+                    throw new ArgumentNullException(nameof(currentVoiceOption));
+                }
+
+                if (currentVoiceSettings == null)
+                {
+                    throw new ArgumentNullException(nameof(currentVoiceSettings));
+                }
+
+                var (clipPath, audioClip) = await api.TextToSpeechEndpoint.TextToSpeechAsync(speechSynthesisTextInput, currentVoiceOption, currentVoiceSettings, speechSynthesisDownloadDirectory).ConfigureAwait(true);
+
+                if (clipPath.Contains(Application.dataPath))
+                {
+                    var importPath = clipPath.Replace(Application.dataPath, "Assets").Replace("\\", "/");
+                    AssetDatabase.ImportAsset(importPath);
+                    AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
+                    EditorGUIUtility.PingObject(audioClip);
+                    Selection.activeObject = audioClip;
+                }
+
+                FetchUserInfo();
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(e);
+            }
+            finally
+            {
+                isSynthesisRunning = false;
+                speechSynthesisTextInput = string.Empty;
+            }
+        }
+
+        private static bool isGettingDefaultVoiceSettings;
+
+        private async void GetDefaultVoiceSettings(Voice voice)
+        {
+            if (isGettingDefaultVoiceSettings) { return; }
+            isGettingDefaultVoiceSettings = true;
+
             try
             {
                 currentVoiceSettings = await api.VoicesEndpoint.GetVoiceSettingsAsync(voice);
@@ -280,6 +470,10 @@ namespace ElevenLabs.Editor
             catch (Exception e)
             {
                 Debug.LogError(e);
+            }
+            finally
+            {
+                isGettingDefaultVoiceSettings = false;
             }
         }
 
@@ -293,6 +487,22 @@ namespace ElevenLabs.Editor
 
         private static void RenderHistory()
         {
+        }
+
+        private static void StartIndent(int levels)
+        {
+            for (int i = 0; i < levels; i++)
+            {
+                EditorGUI.indentLevel++;
+            }
+        }
+
+        private static void EndIndent(int levels)
+        {
+            for (int i = 0; i < levels; i++)
+            {
+                EditorGUI.indentLevel--;
+            }
         }
     }
 }

@@ -19,6 +19,11 @@ namespace ElevenLabs
         protected override string GetEndpoint()
             => $"{Api.BaseUrl}voice-generation";
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
         public async Task<GeneratedVoiceOptions> GetVoiceGenerationOptionsAsync(CancellationToken cancellationToken = default)
         {
             var response = await Api.Client.GetAsync($"{GetEndpoint()}/generate-voice/parameters", cancellationToken);
@@ -26,6 +31,12 @@ namespace ElevenLabs
             return JsonConvert.DeserializeObject<GeneratedVoiceOptions>(responseAsString, Api.JsonSerializationOptions);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="generatedVoiceRequest"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
         public async Task<bool> GenerateVoiceAsync(GeneratedVoiceRequest generatedVoiceRequest, CancellationToken cancellationToken = default)
         {
             var payload = JsonConvert.SerializeObject(generatedVoiceRequest, Api.JsonSerializationOptions).ToJsonStringContent();
@@ -85,6 +96,12 @@ namespace ElevenLabs
             return audioClip;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="createVoiceRequest"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
         public async Task<Voice> CreateVoiceAsync(CreateVoiceRequest createVoiceRequest, CancellationToken cancellationToken = default)
         {
             var payload = JsonConvert.SerializeObject(createVoiceRequest).ToJsonStringContent();
