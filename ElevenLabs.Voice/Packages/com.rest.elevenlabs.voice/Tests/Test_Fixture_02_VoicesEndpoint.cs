@@ -73,7 +73,7 @@ namespace Rest.ElevenLabs.Voice.Tests
                 Assert.NotNull(results);
                 Assert.IsNotEmpty(results);
                 var voice = results.FirstOrDefault();
-                var result = await api.VoicesEndpoint.EditVoiceSettingsAsync(voice, new VoiceSettings(0.7, 0.7));
+                var result = await api.VoicesEndpoint.EditVoiceSettingsAsync(voice, new VoiceSettings(0.7f, 0.7f));
                 Assert.NotNull(result);
                 Assert.IsTrue(result);
                 var updatedVoice = await api.VoicesEndpoint.GetVoiceAsync(voice);
