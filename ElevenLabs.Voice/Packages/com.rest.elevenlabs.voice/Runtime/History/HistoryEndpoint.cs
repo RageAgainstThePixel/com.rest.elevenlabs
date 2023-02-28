@@ -51,13 +51,59 @@ namespace ElevenLabs.History
         /// <summary>
         /// Get audio of a history item.
         /// </summary>
-        /// <param name="historyId"><see cref="HistoryItem.Id"/></param>
+        /// <param name="historyItem"><see cref="HistoryItem.Id"/></param>
+        /// <param name="saveDirectory">Optional, save directory for the downloaded <see cref="AudioClip"/>.</param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         /// <returns><see cref="AudioClip"/>.</returns>
-        public async Task<AudioClip> GetHistoryAudioAsync(string historyId, CancellationToken cancellationToken = default)
+        public async Task<AudioClip> GetHistoryAudioAsync(HistoryItem historyItem, string saveDirectory = null, CancellationToken cancellationToken = default)
         {
-            var headers = Api.Client.DefaultRequestHeaders.ToDictionary(pair => pair.Key, pair => string.Join(" ", pair.Value));
-            return await Rest.DownloadAudioClipAsync($"{GetEndpoint()}/{historyId}/audio", AudioType.MPEG, fileName: $"{historyId}.mp3", headers: headers, cancellationToken: cancellationToken);
+            Rest.ValidateCacheDirectory();
+
+            var rootDirectory = (saveDirectory ?? Rest.DownloadCacheDirectory).CreateNewDirectory(nameof(ElevenLabs));
+            var downloadDirectory = rootDirectory.CreateNewDirectory("History");
+            var voiceDirectory = downloadDirectory.CreateNewDirectory(historyItem.VoiceName);
+            var filePath = Path.Combine(voiceDirectory, $"{historyItem.Id}.mp3");
+
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+            }
+
+            var response = await Api.Client.GetAsync($"{GetEndpoint()}/{historyItem.Id}/audio", cancellationToken);
+            await response.CheckResponseAsync(cancellationToken);
+
+            var responseStream = await response.Content.ReadAsStreamAsync();
+
+            try
+            {
+                var fileStream = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+
+                try
+                {
+                    await responseStream.CopyToAsync(fileStream, cancellationToken);
+                    await fileStream.FlushAsync(cancellationToken);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError(e);
+                }
+                finally
+                {
+                    fileStream.Close();
+                    await fileStream.DisposeAsync();
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(e);
+            }
+            finally
+            {
+                await responseStream.DisposeAsync();
+            }
+
+            var audioClip = await Rest.DownloadAudioClipAsync($"file://{filePath}", AudioType.MPEG, cancellationToken: cancellationToken);
+            return audioClip;
         }
 
         /// <summary>
@@ -92,7 +138,9 @@ namespace ElevenLabs.History
 
             if (historyItemIds.Count == 1)
             {
-                audioClips.Add(await GetHistoryAudioAsync(historyItemIds.FirstOrDefault(), cancellationToken));
+                var history = await GetHistoryAsync(cancellationToken);
+                var historyItem = history.FirstOrDefault(item => item.Id == historyItemIds.FirstOrDefault());
+                audioClips.Add(await GetHistoryAudioAsync(historyItem, saveDirectory, cancellationToken));
             }
             else
             {
@@ -118,7 +166,7 @@ namespace ElevenLabs.History
                         Directory.CreateDirectory(rootDirectory);
                     }
 
-                    var downloadDirectory = Path.Combine(rootDirectory, "AudioHistory");
+                    var downloadDirectory = Path.Combine(rootDirectory, "History");
 
                     Directory.CreateDirectory(downloadDirectory);
 

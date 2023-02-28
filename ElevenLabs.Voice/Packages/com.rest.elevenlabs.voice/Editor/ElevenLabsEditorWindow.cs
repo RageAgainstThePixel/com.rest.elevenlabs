@@ -6,10 +6,13 @@ using System.Collections.Generic;
 using System.Drawing.Text;
 using System.IO;
 using System.Linq;
+using ElevenLabs.History;
 using ElevenLabs.User;
 using UnityEditor;
+using UnityEditor.VersionControl;
 using UnityEngine;
 using UnityEngine.Serialization;
+using Task = System.Threading.Tasks.Task;
 
 namespace ElevenLabs.Editor
 {
@@ -73,28 +76,30 @@ namespace ElevenLabs.Editor
 
         private static bool isFetchingUserInfo;
 
+        private SubscriptionInfo userInfo;
+
         private static bool hasFetchedVoices;
 
         private static bool isFetchingVoices;
-
-        private static bool hasFetchedHistory;
-
-        private static bool isFetchingHistory;
 
         private static IReadOnlyList<Voice> voices;
 
         private static GUIContent[] voiceOptions = Array.Empty<GUIContent>();
 
-        private SubscriptionInfo userInfo;
-
         private static Voice currentVoiceOption;
 
         private static VoiceSettings currentVoiceSettings;
 
+        private static bool hasFetchedHistory;
+
+        private static bool isFetchingHistory;
+
+        private static IReadOnlyList<HistoryItem> history;
+
         [SerializeField]
         private int tab;
 
-        private string speechSynthesisDownloadDirectory = $"{Application.streamingAssetsPath}/{nameof(ElevenLabs)}";
+        private string editorDownloadDirectory = $"{Application.streamingAssetsPath}/{nameof(ElevenLabs)}";
 
         [SerializeField]
         private string currentVoiceId;
@@ -163,6 +168,31 @@ namespace ElevenLabs.Editor
             EditorGUILayout.Space();
             scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition, GUILayout.ExpandWidth(true));
 
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.BeginVertical();
+            EditorGUI.indentLevel++;
+            EditorGUILayout.LabelField(new GUIContent("Save Directory"));
+            EditorGUILayout.TextField(editorDownloadDirectory);
+
+            EditorGUILayout.BeginHorizontal();
+            {
+                GUILayout.Space(20);
+
+                if (GUILayout.Button("Change Save Directory", GUILayout.ExpandWidth(true)))
+                {
+                    EditorApplication.delayCall += () =>
+                    {
+                        editorDownloadDirectory = EditorUtility.OpenFolderPanel("Save Directory", editorDownloadDirectory, string.Empty);
+                    };
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+            EditorGUI.indentLevel--;
+            EditorGUILayout.EndVertical();
+            GUILayout.Space(10);
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.Space();
+
             switch (tab)
             {
                 case 0:
@@ -199,7 +229,7 @@ namespace ElevenLabs.Editor
             }
         }
 
-        private async void FetchVoices()
+        private static async void FetchVoices()
         {
             if (isFetchingVoices) { return; }
             isFetchingVoices = true;
@@ -219,12 +249,33 @@ namespace ElevenLabs.Editor
             }
         }
 
+        private static async void FetchHistory()
+        {
+            if (isFetchingHistory) { return; }
+            isFetchingHistory = true;
+
+            try
+            {
+                history = await api.HistoryEndpoint.GetHistoryAsync();
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(e);
+            }
+            finally
+            {
+                isFetchingHistory = false;
+            }
+        }
+
+        #region Voice Synthesis
+
         private void RenderSpeechSynthesis()
         {
             EditorGUI.indentLevel++;
 
+            EditorGUILayout.BeginHorizontal();
             { //Header
-                EditorGUILayout.BeginHorizontal();
                 EditorGUILayout.LabelField("Settings", EditorStyles.boldLabel);
                 GUILayout.FlexibleSpace();
 
@@ -237,8 +288,8 @@ namespace ElevenLabs.Editor
 
                 EditorGUILayout.Space(10);
                 GUI.enabled = true;
-                EditorGUILayout.EndHorizontal();
             }
+            EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.Space(10);
             GUILayout.BeginHorizontal();
@@ -246,24 +297,6 @@ namespace ElevenLabs.Editor
             { // Body
                 var prevLabelWidth = EditorGUIUtility.labelWidth;
                 EditorGUIUtility.labelWidth = 128 * settingsLabelWidth;
-
-                EditorGUILayout.LabelField(new GUIContent("Save Directory"));
-                EditorGUILayout.TextField(speechSynthesisDownloadDirectory);
-
-                EditorGUILayout.BeginHorizontal();
-                {
-                    GUILayout.Space(20);
-
-                    if (GUILayout.Button("Change Save Directory", GUILayout.ExpandWidth(true)))
-                    {
-                        EditorApplication.delayCall += () =>
-                        {
-                            speechSynthesisDownloadDirectory = EditorUtility.OpenFolderPanel("Save Directory", speechSynthesisDownloadDirectory, "");
-                        };
-                    }
-                }
-                EditorGUILayout.EndHorizontal();
-                EditorGUILayout.Space();
 
                 EditorGUILayout.BeginHorizontal();
                 { // voice dropdown
@@ -431,7 +464,7 @@ namespace ElevenLabs.Editor
                     throw new ArgumentNullException(nameof(currentVoiceSettings));
                 }
 
-                var (clipPath, audioClip) = await api.TextToSpeechEndpoint.TextToSpeechAsync(speechSynthesisTextInput, currentVoiceOption, currentVoiceSettings, speechSynthesisDownloadDirectory).ConfigureAwait(true);
+                var (clipPath, audioClip) = await api.TextToSpeechEndpoint.TextToSpeechAsync(speechSynthesisTextInput, currentVoiceOption, currentVoiceSettings, editorDownloadDirectory);
 
                 if (clipPath.Contains(Application.dataPath))
                 {
@@ -477,21 +510,123 @@ namespace ElevenLabs.Editor
             }
         }
 
+        #endregion Voice Synthesis
+
         private void RenderVoiceLab()
         {
+            EditorGUI.indentLevel++;
+
+            var voiceCount = string.Empty;
+
+            if (voices != null && userInfo != null)
+            {
+                var generatedCount = voices.Count(voice => voice.Category is "generated" or "cloned");
+                voiceCount = $"{generatedCount}/{userInfo.VoiceLimit}";
+            }
+
+            EditorGUILayout.BeginHorizontal();
+            { //Header
+                EditorGUILayout.LabelField($"Voices {voiceCount}", EditorStyles.boldLabel);
+                GUILayout.FlexibleSpace();
+
+                GUI.enabled = !isFetchingVoices;
+
+                if (GUILayout.Button("Refresh"))
+                {
+                    EditorApplication.delayCall += FetchVoices;
+                }
+
+                EditorGUILayout.Space(10);
+                GUI.enabled = true;
+            }
+            EditorGUILayout.EndHorizontal();
+
+            if (voices == null) { return; }
+
+            foreach (var voice in voices)
+            {
+                if (voice.Category.Contains("premade")) { continue; }
+
+                EditorGUILayout.BeginVertical();
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField($"{voice.Category}/{voice.Name} | {voice.Id}");
+                EditorGUILayout.EndHorizontal();
+                EditorGUI.indentLevel++;
+
+                var labels = voice.Labels.Select(label => $"{label.Key}: {label.Value}").ToList();
+
+                if (labels is { Count: > 0 })
+                {
+                    EditorGUILayout.LabelField($"({string.Join(" | ", labels)})");
+                }
+
+                if (voice.Samples != null)
+                {
+                    foreach (var voiceSample in voice.Samples)
+                    {
+                        EditorGUILayout.BeginHorizontal();
+                        EditorGUILayout.LabelField($"{voiceSample.FileName} | {voiceSample.MimeType} | {voiceSample.SizeBytes}");
+                        var fileName = Path.GetFileNameWithoutExtension(voiceSample.FileName);
+                        var files = AssetDatabase.FindAssets($"t:{nameof(AudioClip)} {fileName}");
+
+                        switch (files)
+                        {
+                            case { Length: 0 }:
+                                if (GUILayout.Button("Download"))
+                                {
+                                    EditorApplication.delayCall += () => DownloadVoiceSample(voice, voiceSample);
+                                }
+
+                                break;
+                            case { Length: 1 }:
+                                var clipPath = AssetDatabase.GUIDToAssetPath(files[0]);
+                                var sampleClip = AssetDatabase.LoadAssetAtPath<AudioClip>(clipPath);
+                                EditorGUILayout.ObjectField(GUIContent.none, sampleClip, typeof(AudioClip), false);
+
+                                break;
+                            default:
+                                EditorGUILayout.LabelField($"Found multiple matches for {fileName}");
+
+                                break;
+                        }
+
+                        if (GUILayout.Button("Delete"))
+                        {
+
+                        }
+
+                        EditorGUILayout.EndHorizontal();
+                    }
+                }
+
+                EditorGUI.indentLevel--;
+                EditorGUILayout.EndVertical();
+            }
+
+            EditorGUI.indentLevel--;
         }
 
-        private static void FetchHistory()
+        private async void DownloadVoiceSample(Voice sample, Sample voiceSample)
         {
+            try
+            {
+                var sampleClip = await api.VoicesEndpoint.GetVoiceSampleAsync(sample, voiceSample);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(e);
+            }
         }
 
         private static void RenderHistory()
         {
         }
 
+        #region GUI Utilities
+
         private static void StartIndent(int levels)
         {
-            for (int i = 0; i < levels; i++)
+            for (var i = 0; i < levels; i++)
             {
                 EditorGUI.indentLevel++;
             }
@@ -499,10 +634,12 @@ namespace ElevenLabs.Editor
 
         private static void EndIndent(int levels)
         {
-            for (int i = 0; i < levels; i++)
+            for (var i = 0; i < levels; i++)
             {
                 EditorGUI.indentLevel--;
             }
         }
+
+        #endregion GUI Utilities
     }
 }

@@ -251,11 +251,56 @@ namespace ElevenLabs.Voices
         /// </summary>
         /// <param name="voiceId"></param>
         /// <param name="sampleId"></param>
+        /// <param name="saveDirectory"></param>
         /// <param name="cancellationToken"></param>
-        public async Task<AudioClip> GetVoiceSampleAsync(string voiceId, string sampleId, CancellationToken cancellationToken = default)
+        public async Task<AudioClip> GetVoiceSampleAsync(string voiceId, string sampleId, string saveDirectory = null, CancellationToken cancellationToken = default)
         {
-            var headers = Api.Client.DefaultRequestHeaders.ToDictionary(pair => pair.Key, pair => string.Join(" ", pair.Value));
-            return await Rest.DownloadAudioClipAsync($"{GetEndpoint()}/{voiceId}/samples/{sampleId}/audio", AudioType.MPEG, headers: headers, cancellationToken: cancellationToken);
+            var response = await Api.Client.GetAsync($"{GetEndpoint()}/{voiceId}/samples/{sampleId}/audio", cancellationToken);
+            await response.CheckResponseAsync(cancellationToken);
+
+            Rest.ValidateCacheDirectory();
+
+            var rootDirectory = (saveDirectory ?? Rest.DownloadCacheDirectory).CreateNewDirectory(nameof(ElevenLabs));
+            var downloadDirectory = rootDirectory.CreateNewDirectory(voiceId);
+            var filePath = Path.Combine(downloadDirectory, $"{sampleId}.mp3");
+
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+            }
+
+            var responseStream = await response.Content.ReadAsStreamAsync();
+
+            try
+            {
+                var fileStream = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+
+                try
+                {
+                    await responseStream.CopyToAsync(fileStream, cancellationToken);
+                    await fileStream.FlushAsync(cancellationToken);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError(e);
+                }
+                finally
+                {
+                    fileStream.Close();
+                    await fileStream.DisposeAsync();
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(e);
+            }
+            finally
+            {
+                await responseStream.DisposeAsync();
+            }
+
+            var audioClip = await Rest.DownloadAudioClipAsync($"file://{filePath}", AudioType.MPEG, cancellationToken: cancellationToken);
+            return audioClip;
         }
 
         /// <summary>

@@ -35,9 +35,10 @@ namespace ElevenLabs
         /// 
         /// </summary>
         /// <param name="generatedVoiceRequest"></param>
+        /// <param name="saveDirectory">Optional, save directory for downloaded <see cref="AudioClip"/>.</param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        public async Task<bool> GenerateVoiceAsync(GeneratedVoiceRequest generatedVoiceRequest, CancellationToken cancellationToken = default)
+        public async Task<bool> GenerateVoiceAsync(GeneratedVoiceRequest generatedVoiceRequest, string saveDirectory = null, CancellationToken cancellationToken = default)
         {
             var payload = JsonConvert.SerializeObject(generatedVoiceRequest, Api.JsonSerializationOptions).ToJsonStringContent();
             var response = await Api.Client.PostAsync($"{GetEndpoint()}/generate-voice", payload, cancellationToken);
@@ -47,14 +48,8 @@ namespace ElevenLabs
 
             Rest.ValidateCacheDirectory();
 
-            var rootDirectory = Path.Combine(Rest.DownloadCacheDirectory, nameof(ElevenLabs));
-
-            if (!Directory.Exists(rootDirectory))
-            {
-                Directory.CreateDirectory(rootDirectory);
-            }
-
-            var downloadDirectory = Path.Combine(rootDirectory, "VoiceGeneration");
+            var rootDirectory = (saveDirectory ?? Rest.DownloadCacheDirectory).CreateNewDirectory(nameof(ElevenLabs));
+            var downloadDirectory = rootDirectory.CreateNewDirectory("VoiceGeneration");
             var filePath = Path.Combine(downloadDirectory, $"{generatedVoiceId}.mp3");
 
             if (File.Exists(filePath))

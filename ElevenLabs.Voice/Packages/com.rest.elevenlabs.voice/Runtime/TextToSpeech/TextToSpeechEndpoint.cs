@@ -54,26 +54,10 @@ namespace ElevenLabs.TextToSpeech
                 throw new ArgumentOutOfRangeException(nameof(text), $"{nameof(text)} cannot exceed 5000 characters");
             }
 
-            if (string.IsNullOrWhiteSpace(saveDirectory))
-            {
-                Rest.ValidateCacheDirectory();
-                saveDirectory = Rest.DownloadCacheDirectory;
-            }
+            Rest.ValidateCacheDirectory();
 
-            var rootDirectory = Path.Combine(saveDirectory, nameof(ElevenLabs));
-
-            if (!Directory.Exists(rootDirectory))
-            {
-                Directory.CreateDirectory(rootDirectory);
-            }
-
-            var downloadDirectory = Path.Combine(rootDirectory, "TextToSpeech");
-
-            if (!Directory.Exists(downloadDirectory))
-            {
-                Directory.CreateDirectory(downloadDirectory);
-            }
-
+            var rootDirectory = (saveDirectory ?? Rest.DownloadCacheDirectory).CreateNewDirectory(nameof(ElevenLabs));
+            var downloadDirectory = rootDirectory.CreateNewDirectory("TextToSpeech");
             var fileName = $"{text.GenerateGuid()}.mp3";
             var filePath = Path.Combine(downloadDirectory, fileName);
 

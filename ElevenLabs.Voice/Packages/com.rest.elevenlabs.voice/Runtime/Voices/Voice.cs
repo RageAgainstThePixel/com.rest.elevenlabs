@@ -15,7 +15,7 @@ namespace ElevenLabs.Voices
             [JsonProperty("name")] string name,
             [JsonProperty("samples")] List<Sample> samples,
             [JsonProperty("category")] string category,
-            [JsonProperty("labels")] Labels labels,
+            [JsonProperty("labels")] Dictionary<string, string> labels,
             [JsonProperty("preview_url")] string previewUrl,
             [JsonProperty("available_for_tiers")] List<string> availableForTiers,
             [JsonProperty("settings")] VoiceSettings settings)
@@ -43,7 +43,7 @@ namespace ElevenLabs.Voices
         public string Category { get; }
 
         [JsonProperty("labels")]
-        public Labels Labels { get; }
+        public Dictionary<string, string> Labels { get; }
 
         [JsonProperty("preview_url")]
         public string PreviewUrl { get; }

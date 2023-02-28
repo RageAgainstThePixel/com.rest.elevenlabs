@@ -3,6 +3,7 @@
 using ElevenLabs;
 using NUnit.Framework;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -88,6 +89,10 @@ namespace Rest.ElevenLabs.Voice.Tests
                 var historyItems = await api.HistoryEndpoint.GetHistoryAsync();
                 Assert.NotNull(historyItems);
                 Assert.IsNotEmpty(historyItems);
+                var singleItem = historyItems.FirstOrDefault();
+                var singleItemResult = await api.HistoryEndpoint.DownloadHistoryItemsAsync(new List<string> { singleItem });
+                Assert.NotNull(singleItemResult);
+                Assert.IsNotEmpty(singleItemResult);
                 var downloadItems = historyItems.Select(item => item.Id).ToList();
                 var results = await api.HistoryEndpoint.DownloadHistoryItemsAsync(downloadItems);
                 Assert.NotNull(results);
