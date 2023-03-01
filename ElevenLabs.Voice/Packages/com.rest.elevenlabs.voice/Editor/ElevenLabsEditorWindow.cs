@@ -388,7 +388,7 @@ namespace ElevenLabs.Editor
 
                     if (EditorGUI.EndChangeCheck())
                     {
-                        currentVoiceOption = voices?.FirstOrDefault(voice => voiceOptions[voiceIndex].text.Contains(voice.Name));
+                        currentVoiceOption = voices?.FirstOrDefault(voice => voiceOptions[voiceIndex].text.Contains($"{voice.Category}/{voice.Name}"));
                         currentVoiceId = currentVoiceOption!.Id;
                         EditorApplication.delayCall += () => GetDefaultVoiceSettings(currentVoiceOption);
                     }
