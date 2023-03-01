@@ -575,6 +575,8 @@ namespace ElevenLabs.Editor
                 GUI.enabled = true;
             }
             EditorGUILayout.EndHorizontal();
+            EditorGUILayout.Space();
+            EditorGUILayout.Space();
 
             if (voices == null) { return; }
 
@@ -588,6 +590,15 @@ namespace ElevenLabs.Editor
                 EditorGUILayout.BeginHorizontal();
                 {
                     EditorGUILayout.LabelField($"{voice.Category}/{voice.Name} | {voice.Id}", GUILayout.ExpandWidth(true));
+
+                    GUI.enabled = !isFetchingVoices;
+
+                    if (GUILayout.Button("Delete"))
+                    {
+                        EditorApplication.delayCall += () => DeleteVoice(voice);
+                    }
+
+                    GUI.enabled = true;
                 }
                 EditorGUILayout.EndHorizontal();
                 EditorGUI.indentLevel++;
@@ -596,7 +607,7 @@ namespace ElevenLabs.Editor
                 {
                     cachedLabels = new Dictionary<string, string>();
 
-                    foreach (var (key, value) in voice.Labels)
+                    foreach (var (key, value) in voice.Labels.OrderBy(pair => pair.Key))
                     {
                         cachedLabels.TryAdd(key, value);
                     }
@@ -851,6 +862,35 @@ namespace ElevenLabs.Editor
             EditorGUI.indentLevel--;
         }
 
+        private static async void DeleteVoice(Voice voice)
+        {
+            if (!EditorUtility.DisplayDialog(
+                    "Alert!",
+                    $"Are you sure you want to delete voice {voice.Id} \"{voice.Name}\"?", "Yes",
+                    "No"))
+            {
+                return;
+            }
+
+            try
+            {
+                var result = await api.VoicesEndpoint.DeleteVoiceAsync(voice);
+
+                if (!result)
+                {
+                    Debug.LogError($"Failed to delete voice: {voice.Name}!");
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(e);
+            }
+            finally
+            {
+                FetchVoices();
+            }
+        }
+
         private static async void EditVoice(Voice voice, AudioClip audioClip = null, Dictionary<string, string> labels = null)
         {
             try
@@ -904,6 +944,14 @@ namespace ElevenLabs.Editor
 
         private static async void DeleteVoiceSample(Voice voice, Sample voiceSample)
         {
+            if (!EditorUtility.DisplayDialog(
+                    "Alert!",
+                    $"Are you sure you want to delete sample {voiceSample.Id} from {voice.Name}?", "Yes",
+                    "No"))
+            {
+                return;
+            }
+
             try
             {
                 EditorUtility.DisplayProgressBar("Deleting voice sample...", $"Deleting {voiceSample.Id}", -1);
