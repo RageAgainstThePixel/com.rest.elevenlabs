@@ -134,7 +134,7 @@ namespace ElevenLabs.Voices
         /// <param name="samplePaths">Collection of file paths to use as samples for the new voice.</param>
         /// <param name="labels">Optional, labels for the new voice.</param>
         /// <param name="cancellationToken"></param>
-        public async Task<Voice> AddVoiceAsync(string name, IEnumerable<string> samplePaths = null, Dictionary<string, string> labels = null, CancellationToken cancellationToken = default)
+        public async Task<Voice> AddVoiceAsync(string name, IEnumerable<string> samplePaths = null, IReadOnlyDictionary<string, string> labels = null, CancellationToken cancellationToken = default)
         {
             var form = new MultipartFormDataContent();
 
@@ -189,7 +189,7 @@ namespace ElevenLabs.Voices
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
         /// <exception cref="NotImplementedException"></exception>
-        public async Task<bool> EditVoiceAsync(Voice voice, IEnumerable<string> samplePaths = null, Dictionary<string, string> labels = null, CancellationToken cancellationToken = default)
+        public async Task<bool> EditVoiceAsync(Voice voice, IEnumerable<string> samplePaths = null, IReadOnlyDictionary<string, string> labels = null, CancellationToken cancellationToken = default)
         {
             var form = new MultipartFormDataContent();
 

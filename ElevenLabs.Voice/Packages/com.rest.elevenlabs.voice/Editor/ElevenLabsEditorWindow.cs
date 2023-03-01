@@ -4,6 +4,7 @@ using ElevenLabs.History;
 using ElevenLabs.User;
 using ElevenLabs.Voices;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -76,6 +77,8 @@ namespace ElevenLabs.Editor
 
         private static ElevenLabsClient api;
 
+        private static string editorDownloadDirectory = string.Empty;
+
         private static bool hasFetchedUserInfo;
 
         private static bool isFetchingUserInfo;
@@ -94,13 +97,15 @@ namespace ElevenLabs.Editor
 
         private static VoiceSettings currentVoiceSettings;
 
-        private static readonly Dictionary<string, Dictionary<string, string>> voiceLabels = new Dictionary<string, Dictionary<string, string>>();
+        private static readonly ConcurrentDictionary<string, ConcurrentDictionary<string, string>> voiceLabels = new ConcurrentDictionary<string, ConcurrentDictionary<string, string>>();
 
         private static bool hasFetchedHistory;
 
         private static bool isFetchingHistory;
 
         private static IReadOnlyList<HistoryItem> history;
+
+        private static readonly ConcurrentBag<string> downloadedClips = new ConcurrentBag<string>();
 
         [SerializeField]
         private int tab;
@@ -114,8 +119,6 @@ namespace ElevenLabs.Editor
         private Vector2 scrollPosition = Vector2.zero;
 
         private string speechSynthesisTextInput = string.Empty;
-
-        private string editorDownloadDirectory = string.Empty;
 
         private AudioClip newSampleClip;
 
@@ -160,6 +163,10 @@ namespace ElevenLabs.Editor
                 hasFetchedHistory = true;
                 FetchHistory();
             }
+            else
+            {
+                CheckHistory();
+            }
         }
 
         private void OnGUI()
@@ -197,7 +204,7 @@ namespace ElevenLabs.Editor
 
             EditorGUILayout.BeginHorizontal();
             {
-                GUILayout.Space(20);
+                GUILayout.Space(18);
 
                 if (GUILayout.Button("Change Save Directory", GUILayout.ExpandWidth(true)))
                 {
@@ -284,7 +291,8 @@ namespace ElevenLabs.Editor
 
             try
             {
-                history = await api.HistoryEndpoint.GetHistoryAsync();
+                history = await api.HistoryEndpoint.GetHistoryAsync().ConfigureAwait(true);
+                CheckHistory();
             }
             catch (Exception e)
             {
@@ -293,6 +301,25 @@ namespace ElevenLabs.Editor
             finally
             {
                 isFetchingHistory = false;
+            }
+        }
+
+        private static void CheckHistory()
+        {
+            if (history == null) { return; }
+            var assets = AssetDatabase.FindAssets($"t:{nameof(AudioClip)}");
+            downloadedClips.Clear();
+
+            foreach (var guid in assets)
+            {
+                var assetPath = AssetDatabase.GUIDToAssetPath(guid);
+                var assetName = Path.GetFileNameWithoutExtension(assetPath);
+
+                if (history.Any(item => item.Id == assetName) ||
+                    history.Any(item => item.TextHash == assetName))
+                {
+                    downloadedClips.Add(assetPath);
+                }
             }
         }
 
@@ -605,7 +632,7 @@ namespace ElevenLabs.Editor
 
                 if (!voiceLabels.TryGetValue(voice.Id, out var cachedLabels))
                 {
-                    cachedLabels = new Dictionary<string, string>();
+                    cachedLabels = new ConcurrentDictionary<string, string>();
 
                     foreach (var (key, value) in voice.Labels.OrderBy(pair => pair.Key))
                     {
@@ -654,7 +681,7 @@ namespace ElevenLabs.Editor
                                     {
                                         if (cachedLabels.TryGetValue(key, out _))
                                         {
-                                            cachedLabels.Remove(key);
+                                            cachedLabels.TryRemove(key, out _);
                                         }
 
                                         if (!cachedLabels.TryAdd(tempLabelKey, string.Empty))
@@ -692,7 +719,7 @@ namespace ElevenLabs.Editor
                             {
                                 EditorApplication.delayCall += () =>
                                 {
-                                    cachedLabels.Remove(key);
+                                    cachedLabels.TryRemove(key, out _);
                                 };
                             }
 
@@ -777,7 +804,6 @@ namespace ElevenLabs.Editor
 
                 if (isCloned)
                 {
-
                     EditorGUILayout.Space();
                     EditorGUILayout.LabelField($"Samples {voice.Samples?.Count ?? 0}/25", EditorStyles.boldLabel);
                     EditorGUILayout.Space();
@@ -891,7 +917,7 @@ namespace ElevenLabs.Editor
             }
         }
 
-        private static async void EditVoice(Voice voice, AudioClip audioClip = null, Dictionary<string, string> labels = null)
+        private static async void EditVoice(Voice voice, AudioClip audioClip = null, IReadOnlyDictionary<string, string> labels = null)
         {
             try
             {
@@ -968,7 +994,7 @@ namespace ElevenLabs.Editor
             }
         }
 
-        private async void DownloadVoiceSample(Voice sample, Sample voiceSample)
+        private static async void DownloadVoiceSample(Voice sample, Sample voiceSample)
         {
             try
             {
@@ -986,9 +1012,151 @@ namespace ElevenLabs.Editor
 
         #endregion Voice Lab
 
+        #region History
+
         private static void RenderHistory()
         {
+            EditorGUI.indentLevel++;
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.BeginVertical();
+
+            EditorGUILayout.BeginHorizontal();
+            { //Header
+                EditorGUILayout.LabelField("History", EditorStyles.boldLabel);
+                GUILayout.FlexibleSpace();
+
+                GUI.enabled = !isFetchingVoices || !isFetchingUserInfo;
+
+                if (GUILayout.Button("Refresh"))
+                {
+                    EditorApplication.delayCall += FetchHistory;
+                }
+
+                GUI.enabled = true;
+            }
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.Space();
+
+            if (history != null)
+            {
+                EditorGUILayout.BeginHorizontal();
+                {
+                    GUILayout.Space(18);
+
+                    GUI.enabled = !isFetchingHistory && history.Count != downloadedClips.Count;
+
+                    if (GUILayout.Button("Download All History"))
+                    {
+                        EditorApplication.delayCall += () => DownloadHistoryAudio(history);
+                    }
+
+                    GUI.enabled = true;
+                }
+                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.Space();
+
+                foreach (var item in history)
+                {
+                    EditorGUI.indentLevel++;
+
+                    EditorGUILayout.BeginHorizontal();
+                    EditorGUILayout.LabelField($"{item.Date} | {item.VoiceName}");
+
+                    GUI.enabled = !downloadedClips.Any(path =>
+                    {
+                        var assetPath = Path.GetFileNameWithoutExtension(path);
+                        return assetPath == item.Id || assetPath == item.TextHash;
+                    });
+
+                    if (GUILayout.Button("Download", GUILayout.Width(96)))
+                    {
+                        EditorApplication.delayCall += () => DownloadHistoryAudio(new[] { item });
+                    }
+
+                    GUI.enabled = !isFetchingHistory;
+
+                    if (GUILayout.Button("Delete", GUILayout.Width(96)))
+                    {
+                        EditorApplication.delayCall += () => DeleteHistoryItem(item);
+                    }
+
+                    GUI.enabled = true;
+
+                    EditorGUILayout.EndHorizontal();
+
+                    GUI.enabled = false;
+                    EditorGUILayout.TextArea(item.Text);
+                    GUI.enabled = true;
+                    EditorGUI.indentLevel--;
+                    EditorGUILayout.Space();
+                }
+            }
+
+            EditorGUI.indentLevel--;
+            EditorGUILayout.EndVertical();
+            GUILayout.Space(10);
+            EditorGUILayout.EndHorizontal();
         }
+
+        private static async void DownloadHistoryAudio(IEnumerable<HistoryItem> items)
+        {
+            var historyItemsToDownload = items.Select(item => item.Id).ToList();
+
+            foreach (var clipPath in downloadedClips)
+            {
+                var clipName = Path.GetFileNameWithoutExtension(clipPath);
+
+                if (historyItemsToDownload.Contains(clipName))
+                {
+                    historyItemsToDownload.Remove(clipName);
+                }
+            }
+
+            if (historyItemsToDownload.Count > 0)
+            {
+                try
+                {
+                    EditorUtility.DisplayProgressBar("Downloading history...", $"Downloading {historyItemsToDownload.Count} items...", -1);
+                    await api.HistoryEndpoint.DownloadHistoryItemsAsync(historyItemsToDownload, editorDownloadDirectory);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError(e);
+                }
+                finally
+                {
+                    EditorUtility.ClearProgressBar();
+                    FetchHistory();
+                    AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
+                }
+            }
+        }
+
+        private static async void DeleteHistoryItem(HistoryItem item)
+        {
+            if (!EditorUtility.DisplayDialog(
+                    "Alert!",
+                    $"Are you sure you want to delete history {item.Id}?", "Yes",
+                    "No"))
+            {
+                return;
+            }
+
+            try
+            {
+                await api.HistoryEndpoint.DeleteHistoryItemAsync(item);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(e);
+            }
+            finally
+            {
+                FetchHistory();
+            }
+        }
+
+        #endregion History
 
         #region GUI Utilities
 
