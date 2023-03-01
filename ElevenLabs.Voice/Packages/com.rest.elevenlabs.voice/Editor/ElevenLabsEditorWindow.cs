@@ -830,7 +830,7 @@ namespace ElevenLabs.Editor
 
                         GUI.enabled = !isFetchingVoices;
 
-                        if (GUILayout.Button("Delete"))
+                        if (GUILayout.Button("Delete", GUILayout.Width(96)))
                         {
                             EditorApplication.delayCall += () => DeleteVoiceSample(voice, voiceSample);
                         }
