@@ -134,7 +134,7 @@ namespace ElevenLabs.Voices
         /// <param name="samplePaths">Collection of file paths to use as samples for the new voice.</param>
         /// <param name="labels">Optional, labels for the new voice.</param>
         /// <param name="cancellationToken"></param>
-        public async Task<Voice> AddVoiceAsync(string name, IEnumerable<string> samplePaths, Dictionary<string, string> labels = null, CancellationToken cancellationToken = default)
+        public async Task<Voice> AddVoiceAsync(string name, IEnumerable<string> samplePaths = null, Dictionary<string, string> labels = null, CancellationToken cancellationToken = default)
         {
             var form = new MultipartFormDataContent();
 
@@ -145,26 +145,27 @@ namespace ElevenLabs.Voices
 
             form.Add(new StringContent(name), "name");
 
-            samplePaths = samplePaths.ToList();
-
-            if (!samplePaths.Any())
+            if (samplePaths != null)
             {
-                throw new ArgumentException(nameof(samplePaths));
-            }
+                samplePaths = samplePaths.ToList();
 
-            foreach (var sample in samplePaths)
-            {
-                if (string.IsNullOrWhiteSpace(sample))
+                if (samplePaths.Any())
                 {
-                    throw new ArgumentNullException(nameof(sample));
-                }
+                    foreach (var sample in samplePaths)
+                    {
+                        if (string.IsNullOrWhiteSpace(sample))
+                        {
+                            throw new ArgumentNullException(nameof(sample));
+                        }
 
-                var fileStream = File.OpenRead(sample);
-                var stream = new MemoryStream();
-                await fileStream.CopyToAsync(stream, cancellationToken);
-                form.Add(new ByteArrayContent(stream.ToArray()), "files", Path.GetFileName(sample));
-                await fileStream.DisposeAsync();
-                await stream.DisposeAsync();
+                        var fileStream = File.OpenRead(sample);
+                        var stream = new MemoryStream();
+                        await fileStream.CopyToAsync(stream, cancellationToken);
+                        form.Add(new ByteArrayContent(stream.ToArray()), "files", Path.GetFileName(sample));
+                        await fileStream.DisposeAsync();
+                        await stream.DisposeAsync();
+                    }
+                }
             }
 
             if (labels != null)
@@ -188,7 +189,7 @@ namespace ElevenLabs.Voices
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
         /// <exception cref="NotImplementedException"></exception>
-        public async Task<bool> EditVoiceAsync(Voice voice, IEnumerable<string> samplePaths, Dictionary<string, string> labels, CancellationToken cancellationToken = default)
+        public async Task<bool> EditVoiceAsync(Voice voice, IEnumerable<string> samplePaths = null, Dictionary<string, string> labels = null, CancellationToken cancellationToken = default)
         {
             var form = new MultipartFormDataContent();
 
@@ -199,26 +200,27 @@ namespace ElevenLabs.Voices
 
             form.Add(new StringContent(voice.Name), "name");
 
-            samplePaths = samplePaths.ToList();
-
-            if (!samplePaths.Any())
+            if (samplePaths != null)
             {
-                throw new ArgumentException(nameof(samplePaths));
-            }
+                samplePaths = samplePaths.ToList();
 
-            foreach (var sample in samplePaths)
-            {
-                if (string.IsNullOrWhiteSpace(sample))
+                if (samplePaths.Any())
                 {
-                    throw new ArgumentNullException(nameof(sample));
-                }
+                    foreach (var sample in samplePaths)
+                    {
+                        if (string.IsNullOrWhiteSpace(sample))
+                        {
+                            throw new ArgumentNullException(nameof(sample));
+                        }
 
-                var fileStream = File.OpenRead(sample);
-                var stream = new MemoryStream();
-                await fileStream.CopyToAsync(stream, cancellationToken);
-                form.Add(new ByteArrayContent(stream.ToArray()), "files", Path.GetFileName(sample));
-                await fileStream.DisposeAsync();
-                await stream.DisposeAsync();
+                        var fileStream = File.OpenRead(sample);
+                        var stream = new MemoryStream();
+                        await fileStream.CopyToAsync(stream, cancellationToken);
+                        form.Add(new ByteArrayContent(stream.ToArray()), "files", Path.GetFileName(sample));
+                        await fileStream.DisposeAsync();
+                        await stream.DisposeAsync();
+                    }
+                }
             }
 
             if (labels != null)

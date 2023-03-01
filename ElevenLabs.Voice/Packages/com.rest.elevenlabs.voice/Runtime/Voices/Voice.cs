@@ -43,7 +43,7 @@ namespace ElevenLabs.Voices
         public string Category { get; }
 
         [JsonProperty("labels")]
-        public Dictionary<string, string> Labels { get; }
+        public IReadOnlyDictionary<string, string> Labels { get; }
 
         [JsonProperty("preview_url")]
         public string PreviewUrl { get; }
