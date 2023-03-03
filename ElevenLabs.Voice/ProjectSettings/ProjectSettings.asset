@@ -156,7 +156,7 @@ PlayerSettings:
   androidMaxAspectRatio: 2.1
   applicationIdentifier:
     Android: com.rest.elevenlabs
-    Lumin: com.Rest.elevenlabs
+    Lumin: com.rest.elevenlabs
     Standalone: com.rest.elevenlabs
     iPhone: com.rest.elevenlabs
   buildNumber:
