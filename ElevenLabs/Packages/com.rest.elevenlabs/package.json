@@ -3,7 +3,7 @@
   "displayName": "ElevenLabs",
   "description": "A non-official Eleven Labs voice synthesis RESTful client.",
   "keywords": [],
-  "version": "1.0.0-preview.1",
+  "version": "1.0.0-preview.2",
   "unity": "2021.3",
   "documentationUrl": "https://github.com/StephenHodgson/com.rest.elevenlabs#documentation",
   "changelogUrl": "https://github.com/StephenHodgson/com.rest.elevenlabs/releases",
@@ -13,7 +13,7 @@
     "repository": "https://github.com/StephenHodgson/com.rest.elevenlabs.git"
   },
   "author": {
-    "name": "StephenHodgson",
+    "name": "Stephen Hodgson",
     "url": "https://github.com/StephenHodgson"
   },
   "dependencies": {
