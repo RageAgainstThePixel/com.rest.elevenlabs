@@ -26,10 +26,43 @@ A non-official [Eleven Labs](https://elevenlabs.io) voice synthesis RESTful clie
 - Open your Unity Package Manager
 - Add package from git url: `https://github.com/StephenHodgson/com.rest.elevenlabs.git#upm`
 
+---
+
 ## Documentation
 
-### Project Setup
+### Table of Contents
+
+- [Text to Speech](#text-to-speech)
+- [Voices](#voices)
+  - [Samples](#samples)
+- [History](#history)
+- [User](#user)
+
+### [Text to Speech](https://api.elevenlabs.io/docs#/text-to-speech)
+
+Convert text to speech.
 
 ```csharp
-// TODO
+var api = new ElevenLabsClient();
+var text = "The quick brown fox jumps over the lazy dog.";
+var voice = (await api.VoicesEndpoint.GetAllVoicesAsync()).FirstOrDefault();
+var defaultVoiceSettings = await api.VoicesEndpoint.GetDefaultVoiceSettingsAsync();
+var (clipPath, audioClip) = await api.TextToSpeechEndpoint.TextToSpeechAsync(text, voice, defaultVoiceSettings);
+Debug.Log(clipPath);
 ```
+
+### [Voices](https://api.elevenlabs.io/docs#/voices)
+
+Access to voices created either by the user or eleven labs.
+
+#### [Samples](https://api.elevenlabs.io/docs#/samples)
+
+Access to your samples, created by you when cloning voices.
+
+### [History](https://api.elevenlabs.io/docs#/history)
+
+Access to your previously synthesized audio clips including its metadata.
+
+### [User](https://api.elevenlabs.io/docs#/user)
+
+Access to your user Information and subscription status.
