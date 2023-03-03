@@ -5,17 +5,13 @@
 
 A non-official [Eleven Labs](https://elevenlabs.io) voice synthesis RESTful client for the [Unity](https://unity.com/) Game Engine.
 
-I am not affiliated with Eleven Labs and an account with api access is required.
-
-***All copyrights, trademarks, logos, and assets are the property of their respective owners.***
-
 ## Installing
 
 ### Via Unity Package Manager and OpenUPM
 
 - Open your Unity project settings
 - Select the `Package Manager`
-![scoped-registries](ElevenLabs/Packages/com.rest.elevenlabs/Documentation~/images/package-manager-scopes.png)
+![scoped-registries](https://github.com/StephenHodgson/com.rest.elevenlabs/raw/main/Rest.elevenlabs/Packages/com.rest.elevenlabs/Documentation~/images/package-manager-scopes.png)
 - Add the OpenUPM package registry:
   - `Name: OpenUPM`
   - `URL: https://package.openupm.com`
@@ -23,7 +19,7 @@ I am not affiliated with Eleven Labs and an account with api access is required.
     - `com.rest.elevenlabs`
 - Open the Unity Package Manager window
 - Change the Registry from Unity to `My Registries`
-- Add the `Elevenlabs` package
+- Add the `ElevenLabs` package
 
 ### Via Unity Package Manager and Git url
 
