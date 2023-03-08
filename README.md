@@ -28,7 +28,7 @@ I am not affiliated with Eleven Labs and an account with api access is required.
 ### Via Unity Package Manager and Git url
 
 - Open your Unity Package Manager
-- Add package from git url: `https://github.com/StephenHodgson/com.rest.elevenlabs.git#upm`
+- Add package from git url: `https://github.com/RageAgainstThePixel/com.rest.elevenlabs.git#upm`
 
 ---
 

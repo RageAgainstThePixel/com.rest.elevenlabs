@@ -11,7 +11,7 @@ A non-official [Eleven Labs](https://elevenlabs.io) voice synthesis RESTful clie
 
 - Open your Unity project settings
 - Select the `Package Manager`
-![scoped-registries](https://github.com/StephenHodgson/com.rest.elevenlabs/raw/main/Rest.elevenlabs/Packages/com.rest.elevenlabs/Documentation~/images/package-manager-scopes.png)
+![scoped-registries](images/package-manager-scopes.png)
 - Add the OpenUPM package registry:
   - `Name: OpenUPM`
   - `URL: https://package.openupm.com`
@@ -24,7 +24,7 @@ A non-official [Eleven Labs](https://elevenlabs.io) voice synthesis RESTful clie
 ### Via Unity Package Manager and Git url
 
 - Open your Unity Package Manager
-- Add package from git url: `https://github.com/StephenHodgson/com.rest.elevenlabs.git#upm`
+- Add package from git url: `https://github.com/RageAgainstThePixel/com.rest.elevenlabs.git#upm`
 
 ---
 
