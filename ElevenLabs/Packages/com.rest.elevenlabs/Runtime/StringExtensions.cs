@@ -1,6 +1,5 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using ElevenLabs.History;
 using System;
 using System.IO;
 using System.Net.Http;

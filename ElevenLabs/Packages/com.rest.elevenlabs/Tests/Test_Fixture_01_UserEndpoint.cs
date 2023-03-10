@@ -2,35 +2,28 @@
 
 using ElevenLabs;
 using NUnit.Framework;
-using System.Collections;
-using UnityEngine.TestTools;
+using System.Threading.Tasks;
 
 namespace Rest.ElevenLabs.Voice.Tests
 {
     internal class Test_Fixture_01_UserEndpoint
     {
-        [UnityTest]
-        public IEnumerator Test_01_GetUserInfo()
+        [Test]
+        public async Task Test_01_GetUserInfo()
         {
-            yield return AwaitTestUtilities.Await(async () =>
-            {
-                var api = new ElevenLabsClient();
-                Assert.NotNull(api.UserEndpoint);
-                var result = await api.UserEndpoint.GetUserInfoAsync();
-                Assert.NotNull(result);
-            });
+            var api = new ElevenLabsClient();
+            Assert.NotNull(api.UserEndpoint);
+            var result = await api.UserEndpoint.GetUserInfoAsync();
+            Assert.NotNull(result);
         }
 
-        [UnityTest]
-        public IEnumerator Test_02_GetSubscriptionInfo()
+        [Test]
+        public async Task Test_02_GetSubscriptionInfo()
         {
-            yield return AwaitTestUtilities.Await(async () =>
-            {
-                var api = new ElevenLabsClient();
-                Assert.NotNull(api.UserEndpoint);
-                var result = await api.UserEndpoint.GetSubscriptionInfoAsync();
-                Assert.NotNull(result);
-            });
+            var api = new ElevenLabsClient();
+            Assert.NotNull(api.UserEndpoint);
+            var result = await api.UserEndpoint.GetSubscriptionInfoAsync();
+            Assert.NotNull(result);
         }
     }
 }
