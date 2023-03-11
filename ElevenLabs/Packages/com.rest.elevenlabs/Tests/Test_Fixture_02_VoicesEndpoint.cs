@@ -1,6 +1,5 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using ElevenLabs;
 using ElevenLabs.Voices;
 using NUnit.Framework;
 using System.Collections.Generic;
@@ -9,7 +8,7 @@ using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 
-namespace Rest.ElevenLabs.Voice.Tests
+namespace ElevenLabs.Voice.Tests
 {
     internal class Test_Fixture_02_VoicesEndpoint
     {
