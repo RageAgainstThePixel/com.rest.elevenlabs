@@ -16,23 +16,6 @@ namespace ElevenLabs.TextToSpeech
     /// </summary>
     public sealed class TextToSpeechEndpoint : BaseEndPoint
     {
-        private class TextToSpeechRequest
-        {
-            public TextToSpeechRequest(
-                [JsonProperty("text")] string text,
-                [JsonProperty("voice_settings")] VoiceSettings voiceSettings)
-            {
-                Text = text;
-                VoiceSettings = voiceSettings;
-            }
-
-            [JsonProperty("text")]
-            public string Text { get; }
-
-            [JsonProperty("voice_settings")]
-            public VoiceSettings VoiceSettings { get; }
-        }
-
         public TextToSpeechEndpoint(ElevenLabsClient api) : base(api) { }
 
         protected override string GetEndpoint()

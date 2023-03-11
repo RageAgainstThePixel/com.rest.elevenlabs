@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using Utilities.WebRequestRest;
 
-namespace ElevenLabs
+namespace ElevenLabs.VoiceGeneration
 {
     public sealed class VoiceGenerationEndpoint : BaseEndPoint
     {
@@ -20,10 +20,10 @@ namespace ElevenLabs
             => $"{Api.BaseUrl}voice-generation";
 
         /// <summary>
-        /// 
+        /// Gets the available voice generation options.
         /// </summary>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
+        /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
+        /// <returns><see cref="GeneratedVoiceOptions"/>.</returns>
         public async Task<GeneratedVoiceOptions> GetVoiceGenerationOptionsAsync(CancellationToken cancellationToken = default)
         {
             var response = await Api.Client.GetAsync($"{GetEndpoint()}/generate-voice/parameters", cancellationToken);
@@ -34,11 +34,11 @@ namespace ElevenLabs
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="generatedVoiceRequest"></param>
-        /// <param name="saveDirectory">Optional, save directory for downloaded <see cref="AudioClip"/>.</param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
-        public async Task<bool> GenerateVoiceAsync(GeneratedVoiceRequest generatedVoiceRequest, string saveDirectory = null, CancellationToken cancellationToken = default)
+        /// <param name="generatedVoiceRequest"><see cref="GeneratedVoiceRequest"/></param>
+        /// <param name="saveDirectory">The save directory for downloaded audio file.</param>
+        /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
+        /// <returns><see cref="Tuple{VoiceId,AudioClip}"/>.</returns>
+        public async Task<Tuple<string, AudioClip>> GenerateVoiceAsync(GeneratedVoiceRequest generatedVoiceRequest, string saveDirectory = null, CancellationToken cancellationToken = default)
         {
             var payload = JsonConvert.SerializeObject(generatedVoiceRequest, Api.JsonSerializationOptions).ToJsonStringContent();
             var response = await Api.Client.PostAsync($"{GetEndpoint()}/generate-voice", payload, cancellationToken);
@@ -49,7 +49,7 @@ namespace ElevenLabs
             Rest.ValidateCacheDirectory();
 
             var rootDirectory = (saveDirectory ?? Rest.DownloadCacheDirectory).CreateNewDirectory(nameof(ElevenLabs));
-            var downloadDirectory = rootDirectory.CreateNewDirectory("VoiceGeneration");
+            var downloadDirectory = rootDirectory.CreateNewDirectory(nameof(VoiceGeneration));
             var filePath = Path.Combine(downloadDirectory, $"{generatedVoiceId}.mp3");
 
             if (File.Exists(filePath))
@@ -88,15 +88,15 @@ namespace ElevenLabs
             }
 
             var audioClip = await Rest.DownloadAudioClipAsync($"file://{filePath}", AudioType.MPEG, cancellationToken: cancellationToken);
-            return audioClip;
+            return new Tuple<string, AudioClip>(generatedVoiceId, audioClip);
         }
 
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="createVoiceRequest"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
+        /// <param name="createVoiceRequest"><see cref="CreateVoiceRequest"/>.</param>
+        /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
+        /// <returns><see cref="Voice"/>.</returns>
         public async Task<Voice> CreateVoiceAsync(CreateVoiceRequest createVoiceRequest, CancellationToken cancellationToken = default)
         {
             var payload = JsonConvert.SerializeObject(createVoiceRequest).ToJsonStringContent();

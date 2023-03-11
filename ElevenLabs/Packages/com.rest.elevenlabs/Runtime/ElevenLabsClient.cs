@@ -23,7 +23,7 @@ namespace ElevenLabs
         {
             ElevenLabsAuthentication = elevenLabsAuthentication ?? ElevenLabsAuthentication.Default;
 
-            if (ElevenLabsAuthentication?.ApiKey is null)
+            if (string.IsNullOrWhiteSpace(ElevenLabsAuthentication?.ApiKey))
             {
                 throw new AuthenticationException("You must provide API authentication.  Please refer to https://github.com/RageAgainstThePixel/com.rest.elevenlabs#authentication for details.");
             }

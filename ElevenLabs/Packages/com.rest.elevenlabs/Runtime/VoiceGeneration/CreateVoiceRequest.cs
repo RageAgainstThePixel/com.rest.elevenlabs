@@ -2,7 +2,7 @@
 
 using Newtonsoft.Json;
 
-namespace ElevenLabs
+namespace ElevenLabs.VoiceGeneration
 {
     public sealed class CreateVoiceRequest
     {

@@ -3,7 +3,7 @@
 using Newtonsoft.Json;
 using System.Collections.Generic;
 
-namespace ElevenLabs
+namespace ElevenLabs.VoiceGeneration
 {
     public sealed class GeneratedVoiceOptions
     {
