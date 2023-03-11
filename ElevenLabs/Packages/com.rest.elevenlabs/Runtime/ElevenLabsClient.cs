@@ -3,6 +3,7 @@
 using ElevenLabs.History;
 using ElevenLabs.TextToSpeech;
 using ElevenLabs.User;
+using ElevenLabs.VoiceGeneration;
 using ElevenLabs.Voices;
 using Newtonsoft.Json;
 using System.Net.Http;
@@ -42,6 +43,7 @@ namespace ElevenLabs
             VoicesEndpoint = new VoicesEndpoint(this);
             HistoryEndpoint = new HistoryEndpoint(this);
             TextToSpeechEndpoint = new TextToSpeechEndpoint(this);
+            VoiceGenerationEndpoint = new VoiceGenerationEndpoint(this);
         }
 
         /// <summary>
@@ -86,5 +88,7 @@ namespace ElevenLabs
         public HistoryEndpoint HistoryEndpoint { get; }
 
         public TextToSpeechEndpoint TextToSpeechEndpoint { get; }
+
+        public VoiceGenerationEndpoint VoiceGenerationEndpoint { get; }
     }
 }
