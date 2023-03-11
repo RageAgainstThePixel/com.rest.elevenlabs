@@ -9,8 +9,7 @@ namespace ElevenLabs.VoiceGeneration
         [JsonConstructor]
         public Age(
             [JsonProperty("name")] string name,
-            [JsonProperty("code")] string code
-        )
+            [JsonProperty("code")] string code)
         {
             Name = name;
             Code = code;

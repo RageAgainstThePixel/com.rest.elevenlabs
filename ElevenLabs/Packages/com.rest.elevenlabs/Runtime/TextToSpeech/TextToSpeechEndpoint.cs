@@ -40,7 +40,7 @@ namespace ElevenLabs.TextToSpeech
             Rest.ValidateCacheDirectory();
 
             var rootDirectory = (saveDirectory ?? Rest.DownloadCacheDirectory).CreateNewDirectory(nameof(ElevenLabs));
-            var downloadDirectory = rootDirectory.CreateNewDirectory("TextToSpeech");
+            var downloadDirectory = rootDirectory.CreateNewDirectory(nameof(TextToSpeech));
             var fileName = $"{text.GenerateGuid()}.mp3";
             var filePath = Path.Combine(downloadDirectory, fileName);
 

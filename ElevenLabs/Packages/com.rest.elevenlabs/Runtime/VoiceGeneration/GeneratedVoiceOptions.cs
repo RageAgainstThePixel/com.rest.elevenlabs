@@ -15,8 +15,7 @@ namespace ElevenLabs.VoiceGeneration
             [JsonProperty("minimum_characters")] int minimumCharacters,
             [JsonProperty("maximum_characters")] int maximumCharacters,
             [JsonProperty("minimum_accent_strength")] double minimumAccentStrength,
-            [JsonProperty("maximum_accent_strength")] double maximumAccentStrength
-        )
+            [JsonProperty("maximum_accent_strength")] double maximumAccentStrength)
         {
             Genders = genders;
             Accents = accents;

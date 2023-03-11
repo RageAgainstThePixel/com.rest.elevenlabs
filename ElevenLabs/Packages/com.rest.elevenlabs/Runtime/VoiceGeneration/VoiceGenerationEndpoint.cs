@@ -32,7 +32,7 @@ namespace ElevenLabs.VoiceGeneration
         }
 
         /// <summary>
-        /// 
+        /// Generate a <see cref="Voice"/>.
         /// </summary>
         /// <param name="generatedVoiceRequest"><see cref="GeneratedVoiceRequest"/></param>
         /// <param name="saveDirectory">The save directory for downloaded audio file.</param>
@@ -92,7 +92,7 @@ namespace ElevenLabs.VoiceGeneration
         }
 
         /// <summary>
-        /// 
+        /// Clone a <see cref="Voice"/>.
         /// </summary>
         /// <param name="createVoiceRequest"><see cref="CreateVoiceRequest"/>.</param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>

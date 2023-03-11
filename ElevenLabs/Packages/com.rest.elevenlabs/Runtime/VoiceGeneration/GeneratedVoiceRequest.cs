@@ -12,8 +12,7 @@ namespace ElevenLabs.VoiceGeneration
             [JsonProperty("gender")] string gender,
             [JsonProperty("accent")] string accent,
             [JsonProperty("age")] string age,
-            [JsonProperty("accent_strength")] int accentStrength
-        )
+            [JsonProperty("accent_strength")] int accentStrength)
         {
             Text = text;
             Gender = gender;

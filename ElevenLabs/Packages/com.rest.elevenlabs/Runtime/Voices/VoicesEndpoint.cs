@@ -51,7 +51,7 @@ namespace ElevenLabs.Voices
         /// Gets a list of all available voices for a user.
         /// </summary>
         /// <param name="cancellationToken"></param>
-        /// <returns></returns>
+        /// <returns><see cref="IReadOnlyList{T}"/> of <see cref="Voice"/>s.</returns>
         public async Task<IReadOnlyList<Voice>> GetAllVoicesAsync(CancellationToken cancellationToken = default)
         {
             var response = await Api.Client.GetAsync(GetEndpoint(), cancellationToken);
@@ -76,8 +76,8 @@ namespace ElevenLabs.Voices
         /// <summary>
         /// Gets the default settings for voices.
         /// </summary>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
+        /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
+        /// <returns><see cref="VoiceSettings"/>.</returns>
         public async Task<VoiceSettings> GetDefaultVoiceSettingsAsync(CancellationToken cancellationToken = default)
         {
             var response = await Api.Client.GetAsync($"{GetEndpoint()}/settings/default", cancellationToken);
@@ -88,9 +88,9 @@ namespace ElevenLabs.Voices
         /// <summary>
         /// Gets the settings for a specific voice.
         /// </summary>
-        /// <param name="voiceId"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
+        /// <param name="voiceId">The id of the <see cref="Voice"/> to get <see cref="VoiceSettings"/> for.</param>
+        /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
+        /// <returns><see cref="VoiceSettings"/>.</returns>
         public async Task<VoiceSettings> GetVoiceSettingsAsync(string voiceId, CancellationToken cancellationToken = default)
         {
             var response = await Api.Client.GetAsync($"{GetEndpoint()}/{voiceId}/settings", cancellationToken);
@@ -101,10 +101,10 @@ namespace ElevenLabs.Voices
         /// <summary>
         /// Gets metadata about a specific voice.
         /// </summary>
-        /// <param name="voiceId"></param>
-        /// <param name="withSettings"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
+        /// <param name="voiceId">The id of the <see cref="Voice"/> to get.</param>
+        /// <param name="withSettings">Should the response include the <see cref="VoiceSettings"/>?</param>
+        /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
+        /// <returns><see cref="Voice"/>.</returns>
         public async Task<Voice> GetVoiceAsync(string voiceId, bool withSettings = true, CancellationToken cancellationToken = default)
         {
             var response = await Api.Client.GetAsync($"{GetEndpoint()}/{voiceId}?with_settings={withSettings}", cancellationToken);
@@ -115,10 +115,10 @@ namespace ElevenLabs.Voices
         /// <summary>
         /// Edit your settings for a specific voice.
         /// </summary>
-        /// <param name="voiceId"></param>
-        /// <param name="voiceSettings"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
+        /// <param name="voiceId">Id of the voice settings to edit.</param>
+        /// <param name="voiceSettings"><see cref="VoiceSettings"/>.</param>
+        /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
+        /// <returns>True, if voice settings was successfully edited.</returns>
         public async Task<bool> EditVoiceSettingsAsync(string voiceId, VoiceSettings voiceSettings, CancellationToken cancellationToken = default)
         {
             var payload = JsonConvert.SerializeObject(voiceSettings).ToJsonStringContent();
@@ -133,7 +133,7 @@ namespace ElevenLabs.Voices
         /// <param name="name">Name of the voice you want to add.</param>
         /// <param name="samplePaths">Collection of file paths to use as samples for the new voice.</param>
         /// <param name="labels">Optional, labels for the new voice.</param>
-        /// <param name="cancellationToken"></param>
+        /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         public async Task<Voice> AddVoiceAsync(string name, IEnumerable<string> samplePaths = null, IReadOnlyDictionary<string, string> labels = null, CancellationToken cancellationToken = default)
         {
             var form = new MultipartFormDataContent();
@@ -183,12 +183,11 @@ namespace ElevenLabs.Voices
         /// <summary>
         /// Edit a voice created by you.
         /// </summary>
-        /// <param name="voice"></param>
-        /// <param name="samplePaths"></param>
-        /// <param name="labels"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
-        /// <exception cref="NotImplementedException"></exception>
+        /// <param name="voice">The <see cref="Voice"/> to edit.</param>
+        /// <param name="samplePaths">The full string paths of the <see cref="Sample"/>s to upload.</param>
+        /// <param name="labels">The labels to set on the <see cref="Voice"/> description.</param>
+        /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
+        /// <returns>True, if voice was successfully edited.</returns>
         public async Task<bool> EditVoiceAsync(Voice voice, IEnumerable<string> samplePaths = null, IReadOnlyDictionary<string, string> labels = null, CancellationToken cancellationToken = default)
         {
             var form = new MultipartFormDataContent();
@@ -236,9 +235,9 @@ namespace ElevenLabs.Voices
         /// <summary>
         /// Delete a voice by its <see cref="Voice.Id"/>.
         /// </summary>
-        /// <param name="voiceId"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
+        /// <param name="voiceId">The id of the <see cref="Voice"/> to delete.</param>
+        /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
+        /// <returns>True, if voice was successfully deleted.</returns>
         public async Task<bool> DeleteVoiceAsync(string voiceId, CancellationToken cancellationToken = default)
         {
             var response = await Api.Client.DeleteAsync($"{GetEndpoint()}/{voiceId}", cancellationToken);
@@ -251,10 +250,10 @@ namespace ElevenLabs.Voices
         /// <summary>
         /// Get the audio corresponding to a sample attached to a voice.
         /// </summary>
-        /// <param name="voiceId"></param>
-        /// <param name="sampleId"></param>
-        /// <param name="saveDirectory"></param>
-        /// <param name="cancellationToken"></param>
+        /// <param name="voiceId">The <see cref="Voice"/> id this <see cref="Sample"/> belongs to.</param>
+        /// <param name="sampleId">The <see cref="Sample"/> id to download.</param>
+        /// <param name="saveDirectory">Optional, directory to save the <see cref="Sample"/>.</param>
+        /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         public async Task<AudioClip> GetVoiceSampleAsync(string voiceId, string sampleId, string saveDirectory = null, CancellationToken cancellationToken = default)
         {
             var response = await Api.Client.GetAsync($"{GetEndpoint()}/{voiceId}/samples/{sampleId}/audio", cancellationToken);
@@ -308,10 +307,10 @@ namespace ElevenLabs.Voices
         /// <summary>
         /// Delete the audio corresponding to a sample attached to a voice.
         /// </summary>
-        /// <param name="voiceId"></param>
-        /// <param name="sampleId"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
+        /// <param name="voiceId">The <see cref="Voice"/> id this <see cref="Sample"/> belongs to.</param>
+        /// <param name="sampleId">The <see cref="Sample"/> id to delete.</param>
+        /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
+        /// <returns>True, if <see cref="Voice"/> <see cref="Sample"/> was successfully deleted.</returns>
         public async Task<bool> DeleteVoiceSampleAsync(string voiceId, string sampleId, CancellationToken cancellationToken = default)
         {
             var response = await Api.Client.DeleteAsync($"{GetEndpoint()}/{voiceId}/samples/{sampleId}", cancellationToken);

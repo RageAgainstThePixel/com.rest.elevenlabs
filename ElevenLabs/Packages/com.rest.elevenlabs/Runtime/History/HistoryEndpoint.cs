@@ -22,12 +22,12 @@ namespace ElevenLabs.History
         private class HistoryInfo
         {
             [JsonConstructor]
-            public HistoryInfo([JsonProperty("history")] List<HistoryItem> history)
+            public HistoryInfo([JsonProperty(nameof(History))] List<HistoryItem> history)
             {
                 History = history;
             }
 
-            [JsonProperty("history")]
+            [JsonProperty(nameof(History))]
             public IReadOnlyList<HistoryItem> History { get; }
         }
 
@@ -60,7 +60,7 @@ namespace ElevenLabs.History
             Rest.ValidateCacheDirectory();
 
             var rootDirectory = (saveDirectory ?? Rest.DownloadCacheDirectory).CreateNewDirectory(nameof(ElevenLabs));
-            var downloadDirectory = rootDirectory.CreateNewDirectory("History");
+            var downloadDirectory = rootDirectory.CreateNewDirectory(nameof(History));
             var voiceDirectory = downloadDirectory.CreateNewDirectory(historyItem.VoiceName);
             var filePath = Path.Combine(voiceDirectory, $"{historyItem.Id}.mp3");
 
@@ -166,7 +166,7 @@ namespace ElevenLabs.History
                         Directory.CreateDirectory(rootDirectory);
                     }
 
-                    var downloadDirectory = Path.Combine(rootDirectory, "History");
+                    var downloadDirectory = Path.Combine(rootDirectory, nameof(History));
 
                     Directory.CreateDirectory(downloadDirectory);
 

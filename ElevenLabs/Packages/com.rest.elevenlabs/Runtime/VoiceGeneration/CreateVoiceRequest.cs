@@ -9,8 +9,7 @@ namespace ElevenLabs.VoiceGeneration
         [JsonConstructor]
         public CreateVoiceRequest(
             [JsonProperty("voice_name")] string voiceName,
-            [JsonProperty("generated_voice_id")] string generatedVoiceId
-        )
+            [JsonProperty("generated_voice_id")] string generatedVoiceId)
         {
             VoiceName = voiceName;
             GeneratedVoiceId = generatedVoiceId;
