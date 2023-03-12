@@ -41,7 +41,25 @@ namespace ElevenLabs.Voice.Tests
         }
 
         [Test]
-        public async Task Test_03_DeleteHistoryItem()
+        public async Task Test_03_DownloadAllHistoryItems()
+        {
+            var api = new ElevenLabsClient();
+            Assert.NotNull(api.HistoryEndpoint);
+            var historyItems = await api.HistoryEndpoint.GetHistoryAsync();
+            Assert.NotNull(historyItems);
+            Assert.IsNotEmpty(historyItems);
+            var singleItem = historyItems.FirstOrDefault();
+            var singleItemResult = await api.HistoryEndpoint.DownloadHistoryItemsAsync(new List<string> { singleItem });
+            Assert.NotNull(singleItemResult);
+            Assert.IsNotEmpty(singleItemResult);
+            var downloadItems = historyItems.Select(item => item.Id).ToList();
+            var results = await api.HistoryEndpoint.DownloadHistoryItemsAsync(downloadItems);
+            Assert.NotNull(results);
+            Assert.IsNotEmpty(results);
+        }
+
+        [Test]
+        public async Task Test_04_DeleteHistoryItem()
         {
             var api = new ElevenLabsClient();
             Assert.NotNull(api.HistoryEndpoint);
@@ -66,24 +84,6 @@ namespace ElevenLabs.Voice.Tests
             {
                 Debug.Log($"{item.State} {item.Date} | {item.Id} | {item.Text}");
             }
-        }
-
-        [Test]
-        public async Task Test_04_DownloadAllHistoryItems()
-        {
-            var api = new ElevenLabsClient();
-            Assert.NotNull(api.HistoryEndpoint);
-            var historyItems = await api.HistoryEndpoint.GetHistoryAsync();
-            Assert.NotNull(historyItems);
-            Assert.IsNotEmpty(historyItems);
-            var singleItem = historyItems.FirstOrDefault();
-            var singleItemResult = await api.HistoryEndpoint.DownloadHistoryItemsAsync(new List<string> { singleItem });
-            Assert.NotNull(singleItemResult);
-            Assert.IsNotEmpty(singleItemResult);
-            var downloadItems = historyItems.Select(item => item.Id).ToList();
-            var results = await api.HistoryEndpoint.DownloadHistoryItemsAsync(downloadItems);
-            Assert.NotNull(results);
-            Assert.IsNotEmpty(results);
         }
     }
 }
