@@ -44,6 +44,8 @@ namespace ElevenLabs.Editor
 
         private static readonly GUIContent highClarityContent = new GUIContent("High", "Recommended. High enhancement boosts overall voice clarity and target speaker similarity. Very high values can cause artifacts, so adjusting this setting to find the optimal value is encouraged.");
 
+        private static readonly GUIContent addNewSampleContent = new GUIContent("Add new Sample(s)");
+
         private static readonly string[] tabTitles = { "Speech Synthesis", "Voice Lab", "History" };
 
         private static GUIStyle boldCenteredHeaderStyle;
@@ -129,7 +131,8 @@ namespace ElevenLabs.Editor
 
         private string speechSynthesisTextInput = string.Empty;
 
-        private AudioClip newSampleClip;
+        [SerializeField]
+        private List<AudioClip> newSampleClips;
 
         private string tempLabelKey;
 
@@ -865,16 +868,20 @@ namespace ElevenLabs.Editor
                     {
                         EditorGUILayout.BeginHorizontal();
                         {
-                            //newSampleClip = EditorGUILayout.ObjectField("New Sample(s)", newSampleClip, typeof(AudioClip), false, GUILayout.ExpandWidth(true)) as AudioClip;
+                            //GUILayout.FlexibleSpace();
+                            var thisSo = new SerializedObject(this);
+                            var sampleClipsProperty = thisSo.FindProperty(nameof(newSampleClips));
+                            EditorGUILayout.PropertyField(sampleClipsProperty, addNewSampleContent, true);
+                            thisSo.ApplyModifiedProperties();
 
-                            GUI.enabled = newSampleClip != null && !isFetchingVoices;
+                            GUI.enabled = (newSampleClips?.Count > 0 && newSampleClips?.Count <= 25 - voice.Samples.Count) && !isFetchingVoices;
 
-                            if (GUILayout.Button("Add new Sample(s)", GUILayout.Width(DefaultColumnWidth)))
+                            if (GUILayout.Button(addNewSampleContent, GUILayout.Width(WideColumnWidth)))
                             {
                                 EditorApplication.delayCall += () =>
                                 {
-                                    EditVoice(voice, newSampleClip);
-                                    newSampleClip = null;
+                                    EditVoice(voice, newSampleClips);
+                                    newSampleClips = new List<AudioClip>();
                                 };
                             }
 
@@ -975,28 +982,32 @@ namespace ElevenLabs.Editor
             }
         }
 
-        private static async void EditVoice(Voice voice, AudioClip audioClip = null, IReadOnlyDictionary<string, string> labels = null)
+        private static async void EditVoice(Voice voice, List<AudioClip> audioClips = null, IReadOnlyDictionary<string, string> labels = null)
         {
             try
             {
                 var audioClipPaths = new List<string>();
 
-                if (audioClip != null)
+                if (audioClips != null)
                 {
-                    EditorUtility.DisplayProgressBar("Uploading voice sample...", $"Uploading {audioClip.name}", -1);
-                    var audioClipPath = Path.GetFullPath(AssetDatabase.GetAssetPath(audioClip));
+                    EditorUtility.DisplayProgressBar("Uploading voice sample...", $"Uploading {audioClips.Count} voice samples: {string.Join(", ", audioClips.Select(clip => clip.name))}", -1);
 
-                    if (string.IsNullOrWhiteSpace(audioClipPath))
+                    foreach (var audioClip in audioClips)
                     {
-                        throw new ArgumentNullException(nameof(audioClipPath), $"AssetDatabase failed to locate {audioClip.name}!");
-                    }
+                        var audioClipPath = Path.GetFullPath(AssetDatabase.GetAssetPath(audioClip));
 
-                    if (!File.Exists(audioClipPath))
-                    {
-                        throw new ArgumentNullException(nameof(audioClipPath), $"Failed to find valid path to {audioClip.name}: \"{audioClipPath}\"");
-                    }
+                        if (string.IsNullOrWhiteSpace(audioClipPath))
+                        {
+                            throw new ArgumentNullException(nameof(audioClipPath), $"AssetDatabase failed to locate {audioClip.name}!");
+                        }
 
-                    audioClipPaths.Add(audioClipPath);
+                        if (!File.Exists(audioClipPath))
+                        {
+                            throw new ArgumentNullException(nameof(audioClipPath), $"Failed to find valid path to {audioClip.name}: \"{audioClipPath}\"");
+                        }
+
+                        audioClipPaths.Add(audioClipPath);
+                    }
                 }
                 else
                 {
