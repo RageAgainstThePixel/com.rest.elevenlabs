@@ -88,6 +88,7 @@ namespace ElevenLabs.VoiceGeneration
             }
 
             var audioClip = await Rest.DownloadAudioClipAsync($"file://{filePath}", AudioType.MPEG, cancellationToken: cancellationToken);
+            audioClip.name = Path.GetFileNameWithoutExtension(filePath);
             return new Tuple<string, AudioClip>(generatedVoiceId, audioClip);
         }
 

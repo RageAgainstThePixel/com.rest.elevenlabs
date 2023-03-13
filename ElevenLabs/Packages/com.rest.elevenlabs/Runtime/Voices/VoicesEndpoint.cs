@@ -174,7 +174,7 @@ namespace ElevenLabs.Voices
             }
 
             var response = await Api.Client.PostAsync($"{GetEndpoint()}/add", form, cancellationToken);
-            var responseAsString = await response.ReadAsStringAsync(true);
+            var responseAsString = await response.ReadAsStringAsync();
             var voiceResponse = JsonConvert.DeserializeObject<VoiceResponse>(responseAsString, Api.JsonSerializationOptions);
             var voice = await GetVoiceAsync(voiceResponse.VoiceId, cancellationToken: cancellationToken);
             return voice;
@@ -254,6 +254,7 @@ namespace ElevenLabs.Voices
         /// <param name="sampleId">The <see cref="Sample"/> id to download.</param>
         /// <param name="saveDirectory">Optional, directory to save the <see cref="Sample"/>.</param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
+        /// <returns><see cref="AudioClip"/>.</returns>
         public async Task<AudioClip> GetVoiceSampleAsync(string voiceId, string sampleId, string saveDirectory = null, CancellationToken cancellationToken = default)
         {
             var response = await Api.Client.GetAsync($"{GetEndpoint()}/{voiceId}/samples/{sampleId}/audio", cancellationToken);
