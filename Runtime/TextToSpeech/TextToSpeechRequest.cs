@@ -1,3 +1,5 @@
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using ElevenLabs.Voices;
 using Newtonsoft.Json;
 
@@ -5,10 +7,7 @@ namespace ElevenLabs.TextToSpeech
 {
     public sealed class TextToSpeechRequest
     {
-        [JsonConstructor]
-        public TextToSpeechRequest(
-            [JsonProperty("text")] string text,
-            [JsonProperty("voice_settings")] VoiceSettings voiceSettings)
+        public TextToSpeechRequest(string text, VoiceSettings voiceSettings)
         {
             Text = text;
             VoiceSettings = voiceSettings;

@@ -22,12 +22,12 @@ namespace ElevenLabs.History
         private class HistoryInfo
         {
             [JsonConstructor]
-            public HistoryInfo([JsonProperty("history")] List<HistoryItem> history)
+            public HistoryInfo([JsonProperty(nameof(History))] List<HistoryItem> history)
             {
                 History = history;
             }
 
-            [JsonProperty("history")]
+            [JsonProperty(nameof(History))]
             public IReadOnlyList<HistoryItem> History { get; }
         }
 
@@ -60,7 +60,7 @@ namespace ElevenLabs.History
             Rest.ValidateCacheDirectory();
 
             var rootDirectory = (saveDirectory ?? Rest.DownloadCacheDirectory).CreateNewDirectory(nameof(ElevenLabs));
-            var downloadDirectory = rootDirectory.CreateNewDirectory("History");
+            var downloadDirectory = rootDirectory.CreateNewDirectory(nameof(History));
             var voiceDirectory = downloadDirectory.CreateNewDirectory(historyItem.VoiceName);
             var filePath = Path.Combine(voiceDirectory, $"{historyItem.Id}.mp3");
 
@@ -115,24 +115,23 @@ namespace ElevenLabs.History
         public async Task<bool> DeleteHistoryItemAsync(string historyId, CancellationToken cancellationToken = default)
         {
             var response = await Api.Client.DeleteAsync($"{GetEndpoint()}/{historyId}", cancellationToken);
-            await response.ReadAsStringAsync(true);
+            await response.ReadAsStringAsync();
             return response.IsSuccessStatusCode;
         }
 
         /// <summary>
-        /// Download one or more history items. If one history item ID is provided, we will return a single audio file.
-        /// If more than one history item IDs are provided multiple audio files will be downloaded.
+        /// Download one or more history items.<br/>
+        /// If no ids are specified, then all history items are downloaded.<br/>
+        /// If one history item id is provided, we will return a single audio file.<br/>
+        /// If more than one history item ids are provided multiple audio files will be downloaded.
         /// </summary>
-        /// <param name="historyItemIds">One or more history item ids queued for download.</param>
+        /// <param name="historyItemIds">Optional, One or more history item ids queued for download.</param>
         /// <param name="saveDirectory">Optional, directory path to save the history in.</param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         /// <returns>A list of Audio Clips downloaded by the request.</returns>
-        public async Task<IReadOnlyList<AudioClip>> DownloadHistoryItemsAsync(List<string> historyItemIds, string saveDirectory = null, CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<AudioClip>> DownloadHistoryItemsAsync(List<string> historyItemIds = null, string saveDirectory = null, CancellationToken cancellationToken = default)
         {
-            if (historyItemIds is not { Count: not 0 })
-            {
-                throw new ArgumentOutOfRangeException(nameof(historyItemIds));
-            }
+            historyItemIds ??= (await GetHistoryAsync(cancellationToken)).Select(item => item.Id).ToList();
 
             var audioClips = new ConcurrentBag<AudioClip>();
 
@@ -166,7 +165,7 @@ namespace ElevenLabs.History
                         Directory.CreateDirectory(rootDirectory);
                     }
 
-                    var downloadDirectory = Path.Combine(rootDirectory, "History");
+                    var downloadDirectory = Path.Combine(rootDirectory, nameof(History));
 
                     Directory.CreateDirectory(downloadDirectory);
 

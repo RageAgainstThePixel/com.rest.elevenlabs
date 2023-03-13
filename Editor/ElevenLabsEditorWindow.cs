@@ -2,26 +2,326 @@
 
 using ElevenLabs.History;
 using ElevenLabs.User;
+using ElevenLabs.VoiceGeneration;
 using ElevenLabs.Voices;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using UnityEditor;
 using UnityEngine;
+using Utilities.Audio.Editor;
 
 namespace ElevenLabs.Editor
 {
     public sealed class ElevenLabsEditorWindow : EditorWindow
     {
+        [Serializable]
+        private class CreateVoicePopupContent : PopupWindowContent
+        {
+            private class VoiceGenerationArgs : ScriptableObject
+            {
+                public int tab;
+
+                public int genderSelection;
+
+                public int ageSelection;
+
+                public int accentSelection;
+
+                public float accentStrengthSelection;
+
+                [TextArea]
+                public string speechSynthesisTextInput;
+
+                public string voiceName;
+
+                public List<AudioClip> voiceSamples = new List<AudioClip>();
+
+                public readonly Dictionary<string, string> Labels = new Dictionary<string, string>();
+
+                public GeneratedVoiceRequest CreateRequest()
+                {
+                    return new GeneratedVoiceRequest(
+                        speechSynthesisTextInput,
+                        generatedVoiceOptions.Genders[genderSelection],
+                        generatedVoiceOptions.Accents[accentSelection],
+                        generatedVoiceOptions.Ages[ageSelection]);
+                }
+            }
+
+            private readonly Vector2 windowSize = new Vector2(WideColumnWidth * 4, WideColumnWidth * 3);
+
+            private static readonly string[] popupTabTitles = { "Voice Designer", "Voice Cloning" };
+
+            [SerializeField]
+            private VoiceGenerationArgs args;
+
+            [SerializeField]
+            private string generatedVoiceId;
+
+            [SerializeField]
+            private AudioClip generatedVoiceClip;
+
+            private SerializedObject serializedArgs;
+
+            private Vector2 scrollPosition = Vector2.zero;
+
+            public override Vector2 GetWindowSize() => windowSize;
+
+            public override void OnOpen()
+            {
+                if (args == null)
+                {
+                    args = CreateInstance<VoiceGenerationArgs>();
+                }
+                serializedArgs = new SerializedObject(args);
+                ResetVoiceDesigner();
+            }
+
+            public override void OnGUI(Rect rect)
+            {
+                serializedArgs.Update();
+                EditorGUILayout.Space();
+                EditorGUILayout.BeginVertical();
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(TabWidth * 0.5f);
+                EditorGUILayout.BeginVertical();
+                EditorGUI.BeginChangeCheck();
+                args.tab = GUILayout.Toolbar(args.tab, popupTabTitles, GUILayout.ExpandWidth(true));
+
+                if (EditorGUI.EndChangeCheck())
+                {
+                    GUI.FocusControl(null);
+                    scrollPosition = Vector2.zero;
+                }
+                GUILayout.Space(TabWidth * 0.5f);
+
+                switch (args.tab)
+                {
+                    case 0:
+                        RenderVoiceDesigner();
+                        break;
+                    case 1:
+                        RenderVoiceCloning();
+                        break;
+                }
+
+                GUILayout.Space(TabWidth * 0.5f);
+                EditorGUILayout.EndVertical();
+                GUILayout.Space(TabWidth * 0.5f);
+                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.EndVertical();
+                serializedArgs.ApplyModifiedProperties();
+            }
+
+            private void ResetVoiceDesigner()
+            {
+                args.accentStrengthSelection = 1f;
+                args.speechSynthesisTextInput = "First we thought the PC was a calculator. Then we found out how to turn numbers into letters and we thought it was a typewriter.";
+            }
+
+            private void RenderVoiceDesigner()
+            {
+                scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
+                var voiceNameProperty = serializedArgs.FindProperty(nameof(args.voiceName));
+                EditorGUILayout.PropertyField(voiceNameProperty);
+                args.genderSelection = EditorGUILayout.Popup(new GUIContent("Gender"), args.genderSelection, generatedVoiceOptions.Genders.Select(gender => new GUIContent(gender.Name)).ToArray());
+                args.ageSelection = EditorGUILayout.Popup(new GUIContent("Age"), args.ageSelection, generatedVoiceOptions.Ages.Select(age => new GUIContent(age.Name)).ToArray());
+                args.accentSelection = EditorGUILayout.Popup(new GUIContent("Accent"), args.accentSelection, generatedVoiceOptions.Accents.Select(accent => new GUIContent(accent.Name)).ToArray());
+                args.accentStrengthSelection = EditorGUILayout.Slider(new GUIContent("Accent Strength"), args.accentStrengthSelection, (float)generatedVoiceOptions.MinimumAccentStrength, (float)generatedVoiceOptions.MaximumAccentStrength);
+
+                var speechSynthesisTextInputProperty = serializedArgs.FindProperty(nameof(args.speechSynthesisTextInput));
+                EditorGUILayout.PropertyField(speechSynthesisTextInputProperty, GUIContent.none, GUILayout.ExpandHeight(true));
+
+                EditorGUILayout.BeginHorizontal();
+                { // Text area footer
+                    EditorGUILayout.LabelField(new GUIContent($"{args.speechSynthesisTextInput.Length} / {generatedVoiceOptions.MaximumCharacters}"), GUILayout.ExpandWidth(true));
+                    GUILayout.FlexibleSpace();
+                    var remainingCharacters = 0;
+
+                    if (userInfo != null)
+                    {
+                        remainingCharacters = userInfo.CharacterLimit - userInfo.CharacterCount;
+                    }
+
+                    EditorGUILayout.LabelField(new GUIContent($"Total quota remaining: {remainingCharacters}"), RightMiddleAlignedLabel, GUILayout.ExpandWidth(true));
+                }
+                EditorGUILayout.EndHorizontal();
+                GUILayout.Space(TabWidth * 0.5f);
+
+                GUI.enabled = !isCreatingVoice &&
+                              !isGeneratingVoiceSample &&
+                              args.speechSynthesisTextInput.Length <= generatedVoiceOptions.MaximumCharacters &&
+                              args.speechSynthesisTextInput.Length >= generatedVoiceOptions.MinimumCharacters;
+
+                if (GUILayout.Button("Generate", GUILayout.ExpandWidth(true)))
+                {
+                    EditorApplication.delayCall += () =>
+                    {
+                        GenerateVoiceSample(args.CreateRequest());
+                    };
+                }
+
+                GUILayout.Space(TabWidth * 0.5f);
+                GUI.enabled = !isCreatingVoice &&
+                              !isGeneratingVoiceSample &&
+                              !string.IsNullOrWhiteSpace(args.voiceName) &&
+                              !string.IsNullOrWhiteSpace(generatedVoiceId) &&
+                              generatedVoiceClip != null;
+
+                if (GUILayout.Button("Use Voice", GUILayout.ExpandWidth(true)))
+                {
+                    EditorApplication.delayCall += CreateGeneratedVoice;
+                }
+
+                GUI.enabled = true;
+                EditorGUILayout.EndScrollView();
+            }
+
+            private static bool isCreatingVoice;
+
+            private async void CreateGeneratedVoice()
+            {
+                if (isCreatingVoice) { return; }
+                isCreatingVoice = true;
+
+                try
+                {
+                    var request = new CreateVoiceRequest(args.voiceName, generatedVoiceId);
+                    await api.VoiceGenerationEndpoint.CreateVoiceAsync(request);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError(e);
+                }
+                finally
+                {
+                    isCreatingVoice = false;
+                    generatedVoiceId = null;
+                    generatedVoiceClip = null;
+                    FetchVoices();
+                    args = CreateInstance<VoiceGenerationArgs>();
+                    editorWindow.Close();
+                }
+            }
+
+            private static bool isGeneratingVoiceSample;
+
+            private async void GenerateVoiceSample(GeneratedVoiceRequest request)
+            {
+                if (isGeneratingVoiceSample) { return; }
+                isGeneratingVoiceSample = true;
+
+                try
+                {
+                    var (voiceId, audioClip) = await api.VoiceGenerationEndpoint.GenerateVoiceAsync(request, editorDownloadDirectory);
+                    generatedVoiceId = voiceId;
+                    generatedVoiceClip = audioClip;
+                    AudioEditorUtilities.PlayClipPreview(audioClip);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError(e);
+                }
+                finally
+                {
+                    isGeneratingVoiceSample = false;
+                    FetchUserInfo();
+                    FetchVoices();
+                }
+            }
+
+            private void RenderVoiceCloning()
+            {
+                scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
+
+                var voiceNameProperty = serializedArgs.FindProperty(nameof(args.voiceName));
+                EditorGUILayout.PropertyField(voiceNameProperty);
+
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField($"Labels {args.Labels.Count} / 5", GUILayout.ExpandWidth(true));
+
+                GUILayout.FlexibleSpace();
+
+                if (args.Labels.Count < 5 &&
+                    GUILayout.Button("Add Label", GUILayout.Width(WideColumnWidth)))
+                {
+                    EditorApplication.delayCall += () =>
+                    {
+                        tempLabelKey = string.Empty;
+                        args.Labels.TryAdd(NewLabel, string.Empty);
+                        lastTextControl = $"{LabelControlField}_New Label_{nameof(RenderVoiceCloning)}";
+                    };
+                }
+
+                EditorGUILayout.EndHorizontal();
+
+                foreach (var label in args.Labels)
+                {
+                    RenderLabel(label, args.Labels, editorWindow);
+                }
+
+                var voiceSamplesProperty = serializedArgs.FindProperty(nameof(args.voiceSamples));
+                EditorGUILayout.PropertyField(voiceSamplesProperty, new GUIContent($"Sample Clips {args.voiceSamples.Count} / 25"));
+
+                GUILayout.Space(TabWidth * 0.5f);
+                GUILayout.FlexibleSpace();
+                GUI.enabled = !isAddingVoice &&
+                              !string.IsNullOrWhiteSpace(args.voiceName) &&
+                              args.voiceSamples.Count > 0;
+
+                if (GUILayout.Button("Add Voice", GUILayout.ExpandWidth(true)))
+                {
+                    EditorApplication.delayCall += AddVoice;
+                }
+
+                GUI.enabled = true;
+                EditorGUILayout.EndScrollView();
+            }
+
+            private static bool isAddingVoice;
+
+            private async void AddVoice()
+            {
+                if (isAddingVoice) { return; }
+                isAddingVoice = true;
+
+                try
+                {
+                    var voiceSamplePaths = args.voiceSamples.Select(sample => Path.GetFullPath(AssetDatabase.GetAssetPath(sample))).ToList();
+                    await api.VoicesEndpoint.AddVoiceAsync(args.voiceName, voiceSamplePaths, args.Labels);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError(e);
+                }
+                finally
+                {
+                    isAddingVoice = false;
+                    FetchVoices();
+                    args = CreateInstance<VoiceGenerationArgs>();
+                    editorWindow.Close();
+                }
+            }
+        }
+
         #region UX Content
 
-        private const float SettingsLabelWidth = 1.56f;
+        private const int TabWidth = 18;
+        private const int InnerLabelIndentLevel = 13;
 
         private const float InnerLabelWidth = 1.9f;
+        private const float DefaultColumnWidth = 96f;
+        private const float WideColumnWidth = 128f;
+        private const float SettingsLabelWidth = 1.56f;
 
-        private const int InnerLabelIndentLevel = 13;
+        private const string NewLabel = "New Label";
+        private const string LabelControlField = "LabelControlField";
+
+        private static readonly GUIContent saveDirectoryContent = new GUIContent("Save Directory");
 
         private static readonly GUIContent guiTitleContent = new GUIContent("Eleven Labs Dashboard");
 
@@ -38,6 +338,8 @@ namespace ElevenLabs.Editor
         private static readonly GUIContent lowClarityContent = new GUIContent("Low", "Low values are recommended if background artifacts are present in generated speech.");
 
         private static readonly GUIContent highClarityContent = new GUIContent("High", "Recommended. High enhancement boosts overall voice clarity and target speaker similarity. Very high values can cause artifacts, so adjusting this setting to find the optimal value is encouraged.");
+
+        private static readonly GUIContent addNewSampleContent = new GUIContent("Add new Sample(s)");
 
         private static readonly string[] tabTitles = { "Speech Synthesis", "Voice Lab", "History" };
 
@@ -73,7 +375,13 @@ namespace ElevenLabs.Editor
             alignment = TextAnchor.MiddleRight,
         };
 
+        private static string DefaultSaveDirectoryKey => $"{Application.productName}_ElevenLabs_EditorDownloadDirectory";
+
+        private static string DefaultSaveDirectory => $"{Application.streamingAssetsPath}/{nameof(ElevenLabs)}";
+
         #endregion UX Content
+
+        #region Static Content
 
         private static ElevenLabsClient api;
 
@@ -89,7 +397,7 @@ namespace ElevenLabs.Editor
 
         private static bool isFetchingVoices;
 
-        private static IReadOnlyList<Voice> voices;
+        private static IReadOnlyList<Voice> voices = new List<Voice>();
 
         private static GUIContent[] voiceOptions = Array.Empty<GUIContent>();
 
@@ -97,18 +405,33 @@ namespace ElevenLabs.Editor
 
         private static VoiceSettings currentVoiceSettings;
 
-        private static readonly ConcurrentDictionary<string, ConcurrentDictionary<string, string>> voiceLabels = new ConcurrentDictionary<string, ConcurrentDictionary<string, string>>();
+        private static GeneratedVoiceOptions generatedVoiceOptions;
+
+        private static readonly ConcurrentDictionary<string, Dictionary<string, string>> voiceLabels = new ConcurrentDictionary<string, Dictionary<string, string>>();
 
         private static bool hasFetchedHistory;
 
         private static bool isFetchingHistory;
 
-        private static IReadOnlyList<HistoryItem> history;
+        private static IReadOnlyList<HistoryItem> history = new List<HistoryItem>();
 
-        private static readonly ConcurrentBag<string> downloadedClips = new ConcurrentBag<string>();
+        private static readonly List<string> downloadedClips = new List<string>();
+
+        private static Rect createVoiceButtonRect;
+
+        private static string lastTextControl;
+
+        private static string tempLabelKey;
+
+        private static string tempLabelValue;
+
+        #endregion Static Content
 
         [SerializeField]
         private int tab;
+
+        [SerializeField]
+        private CreateVoicePopupContent voicePopupContent;
 
         [SerializeField]
         private string currentVoiceId;
@@ -116,15 +439,12 @@ namespace ElevenLabs.Editor
         [SerializeField]
         private Vector2 voiceSettingsSliderValues = Vector2.zero;
 
+        [SerializeField]
+        private List<AudioClip> newSampleClips;
+
         private Vector2 scrollPosition = Vector2.zero;
 
         private string speechSynthesisTextInput = string.Empty;
-
-        private AudioClip newSampleClip;
-
-        private string tempLabelKey;
-
-        private string tempLabelValue;
 
         [MenuItem("ElevenLabs/Dashboard")]
         private static void OpenWindow()
@@ -138,7 +458,8 @@ namespace ElevenLabs.Editor
         private void OnEnable()
         {
             titleContent = guiTitleContent;
-            minSize = new Vector2(640, 256);
+            minSize = new Vector2(WideColumnWidth * 5, WideColumnWidth * 4);
+            voicePopupContent ??= new CreateVoicePopupContent();
         }
 
         private void OnFocus()
@@ -172,60 +493,75 @@ namespace ElevenLabs.Editor
         private void OnGUI()
         {
             EditorGUILayout.BeginVertical();
-            EditorGUILayout.Space();
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Eleven Labs Dashboard", BoldCenteredHeaderStyle);
-            EditorGUILayout.EndHorizontal();
-            EditorGUILayout.Space();
-
-            if (api == null ||
-                string.IsNullOrWhiteSpace(api.ElevenLabsAuthentication.ApiKey))
-            {
-                EditorGUILayout.HelpBox($"No valid {nameof(ElevenLabsConfigurationSettings)} was found. This tool requires that you set your API key.", MessageType.Error);
-                return;
-            }
-
-            tab = GUILayout.Toolbar(tab, tabTitles);
-
-            EditorGUILayout.Space();
             scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition, GUILayout.ExpandWidth(true));
-
             EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(TabWidth);
             EditorGUILayout.BeginVertical();
-            EditorGUI.indentLevel++;
-            EditorGUILayout.LabelField(new GUIContent("Save Directory"));
+            { // Begin Header
+                EditorGUILayout.Space();
+                EditorGUILayout.LabelField("Eleven Labs Dashboard", BoldCenteredHeaderStyle);
+                EditorGUILayout.Space();
 
-            if (string.IsNullOrWhiteSpace(editorDownloadDirectory))
-            {
-                editorDownloadDirectory = EditorPrefs.GetString($"{Application.productName}_ElevenLabs_EditorDownloadDirectory", $"{Application.streamingAssetsPath}/{nameof(ElevenLabs)}");
-            }
-
-            EditorGUILayout.TextField(editorDownloadDirectory);
-
-            EditorGUILayout.BeginHorizontal();
-            {
-                GUILayout.Space(18);
-
-                if (GUILayout.Button("Change Save Directory", GUILayout.ExpandWidth(true)))
+                if (api == null ||
+                    string.IsNullOrWhiteSpace(api.ElevenLabsAuthentication.ApiKey))
                 {
-                    EditorApplication.delayCall += () =>
-                    {
-                        var result = EditorUtility.OpenFolderPanel("Save Directory", editorDownloadDirectory, string.Empty);
+                    EditorGUILayout.HelpBox(
+                        $"No valid {nameof(ElevenLabsConfigurationSettings)} was found. This tool requires that you set your API key.",
+                        MessageType.Error);
 
-                        if (!string.IsNullOrWhiteSpace(result))
-                        {
-                            editorDownloadDirectory = result;
-                            EditorPrefs.SetString($"{Application.productName}_ElevenLabs_EditorDownloadDirectory", editorDownloadDirectory);
-                        }
-                    };
+                    return;
                 }
-            }
-            EditorGUILayout.EndHorizontal();
-            EditorGUI.indentLevel--;
+
+                EditorGUILayout.Space();
+                EditorGUI.BeginChangeCheck();
+                tab = GUILayout.Toolbar(tab, tabTitles, GUILayout.ExpandWidth(true));
+
+                if (EditorGUI.EndChangeCheck())
+                {
+                    GUI.FocusControl(null);
+                }
+
+                EditorGUILayout.LabelField(saveDirectoryContent);
+
+                if (string.IsNullOrWhiteSpace(editorDownloadDirectory))
+                {
+                    editorDownloadDirectory = EditorPrefs.GetString(DefaultSaveDirectoryKey, DefaultSaveDirectory);
+                }
+
+                EditorGUILayout.BeginHorizontal();
+                {
+                    EditorGUILayout.TextField(editorDownloadDirectory, GUILayout.ExpandWidth(true));
+
+                    if (GUILayout.Button("Reset", GUILayout.Width(WideColumnWidth)))
+                    {
+                        editorDownloadDirectory = DefaultSaveDirectory;
+                        EditorPrefs.SetString(DefaultSaveDirectoryKey, editorDownloadDirectory);
+                    }
+                }
+                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.BeginHorizontal();
+                {
+                    if (GUILayout.Button("Change Save Directory", GUILayout.ExpandWidth(true)))
+                    {
+                        EditorApplication.delayCall += () =>
+                        {
+                            var result = EditorUtility.OpenFolderPanel("Save Directory", editorDownloadDirectory, string.Empty);
+
+                            if (!string.IsNullOrWhiteSpace(result))
+                            {
+                                editorDownloadDirectory = result;
+                                EditorPrefs.SetString(DefaultSaveDirectoryKey, editorDownloadDirectory);
+                            }
+                        };
+                    }
+                }
+                EditorGUILayout.EndHorizontal();
+            } // End Header
             EditorGUILayout.EndVertical();
             GUILayout.Space(10);
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.Space();
+            EditorGUI.indentLevel++;
 
             switch (tab)
             {
@@ -240,6 +576,7 @@ namespace ElevenLabs.Editor
                     break;
             }
 
+            EditorGUI.indentLevel--;
             EditorGUILayout.EndScrollView();
             EditorGUILayout.EndVertical();
         }
@@ -272,6 +609,7 @@ namespace ElevenLabs.Editor
             {
                 voices = await api.VoicesEndpoint.GetAllVoicesAsync();
                 voiceOptions = voices.OrderBy(voice => voice.Name).Select(voice => new GUIContent($"{voice.Category}/{voice.Name}")).ToArray();
+                generatedVoiceOptions = await api.VoiceGenerationEndpoint.GetVoiceGenerationOptionsAsync();
             }
             catch (Exception e)
             {
@@ -310,15 +648,25 @@ namespace ElevenLabs.Editor
             var assets = AssetDatabase.FindAssets($"t:{nameof(AudioClip)}");
             downloadedClips.Clear();
 
-            foreach (var guid in assets)
-            {
-                var assetPath = AssetDatabase.GUIDToAssetPath(guid);
-                var assetName = Path.GetFileNameWithoutExtension(assetPath);
+            var isStreamingAssets = editorDownloadDirectory.Contains(Application.streamingAssetsPath);
 
-                if (history.Any(item => item.Id == assetName) ||
-                    history.Any(item => item.TextHash == assetName))
+            if (isStreamingAssets &&
+                Directory.Exists(editorDownloadDirectory))
+            {
+                downloadedClips.AddRange(Directory.GetFiles(editorDownloadDirectory, "*.mp3", SearchOption.AllDirectories));
+            }
+            else
+            {
+                foreach (var guid in assets)
                 {
-                    downloadedClips.Add(assetPath);
+                    var assetPath = AssetDatabase.GUIDToAssetPath(guid);
+                    var assetName = Path.GetFileNameWithoutExtension(assetPath);
+
+                    if (history.Any(item => item.Id == assetName) ||
+                        history.Any(item => item.TextHash == assetName))
+                    {
+                        downloadedClips.Add(assetPath);
+                    }
                 }
             }
         }
@@ -327,16 +675,14 @@ namespace ElevenLabs.Editor
 
         private void RenderSpeechSynthesis()
         {
-            EditorGUI.indentLevel++;
-
             EditorGUILayout.BeginHorizontal();
-            { //Header
+            { // Header
                 EditorGUILayout.LabelField("Settings", EditorStyles.boldLabel);
                 GUILayout.FlexibleSpace();
 
                 GUI.enabled = !isFetchingVoices || !isFetchingUserInfo;
 
-                if (GUILayout.Button("Refresh"))
+                if (GUILayout.Button("Refresh", GUILayout.Width(DefaultColumnWidth)))
                 {
                     EditorApplication.delayCall += () =>
                     {
@@ -350,12 +696,13 @@ namespace ElevenLabs.Editor
             }
             EditorGUILayout.EndHorizontal();
 
-            EditorGUILayout.Space(10);
+            EditorGUILayout.Space();
+            EditorGUILayout.Space();
             GUILayout.BeginHorizontal();
             GUILayout.BeginVertical();
             { // Body
                 var prevLabelWidth = EditorGUIUtility.labelWidth;
-                EditorGUIUtility.labelWidth = 128 * SettingsLabelWidth;
+                EditorGUIUtility.labelWidth = WideColumnWidth * SettingsLabelWidth;
 
                 EditorGUILayout.BeginHorizontal();
                 { // voice dropdown
@@ -403,11 +750,11 @@ namespace ElevenLabs.Editor
                 EditorGUILayout.BeginHorizontal();
                 {
                     StartIndent(InnerLabelIndentLevel);
-                    EditorGUIUtility.labelWidth = 128 * InnerLabelWidth;
+                    EditorGUIUtility.labelWidth = WideColumnWidth * InnerLabelWidth;
                     EditorGUILayout.LabelField(moreVariableContent, GUILayout.ExpandWidth(true));
                     GUILayout.FlexibleSpace();
                     EditorGUILayout.LabelField(moreStableContent, RightMiddleAlignedLabel, GUILayout.ExpandWidth(true));
-                    EditorGUIUtility.labelWidth = 128 * SettingsLabelWidth;
+                    EditorGUIUtility.labelWidth = WideColumnWidth * SettingsLabelWidth;
                     EndIndent(InnerLabelIndentLevel);
                 }
                 EditorGUILayout.EndHorizontal();
@@ -416,11 +763,11 @@ namespace ElevenLabs.Editor
                 EditorGUILayout.BeginHorizontal();
                 {
                     StartIndent(InnerLabelIndentLevel);
-                    EditorGUIUtility.labelWidth = 128 * InnerLabelWidth;
+                    EditorGUIUtility.labelWidth = WideColumnWidth * InnerLabelWidth;
                     EditorGUILayout.LabelField(lowClarityContent, GUILayout.ExpandWidth(true));
                     GUILayout.FlexibleSpace();
                     EditorGUILayout.LabelField(highClarityContent, RightMiddleAlignedLabel, GUILayout.ExpandWidth(true));
-                    EditorGUIUtility.labelWidth = 128 * SettingsLabelWidth;
+                    EditorGUIUtility.labelWidth = WideColumnWidth * SettingsLabelWidth;
                     EndIndent(InnerLabelIndentLevel);
                 }
                 EditorGUILayout.EndHorizontal();
@@ -432,7 +779,7 @@ namespace ElevenLabs.Editor
                     EditorGUILayout.LabelField("Text", EditorStyles.boldLabel, GUILayout.ExpandWidth(true));
                     GUILayout.FlexibleSpace();
 
-                    if (GUILayout.Button("To Default", GUILayout.Width(128)))
+                    if (GUILayout.Button("Reset to Default", GUILayout.Width(WideColumnWidth)))
                     {
                         EditorApplication.delayCall += () => GetDefaultVoiceSettings(currentVoiceOption);
                     }
@@ -483,7 +830,8 @@ namespace ElevenLabs.Editor
                 EditorGUILayout.BeginHorizontal();
                 {
                     GUI.enabled = !isSynthesisRunning;
-                    GUILayout.Space(20);
+                    GUILayout.Space(TabWidth);
+
                     if (GUILayout.Button("Generate", GUILayout.ExpandWidth(true)))
                     {
                         EditorApplication.delayCall += GenerateSynthesizedText;
@@ -496,8 +844,6 @@ namespace ElevenLabs.Editor
             GUILayout.EndVertical();
             GUILayout.Space(10);
             GUILayout.EndHorizontal();
-
-            EditorGUI.indentLevel--;
         }
 
         private static bool isSynthesisRunning;
@@ -576,24 +922,37 @@ namespace ElevenLabs.Editor
 
         private void RenderVoiceLab()
         {
-            EditorGUI.indentLevel++;
+            string voiceCount;
 
-            var voiceCount = string.Empty;
-
-            if (voices != null && userInfo != null)
+            if (!isFetchingVoices && userInfo != null)
             {
                 var generatedCount = voices.Count(voice => voice.Category is "generated" or "cloned");
                 voiceCount = $"{generatedCount}/{userInfo.VoiceLimit}";
             }
+            else
+            {
+                voiceCount = "~/~";
+            }
 
             EditorGUILayout.BeginHorizontal();
-            { //Header
-                EditorGUILayout.LabelField($"Voices {voiceCount}", EditorStyles.boldLabel);
-                GUILayout.FlexibleSpace();
+            { // Header
+                EditorGUILayout.LabelField($"Voices {voiceCount}", EditorStyles.boldLabel, GUILayout.Width(DefaultColumnWidth));
 
                 GUI.enabled = !isFetchingVoices;
 
-                if (GUILayout.Button("Refresh"))
+                if (GUILayout.Button("Create New Voice", GUILayout.ExpandWidth(true)))
+                {
+                    PopupWindow.Show(createVoiceButtonRect, voicePopupContent);
+                }
+
+                if (Event.current.type == EventType.Repaint)
+                {
+                    createVoiceButtonRect = GUILayoutUtility.GetLastRect();
+                }
+
+                GUILayout.FlexibleSpace();
+
+                if (GUILayout.Button("Refresh", GUILayout.Width(DefaultColumnWidth)))
                 {
                     EditorApplication.delayCall += FetchVoices;
                 }
@@ -605,36 +964,37 @@ namespace ElevenLabs.Editor
             EditorGUILayout.Space();
             EditorGUILayout.Space();
 
-            if (voices == null) { return; }
-
             foreach (var voice in voices)
             {
                 if (voice.Category.Contains("premade")) { continue; }
+                Divider();
 
                 var isCloned = voice.Category.Contains("cloned");
 
                 EditorGUILayout.BeginVertical();
                 EditorGUILayout.BeginHorizontal();
                 {
-                    EditorGUILayout.LabelField($"{voice.Category}/{voice.Name} | {voice.Id}", GUILayout.ExpandWidth(true));
+                    EditorGUILayout.LabelField($"{voice.Category}/{voice.Name} | {voice.Id}", EditorStyles.boldLabel, GUILayout.MinWidth(WideColumnWidth * 3), GUILayout.ExpandWidth(true));
+                    GUILayout.FlexibleSpace();
 
                     GUI.enabled = !isFetchingVoices;
 
-                    if (GUILayout.Button("Delete"))
+                    if (GUILayout.Button("Delete", GUILayout.Width(DefaultColumnWidth)))
                     {
                         EditorApplication.delayCall += () => DeleteVoice(voice);
                     }
 
                     GUI.enabled = true;
                 }
+                EditorGUILayout.Space(10);
                 EditorGUILayout.EndHorizontal();
                 EditorGUI.indentLevel++;
 
                 if (!voiceLabels.TryGetValue(voice.Id, out var cachedLabels))
                 {
-                    cachedLabels = new ConcurrentDictionary<string, string>();
+                    cachedLabels = new Dictionary<string, string>();
 
-                    foreach (var (key, value) in voice.Labels.OrderBy(pair => pair.Key))
+                    foreach (var (key, value) in voice.Labels)
                     {
                         cachedLabels.TryAdd(key, value);
                     }
@@ -642,92 +1002,28 @@ namespace ElevenLabs.Editor
                     voiceLabels.TryAdd(voice.Id, cachedLabels);
                 }
 
-                EditorGUILayout.LabelField($"Labels {cachedLabels?.Count ?? 0}/5", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField($"Labels {cachedLabels?.Count ?? 0} / 5");
                 EditorGUILayout.Space();
                 EditorGUI.indentLevel++;
 
-                const string labelControlName = "labelKeyTextField";
-
                 if (cachedLabels is { Count: > 0 })
                 {
-                    var labelIndex = 0;
+                    var hasNewLabel = cachedLabels.ContainsKey(NewLabel);
 
                     foreach (var cachedLabel in cachedLabels)
                     {
-                        labelIndex++;
-                        EditorGUILayout.BeginHorizontal();
+                        if (hasNewLabel &&
+                            cachedLabel.Key.Contains(NewLabel))
                         {
-                            var (key, value) = cachedLabel;
-                            EditorGUI.BeginChangeCheck();
-                            var prevLabelWidth = EditorGUIUtility.labelWidth;
-                            EditorGUIUtility.labelWidth = 96f;
-                            GUI.SetNextControlName($"{labelControlName}{labelIndex}");
-
-                            EditorGUI.BeginChangeCheck();
-                            var newKey = EditorGUILayout.TextField("Key", key);
-
-                            if (EditorGUI.EndChangeCheck())
-                            {
-                                tempLabelKey = newKey;
-                            }
-
-                            if (Event.current.isKey && Event.current.keyCode == KeyCode.Tab &&
-                                GUI.GetNameOfFocusedControl() == $"{labelControlName}{labelIndex}" &&
-                                !string.IsNullOrWhiteSpace(tempLabelKey))
-                            {
-                                if (key != tempLabelKey)
-                                {
-                                    EditorApplication.delayCall += () =>
-                                    {
-                                        if (cachedLabels.TryGetValue(key, out _))
-                                        {
-                                            cachedLabels.TryRemove(key, out _);
-                                        }
-
-                                        if (!cachedLabels.TryAdd(tempLabelKey, string.Empty))
-                                        {
-                                            Debug.LogError($"failed to add label {tempLabelKey}");
-                                        }
-
-                                        tempLabelKey = string.Empty;
-                                    };
-                                }
-                            }
-
-                            EditorGUI.BeginChangeCheck();
-                            var newValue = EditorGUILayout.TextField("Value", value);
-                            EditorGUIUtility.labelWidth = prevLabelWidth;
-
-                            if (EditorGUI.EndChangeCheck())
-                            {
-                                tempLabelValue = newValue;
-
-                                EditorApplication.delayCall += () =>
-                                {
-                                    if (!string.IsNullOrWhiteSpace(tempLabelValue))
-                                    {
-                                        cachedLabels[key] = tempLabelValue;
-                                    }
-
-                                    tempLabelValue = string.Empty;
-                                };
-                            }
-
-                            GUI.enabled = !isFetchingVoices;
-
-                            if (GUILayout.Button("Delete", GUILayout.Width(96)))
-                            {
-                                EditorApplication.delayCall += () =>
-                                {
-                                    cachedLabels.TryRemove(key, out _);
-                                };
-                            }
-
-                            GUI.enabled = true;
+                            continue;
                         }
 
-                        GUILayout.Space(10);
-                        EditorGUILayout.EndHorizontal();
+                        RenderLabel(cachedLabel, cachedLabels, this);
+                    }
+
+                    if (hasNewLabel)
+                    {
+                        RenderLabel(cachedLabels.FirstOrDefault(pair => pair.Key.Contains(NewLabel)), cachedLabels, this);
                     }
                 }
 
@@ -736,18 +1032,15 @@ namespace ElevenLabs.Editor
 
                 EditorGUILayout.BeginHorizontal();
                 {
-                    EditorGUILayout.Space(40);
+                    EditorGUILayout.Space(TabWidth * 2);
 
                     if (cachedLabels is { Count: < 5 } &&
-                        GUILayout.Button("Add new Label", GUILayout.Width(96)))
+                        !cachedLabels.ContainsKey(NewLabel) &&
+                        GUILayout.Button("Add New Label", GUILayout.Width(WideColumnWidth)))
                     {
                         tempLabelKey = string.Empty;
-
-                        EditorApplication.delayCall += () =>
-                        {
-                            cachedLabels.TryAdd("New Label", string.Empty);
-                            EditorGUI.FocusTextInControl($"{labelControlName}{cachedLabels.Count}");
-                        };
+                        cachedLabels.TryAdd(NewLabel, string.Empty);
+                        lastTextControl = $"{LabelControlField}_New Label_{nameof(RenderVoiceLab)}";
                     }
 
                     GUILayout.FlexibleSpace();
@@ -785,7 +1078,7 @@ namespace ElevenLabs.Editor
 
                     GUI.enabled = !isFetchingVoices && IsLabelsDirty();
 
-                    if (GUILayout.Button("Update Labels", GUILayout.Width(96)))
+                    if (GUILayout.Button("Update Labels", GUILayout.Width(DefaultColumnWidth)))
                     {
                         EditorApplication.delayCall += () =>
                         {
@@ -795,17 +1088,14 @@ namespace ElevenLabs.Editor
 
                     GUILayout.Space(10);
                 }
-
-                GUI.enabled = true;
-
                 EditorGUILayout.EndHorizontal();
-
+                GUI.enabled = true;
                 EditorGUI.indentLevel--;
 
                 if (isCloned)
                 {
                     EditorGUILayout.Space();
-                    EditorGUILayout.LabelField($"Samples {voice.Samples?.Count ?? 0}/25", EditorStyles.boldLabel);
+                    EditorGUILayout.LabelField($"Samples {voice.Samples?.Count ?? 0} / 25");
                     EditorGUILayout.Space();
                     EditorGUI.indentLevel++;
 
@@ -813,16 +1103,19 @@ namespace ElevenLabs.Editor
                     {
                         EditorGUILayout.BeginHorizontal();
                         {
-                            newSampleClip = EditorGUILayout.ObjectField("New Sample", newSampleClip, typeof(AudioClip), false, GUILayout.ExpandWidth(true)) as AudioClip;
+                            var thisSo = new SerializedObject(this);
+                            var sampleClipsProperty = thisSo.FindProperty(nameof(newSampleClips));
+                            EditorGUILayout.PropertyField(sampleClipsProperty, addNewSampleContent, true);
+                            thisSo.ApplyModifiedProperties();
 
-                            GUI.enabled = newSampleClip != null && !isFetchingVoices;
+                            GUI.enabled = (newSampleClips?.Count > 0 && newSampleClips?.Count <= 25 - voice.Samples.Count) && !isFetchingVoices;
 
-                            if (GUILayout.Button("Add Sample", GUILayout.Width(96)))
+                            if (GUILayout.Button(addNewSampleContent, GUILayout.Width(WideColumnWidth)))
                             {
                                 EditorApplication.delayCall += () =>
                                 {
-                                    EditVoice(voice, newSampleClip);
-                                    newSampleClip = null;
+                                    EditVoice(voice, newSampleClips);
+                                    newSampleClips = new List<AudioClip>();
                                 };
                             }
 
@@ -831,13 +1124,17 @@ namespace ElevenLabs.Editor
                         GUILayout.Space(10);
                         EditorGUILayout.EndHorizontal();
                     }
+
+                    EditorGUI.indentLevel--;
                 }
 
                 if (voice.Samples != null)
                 {
+                    EditorGUI.indentLevel++;
+
                     foreach (var voiceSample in voice.Samples)
                     {
-                        EditorGUILayout.LabelField($"{voiceSample.Id} | {voiceSample.FileName} | {voiceSample.MimeType} | {voiceSample.SizeBytes}");
+                        EditorGUILayout.LabelField($"{voiceSample.Id} | {voiceSample.FileName} | {voiceSample.MimeType} | {voiceSample.SizeBytes}", GUILayout.ExpandWidth(true));
                         EditorGUILayout.BeginHorizontal();
                         var fileName = Path.GetFileNameWithoutExtension(voiceSample.FileName);
                         var files = AssetDatabase.FindAssets($"t:{nameof(AudioClip)} {fileName}").ToList();
@@ -848,7 +1145,7 @@ namespace ElevenLabs.Editor
                             case { Count: 0 }:
                                 GUI.enabled = !isFetchingVoices;
 
-                                if (GUILayout.Button("Download"))
+                                if (GUILayout.Button("Download", GUILayout.Width(DefaultColumnWidth)))
                                 {
                                     EditorApplication.delayCall += () => DownloadVoiceSample(voice, voiceSample);
                                 }
@@ -867,7 +1164,7 @@ namespace ElevenLabs.Editor
 
                         GUI.enabled = !isFetchingVoices;
 
-                        if (GUILayout.Button("Delete", GUILayout.Width(96)))
+                        if (GUILayout.Button("Delete", GUILayout.Width(DefaultColumnWidth)))
                         {
                             EditorApplication.delayCall += () => DeleteVoiceSample(voice, voiceSample);
                         }
@@ -884,8 +1181,105 @@ namespace ElevenLabs.Editor
                 EditorGUILayout.EndVertical();
                 EditorGUILayout.Space();
             }
+        }
 
-            EditorGUI.indentLevel--;
+        private static void RenderLabel(KeyValuePair<string, string> label, Dictionary<string, string> cachedLabels, EditorWindow editorWindow, [CallerMemberName] string callerMemberName = "")
+        {
+            EditorGUILayout.BeginHorizontal();
+            {
+                var (key, value) = label;
+                var prevLabelWidth = EditorGUIUtility.labelWidth;
+                EditorGUIUtility.labelWidth = DefaultColumnWidth;
+                EditorGUI.BeginChangeCheck();
+                var keyTextControl = $"{LabelControlField}_{key}_{callerMemberName}";
+                GUI.SetNextControlName(keyTextControl);
+                var newKey = EditorGUILayout.TextField("Key", key);
+
+                if (lastTextControl == keyTextControl)
+                {
+                    GUI.FocusControl(keyTextControl);
+                    EditorGUI.FocusTextInControl(keyTextControl);
+                    lastTextControl = string.Empty;
+                }
+
+                if (EditorGUI.EndChangeCheck())
+                {
+                    tempLabelKey = newKey;
+                }
+
+                if (Event.current.isKey && Event.current.keyCode == KeyCode.Tab &&
+                    GUI.GetNameOfFocusedControl() == keyTextControl &&
+                    !string.IsNullOrWhiteSpace(tempLabelKey))
+                {
+                    if (key != tempLabelKey)
+                    {
+                        lastTextControl = $"{LabelControlField}_{tempLabelKey}_{callerMemberName}";
+
+                        EditorApplication.delayCall += () =>
+                        {
+                            if (cachedLabels.TryGetValue(key, out _))
+                            {
+                                cachedLabels.Remove(key, out _);
+                            }
+
+                            if (!cachedLabels.TryAdd(tempLabelKey, string.Empty))
+                            {
+                                Debug.LogError($"failed to add label {tempLabelKey}");
+                            }
+
+                            tempLabelKey = string.Empty;
+                            lastTextControl = $"{lastTextControl}_value_{callerMemberName}";
+                            editorWindow.Repaint();
+                        };
+                    }
+                }
+
+                EditorGUI.BeginChangeCheck();
+                var valueTextControl = $"{LabelControlField}_{key}_value_{callerMemberName}";
+                GUI.SetNextControlName(valueTextControl);
+                var newValue = EditorGUILayout.TextField("Value", value);
+
+                if (lastTextControl == valueTextControl)
+                {
+                    GUI.FocusControl(valueTextControl);
+                    EditorGUI.FocusTextInControl(valueTextControl);
+                    lastTextControl = string.Empty;
+                }
+
+                EditorGUIUtility.labelWidth = prevLabelWidth;
+
+                if (EditorGUI.EndChangeCheck())
+                {
+                    tempLabelValue = newValue;
+
+                    EditorApplication.delayCall += () =>
+                    {
+                        if (!string.IsNullOrWhiteSpace(tempLabelValue))
+                        {
+                            cachedLabels[key] = tempLabelValue;
+                        }
+
+                        tempLabelValue = string.Empty;
+                        editorWindow.Repaint();
+                    };
+                }
+
+                GUI.enabled = !isFetchingVoices;
+
+                if (GUILayout.Button("Delete", GUILayout.Width(DefaultColumnWidth)))
+                {
+                    EditorApplication.delayCall += () => { cachedLabels.Remove(key, out _); };
+                }
+
+                GUI.enabled = true;
+            }
+
+            if (editorWindow is ElevenLabsEditorWindow)
+            {
+                GUILayout.Space(10);
+            }
+
+            EditorGUILayout.EndHorizontal();
         }
 
         private static async void DeleteVoice(Voice voice)
@@ -917,28 +1311,32 @@ namespace ElevenLabs.Editor
             }
         }
 
-        private static async void EditVoice(Voice voice, AudioClip audioClip = null, IReadOnlyDictionary<string, string> labels = null)
+        private static async void EditVoice(Voice voice, List<AudioClip> audioClips = null, IReadOnlyDictionary<string, string> labels = null)
         {
             try
             {
                 var audioClipPaths = new List<string>();
 
-                if (audioClip != null)
+                if (audioClips != null)
                 {
-                    EditorUtility.DisplayProgressBar("Uploading voice sample...", $"Uploading {audioClip.name}", -1);
-                    var audioClipPath = Path.GetFullPath(AssetDatabase.GetAssetPath(audioClip));
+                    EditorUtility.DisplayProgressBar("Uploading voice sample...", $"Uploading {audioClips.Count} voice samples: {string.Join(", ", audioClips.Select(clip => clip.name))}", -1);
 
-                    if (string.IsNullOrWhiteSpace(audioClipPath))
+                    foreach (var audioClip in audioClips)
                     {
-                        throw new ArgumentNullException(nameof(audioClipPath), $"AssetDatabase failed to locate {audioClip.name}!");
-                    }
+                        var audioClipPath = Path.GetFullPath(AssetDatabase.GetAssetPath(audioClip));
 
-                    if (!File.Exists(audioClipPath))
-                    {
-                        throw new ArgumentNullException(nameof(audioClipPath), $"Failed to find valid path to {audioClip.name}: \"{audioClipPath}\"");
-                    }
+                        if (string.IsNullOrWhiteSpace(audioClipPath))
+                        {
+                            throw new ArgumentNullException(nameof(audioClipPath), $"AssetDatabase failed to locate {audioClip.name}!");
+                        }
 
-                    audioClipPaths.Add(audioClipPath);
+                        if (!File.Exists(audioClipPath))
+                        {
+                            throw new ArgumentNullException(nameof(audioClipPath), $"Failed to find valid path to {audioClip.name}: \"{audioClipPath}\"");
+                        }
+
+                        audioClipPaths.Add(audioClipPath);
+                    }
                 }
                 else
                 {
@@ -1016,7 +1414,6 @@ namespace ElevenLabs.Editor
 
         private static void RenderHistory()
         {
-            EditorGUI.indentLevel++;
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.BeginVertical();
 
@@ -1027,7 +1424,7 @@ namespace ElevenLabs.Editor
 
                 GUI.enabled = !isFetchingVoices || !isFetchingUserInfo;
 
-                if (GUILayout.Button("Refresh"))
+                if (GUILayout.Button("Refresh", GUILayout.Width(DefaultColumnWidth)))
                 {
                     EditorApplication.delayCall += FetchHistory;
                 }
@@ -1037,62 +1434,58 @@ namespace ElevenLabs.Editor
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.Space();
 
-            if (history != null)
+            EditorGUILayout.BeginHorizontal();
             {
+                GUILayout.Space(TabWidth);
+
+                GUI.enabled = !isFetchingHistory && history.Count != downloadedClips.Count;
+
+                if (GUILayout.Button("Download All History", GUILayout.ExpandWidth(true)))
+                {
+                    EditorApplication.delayCall += () => DownloadHistoryAudio(history);
+                }
+
+                GUI.enabled = true;
+            }
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.Space();
+
+            foreach (var item in history)
+            {
+                EditorGUI.indentLevel++;
+
                 EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField($"{item.Date} | {item.VoiceName}");
+
+                GUI.enabled = !downloadedClips.Any(path =>
                 {
-                    GUILayout.Space(18);
+                    var assetPath = Path.GetFileNameWithoutExtension(path);
+                    return assetPath == item.Id || assetPath == item.TextHash;
+                });
 
-                    GUI.enabled = !isFetchingHistory && history.Count != downloadedClips.Count;
-
-                    if (GUILayout.Button("Download All History"))
-                    {
-                        EditorApplication.delayCall += () => DownloadHistoryAudio(history);
-                    }
-
-                    GUI.enabled = true;
+                if (GUILayout.Button("Download", GUILayout.Width(DefaultColumnWidth)))
+                {
+                    EditorApplication.delayCall += () => DownloadHistoryAudio(new[] { item });
                 }
+
+                GUI.enabled = !isFetchingHistory;
+
+                if (GUILayout.Button("Delete", GUILayout.Width(DefaultColumnWidth)))
+                {
+                    EditorApplication.delayCall += () => DeleteHistoryItem(item);
+                }
+
+                GUI.enabled = true;
+
                 EditorGUILayout.EndHorizontal();
+
+                GUI.enabled = false;
+                EditorGUILayout.TextArea(item.Text);
+                GUI.enabled = true;
+                EditorGUI.indentLevel--;
                 EditorGUILayout.Space();
-
-                foreach (var item in history)
-                {
-                    EditorGUI.indentLevel++;
-
-                    EditorGUILayout.BeginHorizontal();
-                    EditorGUILayout.LabelField($"{item.Date} | {item.VoiceName}");
-
-                    GUI.enabled = !downloadedClips.Any(path =>
-                    {
-                        var assetPath = Path.GetFileNameWithoutExtension(path);
-                        return assetPath == item.Id || assetPath == item.TextHash;
-                    });
-
-                    if (GUILayout.Button("Download", GUILayout.Width(96)))
-                    {
-                        EditorApplication.delayCall += () => DownloadHistoryAudio(new[] { item });
-                    }
-
-                    GUI.enabled = !isFetchingHistory;
-
-                    if (GUILayout.Button("Delete", GUILayout.Width(96)))
-                    {
-                        EditorApplication.delayCall += () => DeleteHistoryItem(item);
-                    }
-
-                    GUI.enabled = true;
-
-                    EditorGUILayout.EndHorizontal();
-
-                    GUI.enabled = false;
-                    EditorGUILayout.TextArea(item.Text);
-                    GUI.enabled = true;
-                    EditorGUI.indentLevel--;
-                    EditorGUILayout.Space();
-                }
             }
 
-            EditorGUI.indentLevel--;
             EditorGUILayout.EndVertical();
             GUILayout.Space(10);
             EditorGUILayout.EndHorizontal();
@@ -1174,6 +1567,14 @@ namespace ElevenLabs.Editor
             {
                 EditorGUI.indentLevel--;
             }
+        }
+
+        private static void Divider(int height = 1, Color? color = null)
+        {
+            Rect rect = EditorGUILayout.GetControlRect(false, height);
+            rect.height = height;
+            color ??= EditorGUIUtility.isProSkin ? new Color(0.1f, 0.1f, 0.1f) : new Color(0.5f, 0.5f, 0.5f, 1);
+            EditorGUI.DrawRect(rect, color.Value);
         }
 
         #endregion GUI Utilities
