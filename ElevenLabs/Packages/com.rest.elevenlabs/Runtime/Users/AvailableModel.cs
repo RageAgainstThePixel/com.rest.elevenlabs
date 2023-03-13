@@ -11,7 +11,7 @@ namespace ElevenLabs.User
         public AvailableModel(
             [JsonProperty("model_id")] string modelId,
             [JsonProperty("display_name")] string displayName,
-            [JsonProperty("supported_languages")] List<SupportedLanguage> supportedLanguages        )
+            [JsonProperty("supported_languages")] List<SupportedLanguage> supportedLanguages)
         {
             ModelId = modelId;
             DisplayName = displayName;

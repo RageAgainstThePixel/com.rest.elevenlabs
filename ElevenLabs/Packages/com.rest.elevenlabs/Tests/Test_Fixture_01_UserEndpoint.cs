@@ -1,10 +1,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using ElevenLabs;
 using NUnit.Framework;
 using System.Threading.Tasks;
 
-namespace Rest.ElevenLabs.Voice.Tests
+namespace ElevenLabs.Voice.Tests
 {
     internal class Test_Fixture_01_UserEndpoint
     {

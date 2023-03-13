@@ -2,15 +2,14 @@
 
 using Newtonsoft.Json;
 
-namespace ElevenLabs
+namespace ElevenLabs.VoiceGeneration
 {
     public sealed class Gender
     {
         [JsonConstructor]
         public Gender(
             [JsonProperty("name")] string name,
-            [JsonProperty("code")] string code
-        )
+            [JsonProperty("code")] string code)
         {
             Name = name;
             Code = code;
