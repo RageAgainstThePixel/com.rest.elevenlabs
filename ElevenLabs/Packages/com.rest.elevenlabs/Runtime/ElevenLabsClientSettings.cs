@@ -26,7 +26,7 @@ namespace ElevenLabs
         /// Creates a new instance of <see cref="ElevenLabsClientSettings"/> for use with ElevenLabs API.
         /// </summary>
         /// <param name="domain">Base api domain.</param>
-        /// <param name="apiVersion">The version of the OpenAI api you want to use.</param>
+        /// <param name="apiVersion">The version of the ElevenLabs api you want to use.</param>
         public ElevenLabsClientSettings(string domain, string apiVersion = DefaultApiVersion)
         {
             if (string.IsNullOrWhiteSpace(domain))
