@@ -1299,7 +1299,18 @@ namespace ElevenLabs.Editor
 
                 if (GUILayout.Button(deleteContent, defaultColumnWidthOption))
                 {
-                    EditorApplication.delayCall += () => { cachedLabels.Remove(key, out _); };
+                    EditorApplication.delayCall += () =>
+                    {
+                        if (!EditorUtility.DisplayDialog(
+                                "Alert!",
+                                $"Are you sure you want to delete {key}:{value} ?", "Yes",
+                                "No"))
+                        {
+                            return;
+                        }
+
+                        cachedLabels.Remove(key, out _);
+                    };
                 }
 
                 GUI.enabled = true;
