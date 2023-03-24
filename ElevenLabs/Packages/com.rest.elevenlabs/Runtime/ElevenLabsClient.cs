@@ -19,21 +19,23 @@ namespace ElevenLabs
         /// <param name="elevenLabsAuthentication">The API authentication information to use for API calls,
         /// or <see langword="null"/> to attempt to use the <see cref="ElevenLabs.ElevenLabsAuthentication.Default"/>,
         /// potentially loading from environment vars or from a config file.</param>
+        /// <param name="clientSettings">Optional, <see cref="ElevenLabsClientSettings"/> for specifying a proxy domain.</param>
+        /// <param name="httpClient">Optional, <see cref="HttpClient"/>.</param>
         /// <exception cref="AuthenticationException">Raised when authentication details are missing or invalid.</exception>
-        public ElevenLabsClient(ElevenLabsAuthentication elevenLabsAuthentication = null)
+        public ElevenLabsClient(ElevenLabsAuthentication elevenLabsAuthentication = null, ElevenLabsClientSettings clientSettings = null, HttpClient httpClient = null)
         {
             ElevenLabsAuthentication = elevenLabsAuthentication ?? ElevenLabsAuthentication.Default;
+            ElevenLabsClientSettings = clientSettings ?? ElevenLabsClientSettings.Default;
 
             if (string.IsNullOrWhiteSpace(ElevenLabsAuthentication?.ApiKey))
             {
                 throw new AuthenticationException("You must provide API authentication.  Please refer to https://github.com/RageAgainstThePixel/com.rest.elevenlabs#authentication for details.");
             }
 
-            Client = new HttpClient();
+            Client = httpClient ?? new HttpClient();
             Client.DefaultRequestHeaders.Add("User-Agent", "com.rest.elevenlabs");
             Client.DefaultRequestHeaders.Add("xi-api-key", ElevenLabsAuthentication.ApiKey);
 
-            Version = 1;
             JsonSerializationOptions = new JsonSerializerSettings
             {
                 DefaultValueHandling = DefaultValueHandling.Ignore
@@ -61,25 +63,7 @@ namespace ElevenLabs
         /// </summary>
         public ElevenLabsAuthentication ElevenLabsAuthentication { get; }
 
-        private int version;
-
-        /// <summary>
-        /// Specifies which version of the API to use.
-        /// </summary>
-        public int Version
-        {
-            get => version;
-            set
-            {
-                version = value;
-                BaseUrl = $"https://api.elevenlabs.io/v{version}/";
-            }
-        }
-
-        /// <summary>
-        /// The base url to use when making calls to the API.
-        /// </summary>
-        internal string BaseUrl { get; private set; }
+        internal ElevenLabsClientSettings ElevenLabsClientSettings { get; }
 
         public UserEndpoint UserEndpoint { get; }
 

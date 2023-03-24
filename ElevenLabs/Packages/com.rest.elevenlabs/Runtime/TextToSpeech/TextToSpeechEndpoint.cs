@@ -18,8 +18,7 @@ namespace ElevenLabs.TextToSpeech
     {
         public TextToSpeechEndpoint(ElevenLabsClient api) : base(api) { }
 
-        protected override string GetEndpoint()
-            => $"{Api.BaseUrl}text-to-speech";
+        protected override string Root => "text-to-speech";
 
         /// <summary>
         /// Converts text into speech using a voice of your choice and returns audio.
@@ -48,7 +47,7 @@ namespace ElevenLabs.TextToSpeech
             {
                 var defaultVoiceSettings = voiceSettings ?? voice.Settings ?? await Api.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken);
                 var payload = JsonConvert.SerializeObject(new TextToSpeechRequest(text, defaultVoiceSettings)).ToJsonStringContent();
-                var response = await Api.Client.PostAsync($"{GetEndpoint()}/{voice.Id}", payload, cancellationToken);
+                var response = await Api.Client.PostAsync(GetUrl($"/{voice.Id}"), payload, cancellationToken);
                 await response.CheckResponseAsync(cancellationToken);
                 var responseStream = await response.Content.ReadAsStreamAsync();
 

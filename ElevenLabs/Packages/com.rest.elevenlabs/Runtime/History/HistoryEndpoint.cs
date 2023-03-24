@@ -33,8 +33,7 @@ namespace ElevenLabs.History
 
         public HistoryEndpoint(ElevenLabsClient api) : base(api) { }
 
-        protected override string GetEndpoint()
-            => $"{Api.BaseUrl}history";
+        protected override string Root => "history";
 
         /// <summary>
         /// Get metadata about all your generated audio.
@@ -43,7 +42,7 @@ namespace ElevenLabs.History
         /// <returns>A list of history items containing metadata about generated audio.</returns>
         public async Task<IReadOnlyList<HistoryItem>> GetHistoryAsync(CancellationToken cancellationToken = default)
         {
-            var result = await Api.Client.GetAsync($"{GetEndpoint()}", cancellationToken);
+            var result = await Api.Client.GetAsync(GetUrl(), cancellationToken);
             var resultAsString = await result.ReadAsStringAsync();
             return JsonConvert.DeserializeObject<HistoryInfo>(resultAsString, Api.JsonSerializationOptions)?.History;
         }
@@ -69,7 +68,7 @@ namespace ElevenLabs.History
                 File.Delete(filePath);
             }
 
-            var response = await Api.Client.GetAsync($"{GetEndpoint()}/{historyItem.Id}/audio", cancellationToken);
+            var response = await Api.Client.GetAsync(GetUrl($"/{historyItem.Id}/audio"), cancellationToken);
             await response.CheckResponseAsync(cancellationToken);
 
             var responseStream = await response.Content.ReadAsStreamAsync();
@@ -114,7 +113,7 @@ namespace ElevenLabs.History
         /// <returns>True, if history item was successfully deleted.</returns>
         public async Task<bool> DeleteHistoryItemAsync(string historyId, CancellationToken cancellationToken = default)
         {
-            var response = await Api.Client.DeleteAsync($"{GetEndpoint()}/{historyId}", cancellationToken);
+            var response = await Api.Client.DeleteAsync(GetUrl($"/{historyId}"), cancellationToken);
             await response.ReadAsStringAsync();
             return response.IsSuccessStatusCode;
         }
@@ -144,7 +143,7 @@ namespace ElevenLabs.History
             else
             {
                 var jsonContent = $"{{\"history_item_ids\":[\"{string.Join("\",\"", historyItemIds)}\"]}}".ToJsonStringContent();
-                var response = await Api.Client.PostAsync($"{GetEndpoint()}/download", jsonContent, cancellationToken);
+                var response = await Api.Client.PostAsync(GetUrl("/download"), jsonContent, cancellationToken);
                 await response.CheckResponseAsync(cancellationToken);
                 var unZipTasks = new List<Task>();
                 var responseStream = await response.Content.ReadAsStreamAsync();
