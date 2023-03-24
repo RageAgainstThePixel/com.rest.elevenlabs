@@ -40,16 +40,14 @@ namespace ElevenLabs.Editor
 
                 public List<AudioClip> voiceSamples = new List<AudioClip>();
 
-                public readonly Dictionary<string, string> Labels = new Dictionary<string, string>();
+                public readonly Dictionary<string, string> labels = new Dictionary<string, string>();
 
                 public GeneratedVoiceRequest CreateRequest()
-                {
-                    return new GeneratedVoiceRequest(
+                    => new GeneratedVoiceRequest(
                         speechSynthesisTextInput,
                         generatedVoiceOptions.Genders[genderSelection],
                         generatedVoiceOptions.Accents[accentSelection],
                         generatedVoiceOptions.Ages[ageSelection]);
-                }
             }
 
             private readonly Vector2 windowSize = new Vector2(WideColumnWidth * 4, WideColumnWidth * 3);
@@ -77,6 +75,7 @@ namespace ElevenLabs.Editor
                 {
                     args = CreateInstance<VoiceGenerationArgs>();
                 }
+
                 serializedArgs = new SerializedObject(args);
                 ResetVoiceDesigner();
             }
@@ -90,13 +89,14 @@ namespace ElevenLabs.Editor
                 GUILayout.Space(TabWidth * 0.5f);
                 EditorGUILayout.BeginVertical();
                 EditorGUI.BeginChangeCheck();
-                args.tab = GUILayout.Toolbar(args.tab, popupTabTitles, GUILayout.ExpandWidth(true));
+                args.tab = GUILayout.Toolbar(args.tab, popupTabTitles, expandWidthOption);
 
                 if (EditorGUI.EndChangeCheck())
                 {
                     GUI.FocusControl(null);
                     scrollPosition = Vector2.zero;
                 }
+
                 GUILayout.Space(TabWidth * 0.5f);
 
                 switch (args.tab)
@@ -138,7 +138,7 @@ namespace ElevenLabs.Editor
 
                 EditorGUILayout.BeginHorizontal();
                 { // Text area footer
-                    EditorGUILayout.LabelField(new GUIContent($"{args.speechSynthesisTextInput.Length} / {generatedVoiceOptions.MaximumCharacters}"), GUILayout.ExpandWidth(true));
+                    EditorGUILayout.LabelField(new GUIContent($"{args.speechSynthesisTextInput.Length} / {generatedVoiceOptions.MaximumCharacters}"), expandWidthOption);
                     GUILayout.FlexibleSpace();
                     var remainingCharacters = 0;
 
@@ -147,7 +147,7 @@ namespace ElevenLabs.Editor
                         remainingCharacters = userInfo.CharacterLimit - userInfo.CharacterCount;
                     }
 
-                    EditorGUILayout.LabelField(new GUIContent($"Total quota remaining: {remainingCharacters}"), RightMiddleAlignedLabel, GUILayout.ExpandWidth(true));
+                    EditorGUILayout.LabelField(new GUIContent($"Total quota remaining: {remainingCharacters}"), RightMiddleAlignedLabel, expandWidthOption);
                 }
                 EditorGUILayout.EndHorizontal();
                 GUILayout.Space(TabWidth * 0.5f);
@@ -157,7 +157,7 @@ namespace ElevenLabs.Editor
                               args.speechSynthesisTextInput.Length <= generatedVoiceOptions.MaximumCharacters &&
                               args.speechSynthesisTextInput.Length >= generatedVoiceOptions.MinimumCharacters;
 
-                if (GUILayout.Button("Generate", GUILayout.ExpandWidth(true)))
+                if (GUILayout.Button("Generate", expandWidthOption))
                 {
                     EditorApplication.delayCall += () =>
                     {
@@ -172,7 +172,7 @@ namespace ElevenLabs.Editor
                               !string.IsNullOrWhiteSpace(generatedVoiceId) &&
                               generatedVoiceClip != null;
 
-                if (GUILayout.Button("Use Voice", GUILayout.ExpandWidth(true)))
+                if (GUILayout.Button("Use Voice", expandWidthOption))
                 {
                     EditorApplication.delayCall += CreateGeneratedVoice;
                 }
@@ -242,26 +242,26 @@ namespace ElevenLabs.Editor
                 EditorGUILayout.PropertyField(voiceNameProperty);
 
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField($"Labels {args.Labels.Count} / 5", GUILayout.ExpandWidth(true));
+                EditorGUILayout.LabelField($"Labels {args.labels.Count} / 5", expandWidthOption);
 
                 GUILayout.FlexibleSpace();
 
-                if (args.Labels.Count < 5 &&
-                    GUILayout.Button("Add Label", GUILayout.Width(WideColumnWidth)))
+                if (args.labels.Count < 5 &&
+                    GUILayout.Button("Add Label", wideColumnWidthOption))
                 {
                     EditorApplication.delayCall += () =>
                     {
                         tempLabelKey = string.Empty;
-                        args.Labels.TryAdd(NewLabel, string.Empty);
+                        args.labels.TryAdd(NewLabel, string.Empty);
                         lastTextControl = $"{LabelControlField}_New Label_{nameof(RenderVoiceCloning)}";
                     };
                 }
 
                 EditorGUILayout.EndHorizontal();
 
-                foreach (var label in args.Labels)
+                foreach (var label in args.labels)
                 {
-                    RenderLabel(label, args.Labels, editorWindow);
+                    RenderLabel(label, args.labels, editorWindow);
                 }
 
                 var voiceSamplesProperty = serializedArgs.FindProperty(nameof(args.voiceSamples));
@@ -273,7 +273,7 @@ namespace ElevenLabs.Editor
                               !string.IsNullOrWhiteSpace(args.voiceName) &&
                               args.voiceSamples.Count > 0;
 
-                if (GUILayout.Button("Add Voice", GUILayout.ExpandWidth(true)))
+                if (GUILayout.Button("Add Voice", expandWidthOption))
                 {
                     EditorApplication.delayCall += AddVoice;
                 }
@@ -291,8 +291,10 @@ namespace ElevenLabs.Editor
 
                 try
                 {
-                    var voiceSamplePaths = args.voiceSamples.Select(sample => Path.GetFullPath(AssetDatabase.GetAssetPath(sample))).ToList();
-                    await api.VoicesEndpoint.AddVoiceAsync(args.voiceName, voiceSamplePaths, args.Labels);
+                    var samplePaths = from audioClip in args.voiceSamples
+                                      where audioClip != null
+                                      select Path.GetFullPath(AssetDatabase.GetAssetPath(audioClip));
+                    await api.VoicesEndpoint.AddVoiceAsync(args.voiceName, samplePaths, args.labels);
                 }
                 catch (Exception e)
                 {
@@ -341,6 +343,12 @@ namespace ElevenLabs.Editor
 
         private static readonly GUIContent addNewSampleContent = new GUIContent("Add new Sample(s)");
 
+        private static readonly GUIContent downloadContent = new GUIContent("Download");
+
+        private static readonly GUIContent deleteContent = new GUIContent("Delete");
+
+        private static readonly GUIContent refreshContent = new GUIContent("Refresh");
+
         private static readonly string[] tabTitles = { "Speech Synthesis", "Voice Lab", "History" };
 
         private static GUIStyle boldCenteredHeaderStyle;
@@ -379,6 +387,21 @@ namespace ElevenLabs.Editor
 
         private static string DefaultSaveDirectory => $"{Application.streamingAssetsPath}/{nameof(ElevenLabs)}";
 
+        private static readonly GUILayoutOption[] defaultColumnWidthOption =
+        {
+            GUILayout.Width(DefaultColumnWidth)
+        };
+
+        private static readonly GUILayoutOption[] wideColumnWidthOption =
+        {
+            GUILayout.Width(WideColumnWidth)
+        };
+
+        private static readonly GUILayoutOption[] expandWidthOption =
+        {
+            GUILayout.ExpandWidth(true)
+        };
+
         #endregion UX Content
 
         #region Static Content
@@ -409,13 +432,17 @@ namespace ElevenLabs.Editor
 
         private static readonly ConcurrentDictionary<string, Dictionary<string, string>> voiceLabels = new ConcurrentDictionary<string, Dictionary<string, string>>();
 
+        private static readonly ConcurrentDictionary<string, string[]> voiceSampleGuidCache = new ConcurrentDictionary<string, string[]>();
+
         private static bool hasFetchedHistory;
 
         private static bool isFetchingHistory;
 
         private static IReadOnlyList<HistoryItem> history = new List<HistoryItem>();
 
-        private static readonly List<string> downloadedClips = new List<string>();
+        private static readonly ConcurrentDictionary<string, GUIContent> historyItemLabelCache = new ConcurrentDictionary<string, GUIContent>();
+
+        private static readonly HashSet<string> downloadedClips = new HashSet<string>();
 
         private static Rect createVoiceButtonRect;
 
@@ -493,7 +520,7 @@ namespace ElevenLabs.Editor
         private void OnGUI()
         {
             EditorGUILayout.BeginVertical();
-            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition, GUILayout.ExpandWidth(true));
+            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition, expandWidthOption);
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(TabWidth);
             EditorGUILayout.BeginVertical();
@@ -505,16 +532,13 @@ namespace ElevenLabs.Editor
                 if (api == null ||
                     string.IsNullOrWhiteSpace(api.ElevenLabsAuthentication.ApiKey))
                 {
-                    EditorGUILayout.HelpBox(
-                        $"No valid {nameof(ElevenLabsConfigurationSettings)} was found. This tool requires that you set your API key.",
-                        MessageType.Error);
-
+                    EditorGUILayout.HelpBox($"No valid {nameof(ElevenLabsConfigurationSettings)} was found. This tool requires that you set your API key.", MessageType.Error);
                     return;
                 }
 
                 EditorGUILayout.Space();
                 EditorGUI.BeginChangeCheck();
-                tab = GUILayout.Toolbar(tab, tabTitles, GUILayout.ExpandWidth(true));
+                tab = GUILayout.Toolbar(tab, tabTitles, expandWidthOption);
 
                 if (EditorGUI.EndChangeCheck())
                 {
@@ -530,9 +554,9 @@ namespace ElevenLabs.Editor
 
                 EditorGUILayout.BeginHorizontal();
                 {
-                    EditorGUILayout.TextField(editorDownloadDirectory, GUILayout.ExpandWidth(true));
+                    EditorGUILayout.TextField(editorDownloadDirectory, expandWidthOption);
 
-                    if (GUILayout.Button("Reset", GUILayout.Width(WideColumnWidth)))
+                    if (GUILayout.Button("Reset", wideColumnWidthOption))
                     {
                         editorDownloadDirectory = DefaultSaveDirectory;
                         EditorPrefs.SetString(DefaultSaveDirectoryKey, editorDownloadDirectory);
@@ -541,7 +565,7 @@ namespace ElevenLabs.Editor
                 EditorGUILayout.EndHorizontal();
                 EditorGUILayout.BeginHorizontal();
                 {
-                    if (GUILayout.Button("Change Save Directory", GUILayout.ExpandWidth(true)))
+                    if (GUILayout.Button("Change Save Directory", expandWidthOption))
                     {
                         EditorApplication.delayCall += () =>
                         {
@@ -630,6 +654,7 @@ namespace ElevenLabs.Editor
             try
             {
                 history = await api.HistoryEndpoint.GetHistoryAsync().ConfigureAwait(true);
+                historyItemLabelCache.Clear();
                 CheckHistory();
             }
             catch (Exception e)
@@ -653,7 +678,12 @@ namespace ElevenLabs.Editor
             if (isStreamingAssets &&
                 Directory.Exists(editorDownloadDirectory))
             {
-                downloadedClips.AddRange(Directory.GetFiles(editorDownloadDirectory, "*.mp3", SearchOption.AllDirectories));
+                var clips = Directory.GetFiles(editorDownloadDirectory, "*.mp3", SearchOption.AllDirectories);
+
+                foreach (var clip in clips)
+                {
+                    downloadedClips.Add(clip);
+                }
             }
             else
             {
@@ -682,7 +712,7 @@ namespace ElevenLabs.Editor
 
                 GUI.enabled = !isFetchingVoices || !isFetchingUserInfo;
 
-                if (GUILayout.Button("Refresh", GUILayout.Width(DefaultColumnWidth)))
+                if (GUILayout.Button(refreshContent, defaultColumnWidthOption))
                 {
                     EditorApplication.delayCall += () =>
                     {
@@ -751,9 +781,9 @@ namespace ElevenLabs.Editor
                 {
                     StartIndent(InnerLabelIndentLevel);
                     EditorGUIUtility.labelWidth = WideColumnWidth * InnerLabelWidth;
-                    EditorGUILayout.LabelField(moreVariableContent, GUILayout.ExpandWidth(true));
+                    EditorGUILayout.LabelField(moreVariableContent, expandWidthOption);
                     GUILayout.FlexibleSpace();
-                    EditorGUILayout.LabelField(moreStableContent, RightMiddleAlignedLabel, GUILayout.ExpandWidth(true));
+                    EditorGUILayout.LabelField(moreStableContent, RightMiddleAlignedLabel, expandWidthOption);
                     EditorGUIUtility.labelWidth = WideColumnWidth * SettingsLabelWidth;
                     EndIndent(InnerLabelIndentLevel);
                 }
@@ -764,9 +794,9 @@ namespace ElevenLabs.Editor
                 {
                     StartIndent(InnerLabelIndentLevel);
                     EditorGUIUtility.labelWidth = WideColumnWidth * InnerLabelWidth;
-                    EditorGUILayout.LabelField(lowClarityContent, GUILayout.ExpandWidth(true));
+                    EditorGUILayout.LabelField(lowClarityContent, expandWidthOption);
                     GUILayout.FlexibleSpace();
-                    EditorGUILayout.LabelField(highClarityContent, RightMiddleAlignedLabel, GUILayout.ExpandWidth(true));
+                    EditorGUILayout.LabelField(highClarityContent, RightMiddleAlignedLabel, expandWidthOption);
                     EditorGUIUtility.labelWidth = WideColumnWidth * SettingsLabelWidth;
                     EndIndent(InnerLabelIndentLevel);
                 }
@@ -776,10 +806,10 @@ namespace ElevenLabs.Editor
                 EditorGUILayout.BeginVertical();
                 EditorGUILayout.BeginHorizontal();
                 { // Text Area Header
-                    EditorGUILayout.LabelField("Text", EditorStyles.boldLabel, GUILayout.ExpandWidth(true));
+                    EditorGUILayout.LabelField("Text", EditorStyles.boldLabel, expandWidthOption);
                     GUILayout.FlexibleSpace();
 
-                    if (GUILayout.Button("Reset to Default", GUILayout.Width(WideColumnWidth)))
+                    if (GUILayout.Button("Reset to Default", wideColumnWidthOption))
                     {
                         EditorApplication.delayCall += () => GetDefaultVoiceSettings(currentVoiceOption);
                     }
@@ -813,7 +843,7 @@ namespace ElevenLabs.Editor
                 GUILayout.Space(10);
                 EditorGUILayout.BeginHorizontal();
                 { // Text area footer
-                    EditorGUILayout.LabelField(new GUIContent($"{speechSynthesisTextInput.Length} / 5000"), GUILayout.ExpandWidth(true));
+                    EditorGUILayout.LabelField(new GUIContent($"{speechSynthesisTextInput.Length} / 5000"), expandWidthOption);
                     GUILayout.FlexibleSpace();
                     var remainingCharacters = 0;
 
@@ -822,7 +852,7 @@ namespace ElevenLabs.Editor
                         remainingCharacters = userInfo.CharacterLimit - userInfo.CharacterCount;
                     }
 
-                    EditorGUILayout.LabelField(new GUIContent($"Total quota remaining: {remainingCharacters}"), RightMiddleAlignedLabel, GUILayout.ExpandWidth(true));
+                    EditorGUILayout.LabelField(new GUIContent($"Total quota remaining: {remainingCharacters}"), RightMiddleAlignedLabel, expandWidthOption);
                 }
                 EditorGUILayout.EndHorizontal();
                 GUILayout.Space(10);
@@ -832,7 +862,7 @@ namespace ElevenLabs.Editor
                     GUI.enabled = !isSynthesisRunning;
                     GUILayout.Space(TabWidth);
 
-                    if (GUILayout.Button("Generate", GUILayout.ExpandWidth(true)))
+                    if (GUILayout.Button("Generate", expandWidthOption))
                     {
                         EditorApplication.delayCall += GenerateSynthesizedText;
                     }
@@ -936,11 +966,11 @@ namespace ElevenLabs.Editor
 
             EditorGUILayout.BeginHorizontal();
             { // Header
-                EditorGUILayout.LabelField($"Voices {voiceCount}", EditorStyles.boldLabel, GUILayout.Width(DefaultColumnWidth));
+                EditorGUILayout.LabelField($"Voices {voiceCount}", EditorStyles.boldLabel, defaultColumnWidthOption);
 
                 GUI.enabled = !isFetchingVoices;
 
-                if (GUILayout.Button("Create New Voice", GUILayout.ExpandWidth(true)))
+                if (GUILayout.Button("Create New Voice", expandWidthOption))
                 {
                     PopupWindow.Show(createVoiceButtonRect, voicePopupContent);
                 }
@@ -952,7 +982,7 @@ namespace ElevenLabs.Editor
 
                 GUILayout.FlexibleSpace();
 
-                if (GUILayout.Button("Refresh", GUILayout.Width(DefaultColumnWidth)))
+                if (GUILayout.Button(refreshContent, defaultColumnWidthOption))
                 {
                     EditorApplication.delayCall += FetchVoices;
                 }
@@ -979,7 +1009,7 @@ namespace ElevenLabs.Editor
 
                     GUI.enabled = !isFetchingVoices;
 
-                    if (GUILayout.Button("Delete", GUILayout.Width(DefaultColumnWidth)))
+                    if (GUILayout.Button(deleteContent, defaultColumnWidthOption))
                     {
                         EditorApplication.delayCall += () => DeleteVoice(voice);
                     }
@@ -1036,7 +1066,7 @@ namespace ElevenLabs.Editor
 
                     if (cachedLabels is { Count: < 5 } &&
                         !cachedLabels.ContainsKey(NewLabel) &&
-                        GUILayout.Button("Add New Label", GUILayout.Width(WideColumnWidth)))
+                        GUILayout.Button("Add New Label", wideColumnWidthOption))
                     {
                         tempLabelKey = string.Empty;
                         cachedLabels.TryAdd(NewLabel, string.Empty);
@@ -1078,7 +1108,7 @@ namespace ElevenLabs.Editor
 
                     GUI.enabled = !isFetchingVoices && IsLabelsDirty();
 
-                    if (GUILayout.Button("Update Labels", GUILayout.Width(DefaultColumnWidth)))
+                    if (GUILayout.Button("Update Labels", defaultColumnWidthOption))
                     {
                         EditorApplication.delayCall += () =>
                         {
@@ -1110,7 +1140,7 @@ namespace ElevenLabs.Editor
 
                             GUI.enabled = (newSampleClips?.Count > 0 && newSampleClips?.Count <= 25 - voice.Samples.Count) && !isFetchingVoices;
 
-                            if (GUILayout.Button(addNewSampleContent, GUILayout.Width(WideColumnWidth)))
+                            if (GUILayout.Button(addNewSampleContent, wideColumnWidthOption))
                             {
                                 EditorApplication.delayCall += () =>
                                 {
@@ -1134,18 +1164,19 @@ namespace ElevenLabs.Editor
 
                     foreach (var voiceSample in voice.Samples)
                     {
-                        EditorGUILayout.LabelField($"{voiceSample.Id} | {voiceSample.FileName} | {voiceSample.MimeType} | {voiceSample.SizeBytes}", GUILayout.ExpandWidth(true));
+                        EditorGUILayout.LabelField($"{voiceSample.Id} | {voiceSample.FileName} | {voiceSample.MimeType} | {voiceSample.SizeBytes}", expandWidthOption);
                         EditorGUILayout.BeginHorizontal();
                         var fileName = Path.GetFileNameWithoutExtension(voiceSample.FileName);
-                        var files = AssetDatabase.FindAssets($"t:{nameof(AudioClip)} {fileName}").ToList();
-                        files.AddRange(AssetDatabase.FindAssets($"t:{nameof(AudioClip)} {voiceSample.Id}"));
+                        var files = GetAssetGuids($"t:{nameof(AudioClip)} {fileName}").ToList();
+                        files.AddRange(GetAssetGuids($"t:{nameof(AudioClip)} {voiceSample.Id}"));
 
                         switch (files)
                         {
                             case { Count: 0 }:
                                 GUI.enabled = !isFetchingVoices;
+                                GUILayout.Space(DefaultColumnWidth * 0.5f);
 
-                                if (GUILayout.Button("Download", GUILayout.Width(DefaultColumnWidth)))
+                                if (GUILayout.Button(downloadContent, defaultColumnWidthOption))
                                 {
                                     EditorApplication.delayCall += () => DownloadVoiceSample(voice, voiceSample);
                                 }
@@ -1164,7 +1195,7 @@ namespace ElevenLabs.Editor
 
                         GUI.enabled = !isFetchingVoices;
 
-                        if (GUILayout.Button("Delete", GUILayout.Width(DefaultColumnWidth)))
+                        if (GUILayout.Button(deleteContent, defaultColumnWidthOption))
                         {
                             EditorApplication.delayCall += () => DeleteVoiceSample(voice, voiceSample);
                         }
@@ -1266,7 +1297,7 @@ namespace ElevenLabs.Editor
 
                 GUI.enabled = !isFetchingVoices;
 
-                if (GUILayout.Button("Delete", GUILayout.Width(DefaultColumnWidth)))
+                if (GUILayout.Button(deleteContent, defaultColumnWidthOption))
                 {
                     EditorApplication.delayCall += () => { cachedLabels.Remove(key, out _); };
                 }
@@ -1424,7 +1455,7 @@ namespace ElevenLabs.Editor
 
                 GUI.enabled = !isFetchingVoices || !isFetchingUserInfo;
 
-                if (GUILayout.Button("Refresh", GUILayout.Width(DefaultColumnWidth)))
+                if (GUILayout.Button(refreshContent, defaultColumnWidthOption))
                 {
                     EditorApplication.delayCall += FetchHistory;
                 }
@@ -1440,7 +1471,7 @@ namespace ElevenLabs.Editor
 
                 GUI.enabled = !isFetchingHistory && history.Count != downloadedClips.Count;
 
-                if (GUILayout.Button("Download All History", GUILayout.ExpandWidth(true)))
+                if (GUILayout.Button("Download All History", expandWidthOption))
                 {
                     EditorApplication.delayCall += () => DownloadHistoryAudio(history);
                 }
@@ -1450,29 +1481,26 @@ namespace ElevenLabs.Editor
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.Space();
 
-            foreach (var item in history)
+            for (var i = 0; i < history.Count; i++)
             {
+                var historyItem = history[i];
                 EditorGUI.indentLevel++;
 
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField($"{item.Date} | {item.VoiceName}");
+                EditorGUILayout.LabelField(GetHistoryItemLabel(historyItem));
+                var isDownloaded = downloadedClips.Contains(historyItem.Id) || downloadedClips.Contains(historyItem.TextHash);
+                GUI.enabled = !isDownloaded;
 
-                GUI.enabled = !downloadedClips.Any(path =>
+                if (GUILayout.Button(downloadContent, defaultColumnWidthOption))
                 {
-                    var assetPath = Path.GetFileNameWithoutExtension(path);
-                    return assetPath == item.Id || assetPath == item.TextHash;
-                });
-
-                if (GUILayout.Button("Download", GUILayout.Width(DefaultColumnWidth)))
-                {
-                    EditorApplication.delayCall += () => DownloadHistoryAudio(new[] { item });
+                    EditorApplication.delayCall += () => DownloadHistoryAudio(new[] { historyItem });
                 }
 
                 GUI.enabled = !isFetchingHistory;
 
-                if (GUILayout.Button("Delete", GUILayout.Width(DefaultColumnWidth)))
+                if (GUILayout.Button(deleteContent, defaultColumnWidthOption))
                 {
-                    EditorApplication.delayCall += () => DeleteHistoryItem(item);
+                    EditorApplication.delayCall += () => DeleteHistoryItem(historyItem);
                 }
 
                 GUI.enabled = true;
@@ -1480,7 +1508,7 @@ namespace ElevenLabs.Editor
                 EditorGUILayout.EndHorizontal();
 
                 GUI.enabled = false;
-                EditorGUILayout.TextArea(item.Text);
+                EditorGUILayout.TextArea(historyItem.Text);
                 GUI.enabled = true;
                 EditorGUI.indentLevel--;
                 EditorGUILayout.Space();
@@ -1552,6 +1580,33 @@ namespace ElevenLabs.Editor
         #endregion History
 
         #region GUI Utilities
+
+        private static GUIContent GetHistoryItemLabel(HistoryItem item)
+        {
+            var id = item.Id;
+
+            if (historyItemLabelCache.TryGetValue(id, out var label))
+            {
+                return label;
+            }
+
+            label = new GUIContent($"{item.Date} | {item.VoiceName}");
+            historyItemLabelCache.TryAdd(id, label);
+
+            return label;
+        }
+
+        private static IEnumerable<string> GetAssetGuids(string filter)
+        {
+            if (voiceSampleGuidCache.TryGetValue(filter, out var guids))
+            {
+                return guids;
+            }
+
+            guids = AssetDatabase.FindAssets(filter);
+            voiceSampleGuidCache.TryAdd(filter, guids);
+            return guids;
+        }
 
         private static void StartIndent(int levels)
         {
