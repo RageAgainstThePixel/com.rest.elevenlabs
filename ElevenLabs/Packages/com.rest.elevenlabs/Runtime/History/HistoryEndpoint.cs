@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Unity.SharpZipLib.Zip;
 using UnityEngine;
+using Utilities.Async;
 using Utilities.WebRequestRest;
 
 namespace ElevenLabs.History
@@ -56,7 +57,7 @@ namespace ElevenLabs.History
         /// <returns><see cref="AudioClip"/>.</returns>
         public async Task<AudioClip> GetHistoryAudioAsync(HistoryItem historyItem, string saveDirectory = null, CancellationToken cancellationToken = default)
         {
-            Rest.ValidateCacheDirectory();
+            await Rest.ValidateCacheDirectoryAsync();
 
             var rootDirectory = (saveDirectory ?? Rest.DownloadCacheDirectory).CreateNewDirectory(nameof(ElevenLabs));
             var downloadDirectory = rootDirectory.CreateNewDirectory(nameof(History));
@@ -126,9 +127,10 @@ namespace ElevenLabs.History
         /// </summary>
         /// <param name="historyItemIds">Optional, One or more history item ids queued for download.</param>
         /// <param name="saveDirectory">Optional, directory path to save the history in.</param>
+        /// <param name="progress">Optional, <see cref="IProgress{T}"/>.</param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         /// <returns>A list of Audio Clips downloaded by the request.</returns>
-        public async Task<IReadOnlyList<AudioClip>> DownloadHistoryItemsAsync(List<string> historyItemIds = null, string saveDirectory = null, CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<AudioClip>> DownloadHistoryItemsAsync(List<string> historyItemIds = null, string saveDirectory = null, IProgress<string> progress = null, CancellationToken cancellationToken = default)
         {
             historyItemIds ??= (await GetHistoryAsync(cancellationToken)).Select(item => item.Id).ToList();
 
@@ -137,8 +139,10 @@ namespace ElevenLabs.History
             if (historyItemIds.Count == 1)
             {
                 var history = await GetHistoryAsync(cancellationToken);
-                var historyItem = history.FirstOrDefault(item => item.Id == historyItemIds.FirstOrDefault());
+                var historyItem = history.FirstOrDefault(item => item.Id == historyItemIds.FirstOrDefault())!;
                 audioClips.Add(await GetHistoryAudioAsync(historyItem, saveDirectory, cancellationToken));
+                await Awaiters.UnityMainThread;
+                progress?.Report(historyItem.Id);
             }
             else
             {
@@ -154,7 +158,7 @@ namespace ElevenLabs.History
 
                     if (saveDirectory == null)
                     {
-                        Rest.ValidateCacheDirectory();
+                        await Rest.ValidateCacheDirectoryAsync();
                     }
 
                     var rootDirectory = Path.Combine(saveDirectory ?? Rest.DownloadCacheDirectory, nameof(ElevenLabs));
@@ -221,6 +225,8 @@ namespace ElevenLabs.History
 
                             var audioClip = await Rest.DownloadAudioClipAsync($"file://{filePath}", AudioType.MPEG, cancellationToken: cancellationToken);
                             audioClips.Add(audioClip);
+                            await Awaiters.UnityMainThread;
+                            progress?.Report(filePath);
                         }
                     }
 

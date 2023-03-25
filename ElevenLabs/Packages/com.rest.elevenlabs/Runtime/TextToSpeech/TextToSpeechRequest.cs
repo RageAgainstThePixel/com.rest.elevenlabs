@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 
 namespace ElevenLabs.TextToSpeech
 {
-    public sealed class TextToSpeechRequest
+    internal sealed class TextToSpeechRequest
     {
         public TextToSpeechRequest(string text, VoiceSettings voiceSettings)
         {

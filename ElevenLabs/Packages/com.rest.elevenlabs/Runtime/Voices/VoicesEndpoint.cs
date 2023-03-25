@@ -259,7 +259,7 @@ namespace ElevenLabs.Voices
             var response = await Api.Client.GetAsync(GetUrl($"/{voiceId}/samples/{sampleId}/audio"), cancellationToken);
             await response.CheckResponseAsync(cancellationToken);
 
-            Rest.ValidateCacheDirectory();
+            await Rest.ValidateCacheDirectoryAsync();
 
             var rootDirectory = (saveDirectory ?? Rest.DownloadCacheDirectory).CreateNewDirectory(nameof(ElevenLabs));
             var downloadDirectory = rootDirectory.CreateNewDirectory(voiceId);

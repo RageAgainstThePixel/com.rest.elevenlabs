@@ -45,7 +45,7 @@ namespace ElevenLabs.VoiceGeneration
 
             var generatedVoiceId = response.Headers.FirstOrDefault(pair => pair.Key == "generated_voice_id").Value.FirstOrDefault();
 
-            Rest.ValidateCacheDirectory();
+            await Rest.ValidateCacheDirectoryAsync();
 
             var rootDirectory = (saveDirectory ?? Rest.DownloadCacheDirectory).CreateNewDirectory(nameof(ElevenLabs));
             var downloadDirectory = rootDirectory.CreateNewDirectory(nameof(VoiceGeneration));
@@ -87,7 +87,6 @@ namespace ElevenLabs.VoiceGeneration
             }
 
             var audioClip = await Rest.DownloadAudioClipAsync($"file://{filePath}", AudioType.MPEG, cancellationToken: cancellationToken);
-            audioClip.name = Path.GetFileNameWithoutExtension(filePath);
             return new Tuple<string, AudioClip>(generatedVoiceId, audioClip);
         }
 
