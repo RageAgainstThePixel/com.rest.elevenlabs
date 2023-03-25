@@ -70,7 +70,7 @@ namespace ElevenLabs.History
             }
 
             var response = await Api.Client.GetAsync(GetUrl($"/{historyItem.Id}/audio"), cancellationToken);
-            await response.CheckResponseAsync(cancellationToken);
+            await response.CheckResponseAsync();
 
             var responseStream = await response.Content.ReadAsStreamAsync();
 
@@ -148,7 +148,7 @@ namespace ElevenLabs.History
             {
                 var jsonContent = $"{{\"history_item_ids\":[\"{string.Join("\",\"", historyItemIds)}\"]}}".ToJsonStringContent();
                 var response = await Api.Client.PostAsync(GetUrl("/download"), jsonContent, cancellationToken);
-                await response.CheckResponseAsync(cancellationToken);
+                await response.CheckResponseAsync();
                 var unZipTasks = new List<Task>();
                 var responseStream = await response.Content.ReadAsStreamAsync();
 

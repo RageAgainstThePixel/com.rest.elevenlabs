@@ -41,7 +41,7 @@ namespace ElevenLabs.VoiceGeneration
         {
             var payload = JsonConvert.SerializeObject(generatedVoiceRequest, Api.JsonSerializationOptions).ToJsonStringContent();
             var response = await Api.Client.PostAsync(GetUrl("/generate-voice"), payload, cancellationToken);
-            await response.CheckResponseAsync(cancellationToken);
+            await response.CheckResponseAsync();
 
             var generatedVoiceId = response.Headers.FirstOrDefault(pair => pair.Key == "generated_voice_id").Value.FirstOrDefault();
 

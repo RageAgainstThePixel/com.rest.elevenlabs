@@ -2,7 +2,6 @@
 
 using System.Net.Http;
 using System.Runtime.CompilerServices;
-using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -27,7 +26,7 @@ namespace ElevenLabs
             return responseAsString;
         }
 
-        internal static async Task CheckResponseAsync(this HttpResponseMessage response, CancellationToken cancellationToken = default, [CallerMemberName] string methodName = null)
+        internal static async Task CheckResponseAsync(this HttpResponseMessage response, [CallerMemberName] string methodName = null)
         {
             if (!response.IsSuccessStatusCode)
             {

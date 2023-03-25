@@ -5,6 +5,8 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net.Http;
+using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -57,7 +59,7 @@ namespace ElevenLabs.TextToSpeech
                 var defaultVoiceSettings = voiceSettings ?? voice.Settings ?? await Api.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken);
                 var payload = JsonConvert.SerializeObject(new TextToSpeechRequest(text, defaultVoiceSettings)).ToJsonStringContent();
                 var response = await Api.Client.PostAsync(GetUrl($"/{voice.Id}"), payload, cancellationToken);
-                await response.CheckResponseAsync(cancellationToken);
+                await response.CheckResponseAsync();
                 var responseStream = await response.Content.ReadAsStreamAsync();
 
                 try
@@ -117,8 +119,9 @@ namespace ElevenLabs.TextToSpeech
             await Rest.ValidateCacheDirectoryAsync();
             var rootDirectory = (saveDirectory ?? Rest.DownloadCacheDirectory).CreateNewDirectory(nameof(ElevenLabs));
             var speechToTextDirectory = rootDirectory.CreateNewDirectory(nameof(TextToSpeech));
-            var downloadDirectory = speechToTextDirectory.CreateNewDirectory(voice.Name);
+            var voiceDirectory = speechToTextDirectory.CreateNewDirectory(voice.Name);
             var clipGuid = text.GenerateGuid().ToString();
+            var downloadDirectory = voiceDirectory.CreateNewDirectory(clipGuid);
             var fileName = $"{clipGuid}.mp3";
             var filePath = Path.Combine(downloadDirectory, fileName);
 
@@ -131,12 +134,70 @@ namespace ElevenLabs.TextToSpeech
                 return;
             }
 
-            var clipDirectory = downloadDirectory.CreateNewDirectory(clipGuid);
-
             var defaultVoiceSettings = voiceSettings ?? voice.Settings ?? await Api.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken);
-            var payload = JsonConvert.SerializeObject(new TextToSpeechRequest(text, defaultVoiceSettings)).ToJsonStringContent();
+            var payload = JsonConvert.SerializeObject(new TextToSpeechRequest(text, defaultVoiceSettings), Api.JsonSerializationOptions).ToJsonStringContent();
+            using var request = new HttpRequestMessage(HttpMethod.Post, GetUrl($"/{voice.Id}/streaming"))
+            {
+                Content = payload
+            };
+            using var response = await Api.Client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            await response.CheckResponseAsync();
+            await using var stream = await response.Content.ReadAsStreamAsync();
+            stream.ReadTimeout = (int)TimeSpan.FromSeconds(30).TotalMilliseconds;
+            var buffer = new byte[1024];
+            var audioClip = AudioClip.Create(clipGuid, 0, 1, 44100, false);
+            var samples = new float[audioClip.samples];
+            var position = 0;
 
-            await Task.CompletedTask;
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                try
+                {
+                    var bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, cancellationToken);
+
+                    if (bytesRead == 0)
+                    {
+                        // No more data available for reading, but there may still be more coming
+                        await Task.Delay(TimeSpan.FromMilliseconds(10), cancellationToken);
+                        continue;
+                    }
+
+                    // Convert byte array to float samples
+                    var floatSamples = new float[bytesRead / 2];
+                    for (var i = 0; i < floatSamples.Length; i++)
+                    {
+                        var sample = BitConverter.ToInt16(buffer, i * 2);
+
+                        floatSamples[i] = sample / (float)short.MaxValue;
+                    }
+
+                    // Copy float samples to audio clip samples
+                    Array.Copy(floatSamples, 0, samples, position, floatSamples.Length);
+                    position += floatSamples.Length;
+
+                    // If samples buffer is full, create new audio clip and send it to the result handler
+                    if (position == samples.Length)
+                    {
+                        audioClip.SetData(samples, 0);
+                        resultHandler(audioClip);
+                        samples = new float[audioClip.samples];
+                        position = 0;
+                    }
+                }
+                catch (IOException ex) when (ex.InnerException is SocketException { SocketErrorCode: SocketError.TimedOut })
+                {
+                    // Stream has timed out, assume server has finished sending data
+                    break;
+                }
+            }
+
+            if (position > 0)
+            {
+                var actualSamples = new float[position];
+                Array.Copy(samples, actualSamples, position);
+                audioClip.SetData(actualSamples, 0);
+                resultHandler(audioClip);
+            }
         }
 
         /// <summary>

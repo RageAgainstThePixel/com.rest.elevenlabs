@@ -227,7 +227,7 @@ namespace ElevenLabs.Voices
             }
 
             var response = await Api.Client.PostAsync(GetUrl($"/{voice.Id}/edit"), form, cancellationToken);
-            await response.CheckResponseAsync(cancellationToken);
+            await response.CheckResponseAsync();
             return response.IsSuccessStatusCode;
         }
 
@@ -240,7 +240,7 @@ namespace ElevenLabs.Voices
         public async Task<bool> DeleteVoiceAsync(string voiceId, CancellationToken cancellationToken = default)
         {
             var response = await Api.Client.DeleteAsync(GetUrl($"/{voiceId}"), cancellationToken);
-            await response.CheckResponseAsync(cancellationToken);
+            await response.CheckResponseAsync();
             return response.IsSuccessStatusCode;
         }
 
@@ -257,7 +257,7 @@ namespace ElevenLabs.Voices
         public async Task<AudioClip> GetVoiceSampleAsync(string voiceId, string sampleId, string saveDirectory = null, CancellationToken cancellationToken = default)
         {
             var response = await Api.Client.GetAsync(GetUrl($"/{voiceId}/samples/{sampleId}/audio"), cancellationToken);
-            await response.CheckResponseAsync(cancellationToken);
+            await response.CheckResponseAsync();
 
             await Rest.ValidateCacheDirectoryAsync();
 
@@ -314,7 +314,7 @@ namespace ElevenLabs.Voices
         public async Task<bool> DeleteVoiceSampleAsync(string voiceId, string sampleId, CancellationToken cancellationToken = default)
         {
             var response = await Api.Client.DeleteAsync(GetUrl($"/{voiceId}/samples/{sampleId}"), cancellationToken);
-            await response.CheckResponseAsync(cancellationToken);
+            await response.CheckResponseAsync();
             return response.IsSuccessStatusCode;
         }
 

@@ -928,6 +928,9 @@ namespace ElevenLabs.Editor
                 }
 
                 var (clipPath, audioClip) = await api.TextToSpeechEndpoint.TextToSpeechAsync(speechSynthesisTextInput, currentVoiceOption, currentVoiceSettings, editorDownloadDirectory);
+                await Awaiters.UnityMainThread;
+
+                AudioEditorUtilities.PlayClipPreview(audioClip);
 
                 if (clipPath.Contains(Application.dataPath))
                 {
