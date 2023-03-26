@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Unity.SharpZipLib.Zip;
 using UnityEngine;
+using Utilities.Async;
 using Utilities.WebRequestRest;
 
 namespace ElevenLabs.History
@@ -33,8 +34,7 @@ namespace ElevenLabs.History
 
         public HistoryEndpoint(ElevenLabsClient api) : base(api) { }
 
-        protected override string GetEndpoint()
-            => $"{Api.BaseUrl}history";
+        protected override string Root => "history";
 
         /// <summary>
         /// Get metadata about all your generated audio.
@@ -43,7 +43,7 @@ namespace ElevenLabs.History
         /// <returns>A list of history items containing metadata about generated audio.</returns>
         public async Task<IReadOnlyList<HistoryItem>> GetHistoryAsync(CancellationToken cancellationToken = default)
         {
-            var result = await Api.Client.GetAsync($"{GetEndpoint()}", cancellationToken);
+            var result = await Api.Client.GetAsync(GetUrl(), cancellationToken);
             var resultAsString = await result.ReadAsStringAsync();
             return JsonConvert.DeserializeObject<HistoryInfo>(resultAsString, Api.JsonSerializationOptions)?.History;
         }
@@ -57,7 +57,7 @@ namespace ElevenLabs.History
         /// <returns><see cref="AudioClip"/>.</returns>
         public async Task<AudioClip> GetHistoryAudioAsync(HistoryItem historyItem, string saveDirectory = null, CancellationToken cancellationToken = default)
         {
-            Rest.ValidateCacheDirectory();
+            await Rest.ValidateCacheDirectoryAsync();
 
             var rootDirectory = (saveDirectory ?? Rest.DownloadCacheDirectory).CreateNewDirectory(nameof(ElevenLabs));
             var downloadDirectory = rootDirectory.CreateNewDirectory(nameof(History));
@@ -69,8 +69,8 @@ namespace ElevenLabs.History
                 File.Delete(filePath);
             }
 
-            var response = await Api.Client.GetAsync($"{GetEndpoint()}/{historyItem.Id}/audio", cancellationToken);
-            await response.CheckResponseAsync(cancellationToken);
+            var response = await Api.Client.GetAsync(GetUrl($"/{historyItem.Id}/audio"), cancellationToken);
+            await response.CheckResponseAsync();
 
             var responseStream = await response.Content.ReadAsStreamAsync();
 
@@ -114,7 +114,7 @@ namespace ElevenLabs.History
         /// <returns>True, if history item was successfully deleted.</returns>
         public async Task<bool> DeleteHistoryItemAsync(string historyId, CancellationToken cancellationToken = default)
         {
-            var response = await Api.Client.DeleteAsync($"{GetEndpoint()}/{historyId}", cancellationToken);
+            var response = await Api.Client.DeleteAsync(GetUrl($"/{historyId}"), cancellationToken);
             await response.ReadAsStringAsync();
             return response.IsSuccessStatusCode;
         }
@@ -127,9 +127,10 @@ namespace ElevenLabs.History
         /// </summary>
         /// <param name="historyItemIds">Optional, One or more history item ids queued for download.</param>
         /// <param name="saveDirectory">Optional, directory path to save the history in.</param>
+        /// <param name="progress">Optional, <see cref="IProgress{T}"/>.</param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         /// <returns>A list of Audio Clips downloaded by the request.</returns>
-        public async Task<IReadOnlyList<AudioClip>> DownloadHistoryItemsAsync(List<string> historyItemIds = null, string saveDirectory = null, CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<AudioClip>> DownloadHistoryItemsAsync(List<string> historyItemIds = null, string saveDirectory = null, IProgress<string> progress = null, CancellationToken cancellationToken = default)
         {
             historyItemIds ??= (await GetHistoryAsync(cancellationToken)).Select(item => item.Id).ToList();
 
@@ -138,14 +139,16 @@ namespace ElevenLabs.History
             if (historyItemIds.Count == 1)
             {
                 var history = await GetHistoryAsync(cancellationToken);
-                var historyItem = history.FirstOrDefault(item => item.Id == historyItemIds.FirstOrDefault());
+                var historyItem = history.FirstOrDefault(item => item.Id == historyItemIds.FirstOrDefault())!;
                 audioClips.Add(await GetHistoryAudioAsync(historyItem, saveDirectory, cancellationToken));
+                await Awaiters.UnityMainThread;
+                progress?.Report(historyItem.Id);
             }
             else
             {
                 var jsonContent = $"{{\"history_item_ids\":[\"{string.Join("\",\"", historyItemIds)}\"]}}".ToJsonStringContent();
-                var response = await Api.Client.PostAsync($"{GetEndpoint()}/download", jsonContent, cancellationToken);
-                await response.CheckResponseAsync(cancellationToken);
+                var response = await Api.Client.PostAsync(GetUrl("/download"), jsonContent, cancellationToken);
+                await response.CheckResponseAsync();
                 var unZipTasks = new List<Task>();
                 var responseStream = await response.Content.ReadAsStreamAsync();
 
@@ -155,7 +158,7 @@ namespace ElevenLabs.History
 
                     if (saveDirectory == null)
                     {
-                        Rest.ValidateCacheDirectory();
+                        await Rest.ValidateCacheDirectoryAsync();
                     }
 
                     var rootDirectory = Path.Combine(saveDirectory ?? Rest.DownloadCacheDirectory, nameof(ElevenLabs));
@@ -222,6 +225,8 @@ namespace ElevenLabs.History
 
                             var audioClip = await Rest.DownloadAudioClipAsync($"file://{filePath}", AudioType.MPEG, cancellationToken: cancellationToken);
                             audioClips.Add(audioClip);
+                            await Awaiters.UnityMainThread;
+                            progress?.Report(filePath);
                         }
                     }
 

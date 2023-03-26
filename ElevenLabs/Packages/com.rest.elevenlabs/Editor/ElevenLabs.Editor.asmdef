@@ -3,7 +3,9 @@
     "rootNamespace": "ElevenLabs.Editor",
     "references": [
         "GUID:85797d0f100db6c43bf118660781167b",
-        "GUID:efb5df23ecb68dc44818ae4293ef6caa"
+        "GUID:efb5df23ecb68dc44818ae4293ef6caa",
+        "GUID:7958db66189566541a6363568aee1575",
+        "GUID:a6609af893242c7438d701ddd4cce46a"
     ],
     "includePlatforms": [
         "Editor"
