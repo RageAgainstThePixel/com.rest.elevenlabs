@@ -51,6 +51,7 @@ I am not affiliated with ElevenLabs and an account with api access is required.
     - [Voice Cloning](#voice-cloning)
   - [History](#history)
 - [Text to Speech](#text-to-speech)
+  - [Stream Text to Speech](#stream-text-to-speech)
 - [Voices](#voices)
   - [Get All Voices](#get-all-voices)
   - [Get Default Voice Settings](#get-default-voice-settings)
@@ -136,7 +137,7 @@ var api = new ElevenLabsClient(ElevenLabsAuthentication.LoadFromEnv());
 
 Using either the [ElevenLabs-DotNet](https://github.com/RageAgainstThePixel/ElevenLabs-DotNet) or [com.rest.elevenlabs](https://github.com/RageAgainstThePixel/com.rest.elevenlabs) packages directly in your front-end app may expose your API keys and other sensitive information. To mitigate this risk, it is recommended to set up an intermediate API that makes requests to ElevenLabs on behalf of your front-end app. This library can be utilized for both front-end and intermediary host configurations, ensuring secure communication with the ElevenLabs API.
 
-### Front End Example
+#### Front End Example
 
 In the front end example, you will need to securely authenticate your users using your preferred OAuth provider. Once the user is authenticated, exchange your custom auth token with your API key on the backend.
 
@@ -159,7 +160,7 @@ var api = new ElevenLabsClient(auth, settings);
 
 This setup allows your front end application to securely communicate with your backend that will be using the ElevenLabs-DotNet-Proxy, which then forwards requests to the ElevenLabs API. This ensures that your ElevenLabs API keys and other sensitive information remain secure throughout the process.
 
-### Back End Example
+#### Back End Example
 
 In this example, we demonstrate how to set up and use `ElevenLabsProxyStartup` in a new ASP.NET Core web app. The proxy server will handle authentication and forward requests to the ElevenLabs API, ensuring that your API keys and other sensitive information remain secure.
 
@@ -243,6 +244,28 @@ var text = "The quick brown fox jumps over the lazy dog.";
 var voice = (await api.VoicesEndpoint.GetAllVoicesAsync()).FirstOrDefault();
 var defaultVoiceSettings = await api.VoicesEndpoint.GetDefaultVoiceSettingsAsync();
 var (clipPath, audioClip) = await api.TextToSpeechEndpoint.TextToSpeechAsync(text, voice, defaultVoiceSettings);
+Debug.Log(clipPath);
+```
+
+### Stream Text to Speech
+
+:warning: WARNING :bangbang: This feature is experimental, and may not work as expected! Unity doesn't seem to respect streaming when setting [`DownloadHandlerAudioClip.streamAudio`](https://docs.unity3d.com/ScriptReference/Networking.DownloadHandlerAudioClip-streamAudio.html) to true.
+
+```csharp
+var api = new ElevenLabsClient();
+var text = "The quick brown fox jumps over the lazy dog.";
+var voice = (await api.VoicesEndpoint.GetAllVoicesAsync()).FirstOrDefault();
+var defaultVoiceSettings = await api.VoicesEndpoint.GetDefaultVoiceSettingsAsync();
+var (clipPath, audioClip) = await api.TextToSpeechEndpoint.TextToSpeechAsync(
+    text,
+    voice,
+    clip =>
+    {
+        // Event raised as soon as the clip has loaded enough data to play.
+        // May not provide or play full clip until Unity bug is addressed.
+        audioSource.PlayOneShot(clip);
+    },
+    defaultVoiceSettings);
 Debug.Log(clipPath);
 ```
 
