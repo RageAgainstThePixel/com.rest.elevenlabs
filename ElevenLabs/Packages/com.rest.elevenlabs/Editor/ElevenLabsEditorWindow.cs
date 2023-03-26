@@ -5,7 +5,6 @@ using ElevenLabs.User;
 using ElevenLabs.VoiceGeneration;
 using ElevenLabs.Voices;
 using System;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -927,10 +926,13 @@ namespace ElevenLabs.Editor
                     throw new ArgumentNullException(nameof(currentVoiceSettings));
                 }
 
-                var (clipPath, audioClip) = await api.TextToSpeechEndpoint.TextToSpeechAsync(speechSynthesisTextInput, currentVoiceOption, currentVoiceSettings, editorDownloadDirectory);
-                await Awaiters.UnityMainThread;
+                var (clipPath, audioClip) = await api.TextToSpeechEndpoint.TextToSpeechAsync(
+                    speechSynthesisTextInput,
+                    currentVoiceOption,
+                    currentVoiceSettings,
+                    editorDownloadDirectory);
 
-                AudioEditorUtilities.PlayClipPreview(audioClip);
+                await Awaiters.UnityMainThread;
 
                 if (clipPath.Contains(Application.dataPath))
                 {
@@ -941,6 +943,8 @@ namespace ElevenLabs.Editor
                     Selection.activeObject = audioClip;
                 }
 
+                AudioEditorUtilities.PlayClipPreview(audioClip);
+
                 FetchUserInfo();
             }
             catch (Exception e)
@@ -950,7 +954,6 @@ namespace ElevenLabs.Editor
             finally
             {
                 isSynthesisRunning = false;
-                speechSynthesisTextInput = string.Empty;
             }
         }
 

@@ -6,12 +6,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
-using System.Net.Sockets;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
-using Utilities.Async;
 using Utilities.WebRequestRest;
 
 namespace ElevenLabs.TextToSpeech
@@ -51,7 +48,8 @@ namespace ElevenLabs.TextToSpeech
             var rootDirectory = (saveDirectory ?? Rest.DownloadCacheDirectory).CreateNewDirectory(nameof(ElevenLabs));
             var speechToTextDirectory = rootDirectory.CreateNewDirectory(nameof(TextToSpeech));
             var downloadDirectory = speechToTextDirectory.CreateNewDirectory(voice.Name);
-            var fileName = $"{text.GenerateGuid()}.mp3";
+            var clipGuid = $"{voice.Id}{text}".GenerateGuid().ToString();
+            var fileName = $"{clipGuid}.mp3";
             var filePath = Path.Combine(downloadDirectory, fileName);
 
             if (!File.Exists(filePath))
@@ -100,11 +98,11 @@ namespace ElevenLabs.TextToSpeech
         /// </summary>
         /// <param name="text">Text input to synthesize speech for.</param>
         /// <param name="voice"><see cref="Voice"/> to use.</param>
-        /// <param name="resultHandler">An action to be called when a new <see cref="AudioClip"/> part has arrived.</param>
+        /// <param name="resultHandler">An action to be called when a new <see cref="AudioClip"/> the clip is ready to play.</param>
         /// <param name="voiceSettings">Optional, <see cref="VoiceSettings"/> that will override the default settings in <see cref="Voice.Settings"/>.</param>
         /// <param name="saveDirectory">Optional, save directory to save the audio clip. Defaults to <see cref="Rest.DownloadCacheDirectory"/></param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
-        public async Task StreamTextToSpeechAsync(string text, Voice voice, Action<AudioClip> resultHandler, VoiceSettings voiceSettings = null, string saveDirectory = null, CancellationToken cancellationToken = default)
+        public async Task<Tuple<string, AudioClip>> StreamTextToSpeechAsync(string text, Voice voice, Action<AudioClip> resultHandler, VoiceSettings voiceSettings = null, string saveDirectory = null, CancellationToken cancellationToken = default)
         {
             if (text.Length > 5000)
             {
@@ -117,87 +115,70 @@ namespace ElevenLabs.TextToSpeech
             }
 
             await Rest.ValidateCacheDirectoryAsync();
+
             var rootDirectory = (saveDirectory ?? Rest.DownloadCacheDirectory).CreateNewDirectory(nameof(ElevenLabs));
             var speechToTextDirectory = rootDirectory.CreateNewDirectory(nameof(TextToSpeech));
-            var voiceDirectory = speechToTextDirectory.CreateNewDirectory(voice.Name);
-            var clipGuid = text.GenerateGuid().ToString();
-            var downloadDirectory = voiceDirectory.CreateNewDirectory(clipGuid);
+            var downloadDirectory = speechToTextDirectory.CreateNewDirectory(voice.Name);
+            var clipGuid = $"{voice.Id}{text}".GenerateGuid().ToString();
             var fileName = $"{clipGuid}.mp3";
             var filePath = Path.Combine(downloadDirectory, fileName);
 
-            if (File.Exists(fileName))
-            {
-                var clip = await Rest.DownloadAudioClipAsync($"file://{filePath}", AudioType.MPEG, cancellationToken: cancellationToken);
-                // Always raise event callbacks on main thread
-                await Awaiters.UnityMainThread;
-                resultHandler.Invoke(clip);
-                return;
-            }
+            AudioClip audioClip = null;
 
-            var defaultVoiceSettings = voiceSettings ?? voice.Settings ?? await Api.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken);
-            var payload = JsonConvert.SerializeObject(new TextToSpeechRequest(text, defaultVoiceSettings), Api.JsonSerializationOptions).ToJsonStringContent();
-            using var request = new HttpRequestMessage(HttpMethod.Post, GetUrl($"/{voice.Id}/streaming"))
+            if (!File.Exists(filePath))
             {
-                Content = payload
-            };
-            using var response = await Api.Client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-            await response.CheckResponseAsync();
-            await using var stream = await response.Content.ReadAsStreamAsync();
-            stream.ReadTimeout = (int)TimeSpan.FromSeconds(30).TotalMilliseconds;
-            var buffer = new byte[1024];
-            var audioClip = AudioClip.Create(clipGuid, 0, 1, 44100, false);
-            var samples = new float[audioClip.samples];
-            var position = 0;
+                var defaultVoiceSettings = voiceSettings ?? voice.Settings ?? await Api.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken);
+                var payload = JsonConvert.SerializeObject(new TextToSpeechRequest(text, defaultVoiceSettings), Api.JsonSerializationOptions).ToJsonStringContent();
+                using var request = new HttpRequestMessage(HttpMethod.Post, GetUrl($"/{voice.Id}/stream"))
+                {
+                    Content = payload
+                };
+                using var response = await Api.Client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                await response.CheckResponseAsync();
+                await using var stream = await response.Content.ReadAsStreamAsync();
 
-            while (!cancellationToken.IsCancellationRequested)
-            {
                 try
                 {
-                    var bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, cancellationToken);
+                    await using var fileStream = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
+                    int bytesRead;
+                    Task loadTask = null;
+                    var buffer = new byte[1024];
+                    var canInvoke = true;
 
-                    if (bytesRead == 0)
+                    while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, cancellationToken)) > 0)
                     {
-                        // No more data available for reading, but there may still be more coming
-                        await Task.Delay(TimeSpan.FromMilliseconds(10), cancellationToken);
-                        continue;
+                        await fileStream.WriteAsync(buffer, 0, bytesRead, cancellationToken);
+
+                        const long playbackAmountThreshold = 10000;
+
+                        if (canInvoke && fileStream.Length >= playbackAmountThreshold)
+                        {
+                            canInvoke = false;
+                            loadTask = Task.Run(async () =>
+                            {
+                                audioClip = await Rest.StreamAudioAsync($"file://{filePath}", AudioType.MPEG, resultHandler, playbackAmountThreshold: playbackAmountThreshold, cancellationToken: cancellationToken);
+                            }, cancellationToken);
+                        }
                     }
 
-                    // Convert byte array to float samples
-                    var floatSamples = new float[bytesRead / 2];
-                    for (var i = 0; i < floatSamples.Length; i++)
+                    await fileStream.FlushAsync(cancellationToken);
+
+                    if (loadTask != null)
                     {
-                        var sample = BitConverter.ToInt16(buffer, i * 2);
-
-                        floatSamples[i] = sample / (float)short.MaxValue;
-                    }
-
-                    // Copy float samples to audio clip samples
-                    Array.Copy(floatSamples, 0, samples, position, floatSamples.Length);
-                    position += floatSamples.Length;
-
-                    // If samples buffer is full, create new audio clip and send it to the result handler
-                    if (position == samples.Length)
-                    {
-                        audioClip.SetData(samples, 0);
-                        resultHandler(audioClip);
-                        samples = new float[audioClip.samples];
-                        position = 0;
+                        await loadTask;
                     }
                 }
-                catch (IOException ex) when (ex.InnerException is SocketException { SocketErrorCode: SocketError.TimedOut })
+                catch (Exception e)
                 {
-                    // Stream has timed out, assume server has finished sending data
-                    break;
+                    Debug.LogError(e);
                 }
             }
-
-            if (position > 0)
+            else
             {
-                var actualSamples = new float[position];
-                Array.Copy(samples, actualSamples, position);
-                audioClip.SetData(actualSamples, 0);
-                resultHandler(audioClip);
+                audioClip = await Rest.StreamAudioAsync($"file://{filePath}", AudioType.MPEG, resultHandler, cancellationToken: cancellationToken);
             }
+
+            return new Tuple<string, AudioClip>(filePath, audioClip);
         }
 
         /// <summary>
@@ -211,27 +192,9 @@ namespace ElevenLabs.TextToSpeech
         /// <param name="saveDirectory">Optional, save directory to save the audio clip. Defaults to <see cref="Rest.DownloadCacheDirectory"/></param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         /// <returns><see cref="AudioClip"/> part.</returns>
-        public async IAsyncEnumerable<AudioClip> StreamTextToSpeechEnumerableAsync(string text, Voice voice, VoiceSettings voiceSettings = null, string saveDirectory = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        public IAsyncEnumerable<AudioClip> StreamTextToSpeechEnumerableAsync(string text, Voice voice, VoiceSettings voiceSettings = null, string saveDirectory = null, CancellationToken cancellationToken = default)
         {
-            if (text.Length > 5000)
-            {
-                throw new ArgumentOutOfRangeException(nameof(text), $"{nameof(text)} cannot exceed 5000 characters");
-            }
-
-            if (voice == null)
-            {
-                throw new ArgumentNullException(nameof(voice));
-            }
-
-            await Rest.ValidateCacheDirectoryAsync();
-            var rootDirectory = (saveDirectory ?? Rest.DownloadCacheDirectory).CreateNewDirectory(nameof(ElevenLabs));
-            var downloadDirectory = rootDirectory.CreateNewDirectory(nameof(TextToSpeech));
-
-            var defaultVoiceSettings = voiceSettings ?? voice.Settings ?? await Api.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken);
-            var payload = JsonConvert.SerializeObject(new TextToSpeechRequest(text, defaultVoiceSettings)).ToJsonStringContent();
-
-            await Task.CompletedTask;
-            yield return null;
+            throw new NotImplementedException();
         }
     }
 }
