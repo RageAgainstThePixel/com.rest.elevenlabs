@@ -14,8 +14,8 @@ namespace ElevenLabs.Editor
         private SerializedProperty apiKey;
         private SerializedProperty proxyDomain;
         private SerializedProperty apiVersion;
-        
-        private static bool wasApiKeyChanged;
+
+        private static bool itemsUpdated;
 
         #region Project Settings Window
 
@@ -25,8 +25,18 @@ namespace ElevenLabs.Editor
             {
                 label = nameof(ElevenLabs),
                 guiHandler = OnPreferencesGui,
-                keywords = new[] { nameof(ElevenLabs) }
+                keywords = new[] { nameof(ElevenLabs) },
+                deactivateHandler = DeactivateHandler
             };
+
+        private static void DeactivateHandler()
+        {
+            if (itemsUpdated)
+            {
+                itemsUpdated = false;
+                EditorUtility.RequestScriptReload();
+            }
+        }
 
         private static void OnPreferencesGui(string searchContext)
         {
@@ -37,6 +47,12 @@ namespace ElevenLabs.Editor
             }
 
             var instance = GetOrCreateInstance();
+
+            if (Selection.activeObject != instance)
+            {
+                Selection.activeObject = instance;
+            }
+
             var instanceEditor = CreateEditor(instance);
             instanceEditor.OnInspectorGUI();
         }
@@ -61,28 +77,23 @@ namespace ElevenLabs.Editor
             }
         }
 
+        private void OnDisable()
+        {
+            if (itemsUpdated)
+            {
+                itemsUpdated = false;
+                EditorUtility.RequestScriptReload();
+            }
+        }
+
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
             EditorGUILayout.Space();
             EditorGUI.indentLevel++;
 
-            EditorGUILayout.LabelField(GUI.GetNameOfFocusedControl());
-            var isApiKeyFieldFocused = GUI.GetNameOfFocusedControl() == apiKey.name;
             EditorGUI.BeginChangeCheck();
-            GUI.SetNextControlName(apiKey.name);
             EditorGUILayout.PropertyField(apiKey);
-
-            if (EditorGUI.EndChangeCheck())
-            {
-                wasApiKeyChanged = true;
-            }
-
-            if (!isApiKeyFieldFocused && wasApiKeyChanged)
-            {
-                wasApiKeyChanged = false;
-                EditorUtility.RequestScriptReload();
-            }
 
             EditorGUILayout.PropertyField(proxyDomain);
             GUI.enabled = false;
@@ -95,6 +106,12 @@ namespace ElevenLabs.Editor
 
             EditorGUILayout.PropertyField(apiVersion);
             GUI.enabled = true;
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                itemsUpdated = true;
+            }
+
             EditorGUI.indentLevel--;
             serializedObject.ApplyModifiedProperties();
         }
