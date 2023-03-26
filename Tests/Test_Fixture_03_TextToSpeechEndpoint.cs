@@ -22,5 +22,28 @@ namespace ElevenLabs.Voice.Tests
             Assert.NotNull(audioClip);
             Debug.Log(clipPath);
         }
+
+        [Test]
+        public async Task Test_02_StreamTextToSpeech()
+        {
+            var api = new ElevenLabsClient(ElevenLabsAuthentication.LoadFromEnv());
+            Assert.NotNull(api.TextToSpeechEndpoint);
+            var voice = (await api.VoicesEndpoint.GetAllVoicesAsync()).FirstOrDefault();
+            Assert.NotNull(voice);
+            var defaultVoiceSettings = await api.VoicesEndpoint.GetDefaultVoiceSettingsAsync();
+            var tcs = new TaskCompletionSource<AudioClip>();
+            var (clipPath, audioClip) = await api.TextToSpeechEndpoint.StreamTextToSpeechAsync(
+                "The quick brown fox jumps over the lazy dog.",
+                voice,
+                clip =>
+                {
+                    tcs.TrySetResult(clip);
+                },
+                defaultVoiceSettings);
+            Assert.NotNull(audioClip);
+            Debug.Log(clipPath);
+            var raisedAudioClip = await tcs.Task;
+            Assert.NotNull(raisedAudioClip);
+        }
     }
 }

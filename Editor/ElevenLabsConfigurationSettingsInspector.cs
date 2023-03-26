@@ -11,18 +11,21 @@ namespace ElevenLabs.Editor
     [CustomEditor(typeof(ElevenLabsConfigurationSettings))]
     internal class ElevenLabsConfigurationSettingsInspector : UnityEditor.Editor
     {
-        private SerializedProperty authInfo;
         private SerializedProperty apiKey;
+        private SerializedProperty proxyDomain;
+        private SerializedProperty apiVersion;
+        
+        private static bool wasApiKeyChanged;
 
         #region Project Settings Window
 
         [SettingsProvider]
         private static SettingsProvider Preferences()
-            => new SettingsProvider("Project/ElevenLabs", SettingsScope.Project, new[] { "ElevenLabs" })
+            => new SettingsProvider($"Project/{nameof(ElevenLabs)}", SettingsScope.Project, new[] { nameof(ElevenLabs) })
             {
-                label = "ElevenLabs",
+                label = nameof(ElevenLabs),
                 guiHandler = OnPreferencesGui,
-                keywords = new[] { "ElevenLabs" }
+                keywords = new[] { nameof(ElevenLabs) }
             };
 
         private static void OnPreferencesGui(string searchContext)
@@ -48,12 +51,13 @@ namespace ElevenLabs.Editor
 
             try
             {
-                authInfo = serializedObject.FindProperty(nameof(authInfo));
-                apiKey = authInfo.FindPropertyRelative(nameof(apiKey));
+                apiKey = serializedObject.FindProperty(nameof(apiKey));
+                proxyDomain = serializedObject.FindProperty(nameof(proxyDomain));
+                apiVersion = serializedObject.FindProperty(nameof(apiVersion));
             }
             catch (Exception)
             {
-                // throw away
+                // Ignored
             }
         }
 
@@ -63,9 +67,34 @@ namespace ElevenLabs.Editor
             EditorGUILayout.Space();
             EditorGUI.indentLevel++;
 
-            var apiKeyContent = new GUIContent(apiKey.displayName, apiKey.tooltip);
-            apiKey.stringValue = EditorGUILayout.TextField(apiKeyContent, apiKey.stringValue);
+            EditorGUILayout.LabelField(GUI.GetNameOfFocusedControl());
+            var isApiKeyFieldFocused = GUI.GetNameOfFocusedControl() == apiKey.name;
+            EditorGUI.BeginChangeCheck();
+            GUI.SetNextControlName(apiKey.name);
+            EditorGUILayout.PropertyField(apiKey);
 
+            if (EditorGUI.EndChangeCheck())
+            {
+                wasApiKeyChanged = true;
+            }
+
+            if (!isApiKeyFieldFocused && wasApiKeyChanged)
+            {
+                wasApiKeyChanged = false;
+                EditorUtility.RequestScriptReload();
+            }
+
+            EditorGUILayout.PropertyField(proxyDomain);
+            GUI.enabled = false;
+
+            if (string.IsNullOrWhiteSpace(apiVersion.stringValue) ||
+                apiVersion.stringValue != ElevenLabsClientSettings.DefaultApiVersion)
+            {
+                apiVersion.stringValue = ElevenLabsClientSettings.DefaultApiVersion;
+            }
+
+            EditorGUILayout.PropertyField(apiVersion);
+            GUI.enabled = true;
             EditorGUI.indentLevel--;
             serializedObject.ApplyModifiedProperties();
         }
