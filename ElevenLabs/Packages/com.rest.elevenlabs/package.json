@@ -3,7 +3,7 @@
   "displayName": "ElevenLabs",
   "description": "A non-official Eleven Labs voice synthesis RESTful client.",
   "keywords": [],
-  "version": "1.1.1",
+  "version": "1.1.2",
   "unity": "2021.3",
   "documentationUrl": "https://github.com/RageAgainstThePixel/com.rest.elevenlabs#documentation",
   "changelogUrl": "https://github.com/RageAgainstThePixel/com.rest.elevenlabs/releases",
@@ -17,10 +17,10 @@
     "url": "https://github.com/StephenHodgson"
   },
   "dependencies": {
-    "com.unity.nuget.newtonsoft-json": "3.0.2",
-    "com.unity.sharp-zip-lib": "1.3.3-preview",
-    "com.utilities.rest": "1.3.0",
-    "com.utilities.audio": "1.0.1"
+    "com.unity.nuget.newtonsoft-json": "3.2.0",
+    "com.unity.sharp-zip-lib": "1.3.4-preview",
+    "com.utilities.rest": "1.3.1",
+    "com.utilities.audio": "1.0.3"
   },
   "publishConfig": {
     "registry": "https://package.openupm.com"

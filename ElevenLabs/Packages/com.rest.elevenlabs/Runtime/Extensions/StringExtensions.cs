@@ -6,7 +6,7 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace ElevenLabs
+namespace ElevenLabs.Extensions
 {
     internal static class StringExtensions
     {
