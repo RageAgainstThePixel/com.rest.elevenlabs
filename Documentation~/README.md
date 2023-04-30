@@ -19,13 +19,14 @@ I am not affiliated with ElevenLabs and an account with api access is required.
 - Select the `Package Manager`
 ![scoped-registries](images/package-manager-scopes.png)
 - Add the OpenUPM package registry:
-  - `Name: OpenUPM`
-  - `URL: https://package.openupm.com`
-  - `Scope(s):`
+  - Name: `OpenUPM`
+  - URL: `https://package.openupm.com`
+  - Scope(s):
     - `com.rest.elevenlabs`
+    - `com.utilities`
 - Open the Unity Package Manager window
 - Change the Registry from Unity to `My Registries`
-- Add the `Elevenlabs` package
+- Add the `ElevenLabs` package
 
 ### Via Unity Package Manager and Git url
 
@@ -246,6 +247,8 @@ var defaultVoiceSettings = await api.VoicesEndpoint.GetDefaultVoiceSettingsAsync
 var (clipPath, audioClip) = await api.TextToSpeechEndpoint.TextToSpeechAsync(text, voice, defaultVoiceSettings);
 Debug.Log(clipPath);
 ```
+
+> Note, only a single audio clip is created per text string. If you'd like to get different variations of the audio, you'll need to pass in `deleteCachedFile: true`.
 
 ### Stream Text to Speech
 
