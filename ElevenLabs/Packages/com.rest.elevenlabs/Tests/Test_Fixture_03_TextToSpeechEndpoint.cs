@@ -18,7 +18,7 @@ namespace ElevenLabs.Voice.Tests
             var voice = (await api.VoicesEndpoint.GetAllVoicesAsync()).FirstOrDefault();
             Assert.NotNull(voice);
             var defaultVoiceSettings = await api.VoicesEndpoint.GetDefaultVoiceSettingsAsync();
-            var (clipPath, audioClip) = await api.TextToSpeechEndpoint.TextToSpeechAsync("The quick brown fox jumps over the lazy dog.", voice, defaultVoiceSettings);
+            var (clipPath, audioClip) = await api.TextToSpeechEndpoint.TextToSpeechAsync("The quick brown fox jumps over the lazy dog.", voice, defaultVoiceSettings, deleteCachedFile: true);
             Assert.NotNull(audioClip);
             Debug.Log(clipPath);
         }
@@ -39,7 +39,8 @@ namespace ElevenLabs.Voice.Tests
                 {
                     tcs.TrySetResult(clip);
                 },
-                defaultVoiceSettings);
+                defaultVoiceSettings,
+                deleteCachedFile: true);
             Assert.NotNull(audioClip);
             Debug.Log(clipPath);
             var raisedAudioClip = await tcs.Task;

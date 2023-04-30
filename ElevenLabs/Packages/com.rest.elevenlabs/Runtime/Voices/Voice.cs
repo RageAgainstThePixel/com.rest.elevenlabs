@@ -7,6 +7,11 @@ namespace ElevenLabs.Voices
 {
     public sealed class Voice
     {
+        public Voice(string id)
+        {
+            Id = id;
+        }
+
         public static implicit operator string(Voice voice) => voice.Id;
 
         [JsonConstructor]

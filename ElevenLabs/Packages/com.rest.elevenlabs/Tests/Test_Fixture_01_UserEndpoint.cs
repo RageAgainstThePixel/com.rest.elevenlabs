@@ -10,7 +10,7 @@ namespace ElevenLabs.Voice.Tests
         [Test]
         public async Task Test_01_GetUserInfo()
         {
-            var api = new ElevenLabsClient();
+            var api = new ElevenLabsClient(ElevenLabsAuthentication.LoadFromEnv());
             Assert.NotNull(api.UserEndpoint);
             var result = await api.UserEndpoint.GetUserInfoAsync();
             Assert.NotNull(result);
@@ -19,7 +19,7 @@ namespace ElevenLabs.Voice.Tests
         [Test]
         public async Task Test_02_GetSubscriptionInfo()
         {
-            var api = new ElevenLabsClient();
+            var api = new ElevenLabsClient(ElevenLabsAuthentication.LoadFromEnv());
             Assert.NotNull(api.UserEndpoint);
             var result = await api.UserEndpoint.GetSubscriptionInfoAsync();
             Assert.NotNull(result);
