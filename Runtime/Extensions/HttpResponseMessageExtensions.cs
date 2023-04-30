@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace ElevenLabs
+namespace ElevenLabs.Extensions
 {
     internal static class HttpResponseMessageExtensions
     {

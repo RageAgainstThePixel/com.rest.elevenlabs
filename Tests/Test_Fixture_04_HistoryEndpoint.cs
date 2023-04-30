@@ -13,7 +13,7 @@ namespace ElevenLabs.Voice.Tests
         [Test]
         public async Task Test_01_GetHistory()
         {
-            var api = new ElevenLabsClient();
+            var api = new ElevenLabsClient(ElevenLabsAuthentication.LoadFromEnv());
             Assert.NotNull(api.HistoryEndpoint);
             var results = await api.HistoryEndpoint.GetHistoryAsync();
             Assert.NotNull(results);
@@ -28,7 +28,7 @@ namespace ElevenLabs.Voice.Tests
         [Test]
         public async Task Test_02_GetHistoryAudio()
         {
-            var api = new ElevenLabsClient();
+            var api = new ElevenLabsClient(ElevenLabsAuthentication.LoadFromEnv());
             Assert.NotNull(api.HistoryEndpoint);
             var historyItems = await api.HistoryEndpoint.GetHistoryAsync();
             Assert.NotNull(historyItems);
@@ -43,7 +43,7 @@ namespace ElevenLabs.Voice.Tests
         [Test]
         public async Task Test_03_DownloadAllHistoryItems()
         {
-            var api = new ElevenLabsClient();
+            var api = new ElevenLabsClient(ElevenLabsAuthentication.LoadFromEnv());
             Assert.NotNull(api.HistoryEndpoint);
             var historyItems = await api.HistoryEndpoint.GetHistoryAsync();
             Assert.NotNull(historyItems);
@@ -61,7 +61,7 @@ namespace ElevenLabs.Voice.Tests
         [Test]
         public async Task Test_04_DeleteHistoryItem()
         {
-            var api = new ElevenLabsClient();
+            var api = new ElevenLabsClient(ElevenLabsAuthentication.LoadFromEnv());
             Assert.NotNull(api.HistoryEndpoint);
             var historyItems = await api.HistoryEndpoint.GetHistoryAsync();
             Assert.NotNull(historyItems);

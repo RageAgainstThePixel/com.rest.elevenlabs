@@ -1,5 +1,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using ElevenLabs.Extensions;
 using ElevenLabs.Voices;
 using Newtonsoft.Json;
 using System;
@@ -29,9 +30,10 @@ namespace ElevenLabs.TextToSpeech
         /// <param name="voice"><see cref="Voice"/> to use.</param>
         /// <param name="voiceSettings">Optional, <see cref="VoiceSettings"/> that will override the default settings in <see cref="Voice.Settings"/>.</param>
         /// <param name="saveDirectory">Optional, save directory to save the audio clip. Defaults to <see cref="Rest.DownloadCacheDirectory"/></param>
+        /// <param name="deleteCachedFile">Optional, deletes the cached file for this text string. Default is false.</param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         /// <returns>Downloaded clip path, and the loaded audio clip.</returns>
-        public async Task<Tuple<string, AudioClip>> TextToSpeechAsync(string text, Voice voice, VoiceSettings voiceSettings = null, string saveDirectory = null, CancellationToken cancellationToken = default)
+        public async Task<Tuple<string, AudioClip>> TextToSpeechAsync(string text, Voice voice, VoiceSettings voiceSettings = null, string saveDirectory = null, bool deleteCachedFile = false, CancellationToken cancellationToken = default)
         {
             if (text.Length > 5000)
             {
@@ -51,6 +53,23 @@ namespace ElevenLabs.TextToSpeech
             var clipGuid = $"{voice.Id}{text}".GenerateGuid().ToString();
             var fileName = $"{clipGuid}.mp3";
             var filePath = Path.Combine(downloadDirectory, fileName);
+
+            if (File.Exists(filePath))
+            {
+#if UNITY_EDITOR
+                if (!deleteCachedFile && !UnityEditor.EditorApplication.isPlaying)
+                {
+                    deleteCachedFile = UnityEditor.EditorUtility.DisplayDialog(
+                        "Attention!",
+                        "You've already previously generated an audio clip with this same voice and text string.\n" +
+                        "Do you want to create a new unique clip?\n\nThis will delete your old clip.", "Delete", "Cancel");
+                }
+#endif
+                if (deleteCachedFile)
+                {
+                    File.Delete(filePath);
+                }
+            }
 
             if (!File.Exists(filePath))
             {
@@ -101,8 +120,9 @@ namespace ElevenLabs.TextToSpeech
         /// <param name="resultHandler">An action to be called when a new <see cref="AudioClip"/> the clip is ready to play.</param>
         /// <param name="voiceSettings">Optional, <see cref="VoiceSettings"/> that will override the default settings in <see cref="Voice.Settings"/>.</param>
         /// <param name="saveDirectory">Optional, save directory to save the audio clip. Defaults to <see cref="Rest.DownloadCacheDirectory"/></param>
+        /// <param name="deleteCachedFile">Optional, deletes the cached file for this text string. Default is false.</param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
-        public async Task<Tuple<string, AudioClip>> StreamTextToSpeechAsync(string text, Voice voice, Action<AudioClip> resultHandler, VoiceSettings voiceSettings = null, string saveDirectory = null, CancellationToken cancellationToken = default)
+        public async Task<Tuple<string, AudioClip>> StreamTextToSpeechAsync(string text, Voice voice, Action<AudioClip> resultHandler, VoiceSettings voiceSettings = null, string saveDirectory = null, bool deleteCachedFile = false, CancellationToken cancellationToken = default)
         {
             if (text.Length > 5000)
             {
@@ -122,8 +142,24 @@ namespace ElevenLabs.TextToSpeech
             var clipGuid = $"{voice.Id}{text}".GenerateGuid().ToString();
             var fileName = $"{clipGuid}.mp3";
             var filePath = Path.Combine(downloadDirectory, fileName);
-
             AudioClip audioClip = null;
+
+            if (File.Exists(filePath))
+            {
+#if UNITY_EDITOR
+                if (!deleteCachedFile && !UnityEditor.EditorApplication.isPlaying)
+                {
+                    deleteCachedFile = UnityEditor.EditorUtility.DisplayDialog(
+                        "Attention!",
+                        "You've already previously generated an audio clip with this same voice and text string.\n" +
+                        "Do you want to create a new unique clip?\n\nThis will delete your old clip.", "Delete", "Cancel");
+                }
+#endif
+                if (deleteCachedFile)
+                {
+                    File.Delete(filePath);
+                }
+            }
 
             if (!File.Exists(filePath))
             {
@@ -179,22 +215,6 @@ namespace ElevenLabs.TextToSpeech
             }
 
             return new Tuple<string, AudioClip>(filePath, audioClip);
-        }
-
-        /// <summary>
-        /// Converts text into speech using a voice of your choice and returns audio as an audio stream.<br/>
-        /// If you are not using C# 8 supporting IAsyncEnumerable{T} or if you are using the .NET Framework,
-        /// you may need to use <see cref="StreamTextToSpeechAsync(string, Voice, Action{AudioClip}, VoiceSettings, string, CancellationToken)"/> instead.
-        /// </summary>
-        /// <param name="text">Text input to synthesize speech for.</param>
-        /// <param name="voice"><see cref="Voice"/> to use.</param>
-        /// <param name="voiceSettings">Optional, <see cref="VoiceSettings"/> that will override the default settings in <see cref="Voice.Settings"/>.</param>
-        /// <param name="saveDirectory">Optional, save directory to save the audio clip. Defaults to <see cref="Rest.DownloadCacheDirectory"/></param>
-        /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
-        /// <returns><see cref="AudioClip"/> part.</returns>
-        public IAsyncEnumerable<AudioClip> StreamTextToSpeechEnumerableAsync(string text, Voice voice, VoiceSettings voiceSettings = null, string saveDirectory = null, CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
         }
     }
 }
