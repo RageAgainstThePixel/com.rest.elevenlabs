@@ -8,6 +8,7 @@ using ElevenLabs.Voices;
 using Newtonsoft.Json;
 using System.Net.Http;
 using System.Security.Authentication;
+using ElevenLabs.Models;
 
 namespace ElevenLabs
 {
@@ -43,6 +44,7 @@ namespace ElevenLabs
 
             UserEndpoint = new UserEndpoint(this);
             VoicesEndpoint = new VoicesEndpoint(this);
+            ModelsEndpoint = new ModelsEndpoint(this);
             HistoryEndpoint = new HistoryEndpoint(this);
             TextToSpeechEndpoint = new TextToSpeechEndpoint(this);
             VoiceGenerationEndpoint = new VoiceGenerationEndpoint(this);
@@ -68,6 +70,8 @@ namespace ElevenLabs
         public UserEndpoint UserEndpoint { get; }
 
         public VoicesEndpoint VoicesEndpoint { get; }
+
+        public ModelsEndpoint ModelsEndpoint { get; }
 
         public HistoryEndpoint HistoryEndpoint { get; }
 

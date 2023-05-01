@@ -4,11 +4,11 @@ using ElevenLabs.Extensions;
 using ElevenLabs.Voices;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using ElevenLabs.Models;
 using UnityEngine;
 using Utilities.WebRequestRest;
 
@@ -29,11 +29,12 @@ namespace ElevenLabs.TextToSpeech
         /// <param name="text">Text input to synthesize speech for. Maximum 5000 characters.</param>
         /// <param name="voice"><see cref="Voice"/> to use.</param>
         /// <param name="voiceSettings">Optional, <see cref="VoiceSettings"/> that will override the default settings in <see cref="Voice.Settings"/>.</param>
+        /// <param name="model">Optional, <see cref="Model"/> to use. Defaults to <see cref="Model.MonoLingualV1"/>.</param>
         /// <param name="saveDirectory">Optional, save directory to save the audio clip. Defaults to <see cref="Rest.DownloadCacheDirectory"/></param>
         /// <param name="deleteCachedFile">Optional, deletes the cached file for this text string. Default is false.</param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         /// <returns>Downloaded clip path, and the loaded audio clip.</returns>
-        public async Task<Tuple<string, AudioClip>> TextToSpeechAsync(string text, Voice voice, VoiceSettings voiceSettings = null, string saveDirectory = null, bool deleteCachedFile = false, CancellationToken cancellationToken = default)
+        public async Task<Tuple<string, AudioClip>> TextToSpeechAsync(string text, Voice voice, VoiceSettings voiceSettings = null, Model model = null, string saveDirectory = null, bool deleteCachedFile = false, CancellationToken cancellationToken = default)
         {
             if (text.Length > 5000)
             {
@@ -74,7 +75,7 @@ namespace ElevenLabs.TextToSpeech
             if (!File.Exists(filePath))
             {
                 var defaultVoiceSettings = voiceSettings ?? voice.Settings ?? await Api.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken);
-                var payload = JsonConvert.SerializeObject(new TextToSpeechRequest(text, defaultVoiceSettings)).ToJsonStringContent();
+                var payload = JsonConvert.SerializeObject(new TextToSpeechRequest(text, model ?? Model.MonoLingualV1, defaultVoiceSettings)).ToJsonStringContent();
                 var response = await Api.Client.PostAsync(GetUrl($"/{voice.Id}"), payload, cancellationToken);
                 await response.CheckResponseAsync();
                 var responseStream = await response.Content.ReadAsStreamAsync();
@@ -119,10 +120,11 @@ namespace ElevenLabs.TextToSpeech
         /// <param name="voice"><see cref="Voice"/> to use.</param>
         /// <param name="resultHandler">An action to be called when a new <see cref="AudioClip"/> the clip is ready to play.</param>
         /// <param name="voiceSettings">Optional, <see cref="VoiceSettings"/> that will override the default settings in <see cref="Voice.Settings"/>.</param>
+        /// <param name="model">Optional, <see cref="Model"/> to use. Defaults to <see cref="Model.MonoLingualV1"/>.</param>
         /// <param name="saveDirectory">Optional, save directory to save the audio clip. Defaults to <see cref="Rest.DownloadCacheDirectory"/></param>
         /// <param name="deleteCachedFile">Optional, deletes the cached file for this text string. Default is false.</param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
-        public async Task<Tuple<string, AudioClip>> StreamTextToSpeechAsync(string text, Voice voice, Action<AudioClip> resultHandler, VoiceSettings voiceSettings = null, string saveDirectory = null, bool deleteCachedFile = false, CancellationToken cancellationToken = default)
+        public async Task<Tuple<string, AudioClip>> StreamTextToSpeechAsync(string text, Voice voice, Action<AudioClip> resultHandler, VoiceSettings voiceSettings = null, Model model = null, string saveDirectory = null, bool deleteCachedFile = false, CancellationToken cancellationToken = default)
         {
             if (text.Length > 5000)
             {
@@ -164,7 +166,7 @@ namespace ElevenLabs.TextToSpeech
             if (!File.Exists(filePath))
             {
                 var defaultVoiceSettings = voiceSettings ?? voice.Settings ?? await Api.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken);
-                var payload = JsonConvert.SerializeObject(new TextToSpeechRequest(text, defaultVoiceSettings), Api.JsonSerializationOptions).ToJsonStringContent();
+                var payload = JsonConvert.SerializeObject(new TextToSpeechRequest(text, model ?? Model.MonoLingualV1, defaultVoiceSettings), Api.JsonSerializationOptions).ToJsonStringContent();
                 using var request = new HttpRequestMessage(HttpMethod.Post, GetUrl($"/{voice.Id}/stream"))
                 {
                     Content = payload
