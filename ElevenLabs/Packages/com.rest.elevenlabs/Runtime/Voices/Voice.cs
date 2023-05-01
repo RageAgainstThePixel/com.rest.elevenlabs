@@ -12,8 +12,6 @@ namespace ElevenLabs.Voices
             Id = id;
         }
 
-        public static implicit operator string(Voice voice) => voice.Id;
-
         [JsonConstructor]
         public Voice(
             [JsonProperty("voice_id")] string id,
@@ -58,5 +56,40 @@ namespace ElevenLabs.Voices
 
         [JsonProperty("settings")]
         public VoiceSettings Settings { get; internal set; }
+
+        public static implicit operator string(Voice voice) => voice.ToString();
+
+        public override string ToString() => Id;
+
+        #region Premade Voices
+
+        [JsonIgnore]
+        public static Voice Adam { get; } = new Voice("pNInz6obpgDQGcFmaJgB");
+
+        [JsonIgnore]
+        public static Voice Antoni { get; } = new Voice("ErXwobaYiN019PkySvjV");
+
+        [JsonIgnore]
+        public static Voice Arnold { get; } = new Voice("VR6AewLTigWG4xSOukaG");
+
+        [JsonIgnore]
+        public static Voice Bella { get; } = new Voice("EXAVITQu4vr4xnSDxMaL");
+
+        [JsonIgnore]
+        public static Voice Domi { get; } = new Voice("AZnzlk1XvdvUeBnXmlld");
+
+        [JsonIgnore]
+        public static Voice Elli { get; } = new Voice("MF3mGyEYCl7XYWbV9V6O");
+
+        [JsonIgnore]
+        public static Voice Josh { get; } = new Voice("TxGEqnHWrfWFTfGW9XjX");
+
+        [JsonIgnore]
+        public static Voice Rachel { get; } = new Voice("21m00Tcm4TlvDq8ikWAM");
+
+        [JsonIgnore]
+        public static Voice Sam { get; } = new Voice("yoZ06aMxZJJ28mfd3POQ");
+
+        #endregion Premade Voices
     }
 }

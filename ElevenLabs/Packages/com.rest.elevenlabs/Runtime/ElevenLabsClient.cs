@@ -1,6 +1,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using ElevenLabs.History;
+using ElevenLabs.Models;
 using ElevenLabs.TextToSpeech;
 using ElevenLabs.User;
 using ElevenLabs.VoiceGeneration;
@@ -43,6 +44,7 @@ namespace ElevenLabs
 
             UserEndpoint = new UserEndpoint(this);
             VoicesEndpoint = new VoicesEndpoint(this);
+            ModelsEndpoint = new ModelsEndpoint(this);
             HistoryEndpoint = new HistoryEndpoint(this);
             TextToSpeechEndpoint = new TextToSpeechEndpoint(this);
             VoiceGenerationEndpoint = new VoiceGenerationEndpoint(this);
@@ -68,6 +70,8 @@ namespace ElevenLabs
         public UserEndpoint UserEndpoint { get; }
 
         public VoicesEndpoint VoicesEndpoint { get; }
+
+        public ModelsEndpoint ModelsEndpoint { get; }
 
         public HistoryEndpoint HistoryEndpoint { get; }
 
