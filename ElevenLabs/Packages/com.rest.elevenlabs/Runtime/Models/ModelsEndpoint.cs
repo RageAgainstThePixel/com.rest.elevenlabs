@@ -1,10 +1,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using ElevenLabs.Extensions;
 using Newtonsoft.Json;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace ElevenLabs.Models
 {
@@ -22,7 +21,6 @@ namespace ElevenLabs.Models
         {
             var response = await Api.Client.GetAsync(GetUrl());
             var responseAsString = await response.ReadAsStringAsync();
-            Console.WriteLine(responseAsString);
             return JsonConvert.DeserializeObject<IReadOnlyList<Model>>(responseAsString, Api.JsonSerializationOptions);
         }
     }
