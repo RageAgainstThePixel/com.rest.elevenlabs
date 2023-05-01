@@ -1,6 +1,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using ElevenLabs.History;
+using ElevenLabs.Models;
 using ElevenLabs.TextToSpeech;
 using ElevenLabs.User;
 using ElevenLabs.VoiceGeneration;
@@ -8,7 +9,6 @@ using ElevenLabs.Voices;
 using Newtonsoft.Json;
 using System.Net.Http;
 using System.Security.Authentication;
-using ElevenLabs.Models;
 
 namespace ElevenLabs
 {
