@@ -1,10 +1,13 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace ElevenLabs.Voices
 {
+    [Serializable]
     public sealed class Voice
     {
         public Voice(string id)
@@ -33,11 +36,25 @@ namespace ElevenLabs.Voices
             Settings = settings;
         }
 
-        [JsonProperty("voice_id")]
-        public string Id { get; }
+        [SerializeField]
+        private string name;
 
         [JsonProperty("name")]
-        public string Name { get; }
+        public string Name
+        {
+            get => name;
+            private set => name = value;
+        }
+
+        [SerializeField]
+        private string id;
+
+        [JsonProperty("voice_id")]
+        public string Id
+        {
+            get => id;
+            private set => id = value;
+        }
 
         [JsonProperty("samples")]
         public IReadOnlyList<Sample> Samples { get; }
