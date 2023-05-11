@@ -15,7 +15,7 @@ namespace ElevenLabs.Voice.Tests
         {
             var api = new ElevenLabsClient(ElevenLabsAuthentication.LoadFromEnv());
             Assert.NotNull(api.TextToSpeechEndpoint);
-            var voice = (await api.VoicesEndpoint.GetAllVoicesAsync()).FirstOrDefault();
+            var voice = Voices.Voice.Adam;
             Assert.NotNull(voice);
             var defaultVoiceSettings = await api.VoicesEndpoint.GetDefaultVoiceSettingsAsync();
             var (clipPath, audioClip) = await api.TextToSpeechEndpoint.TextToSpeechAsync("The quick brown fox jumps over the lazy dog.", voice, defaultVoiceSettings, deleteCachedFile: true);
