@@ -8,7 +8,7 @@ using UnityEngine;
 namespace ElevenLabs.Voices
 {
     [Serializable]
-    public sealed class Voice
+    public sealed class Voice : IEquatable<Voice>
     {
         public Voice(string id)
         {
@@ -74,7 +74,11 @@ namespace ElevenLabs.Voices
         [JsonProperty("settings")]
         public VoiceSettings Settings { get; internal set; }
 
-        public static implicit operator string(Voice voice) => voice.ToString();
+        public static implicit operator string(Voice voice)
+            => voice?.ToString();
+
+        public static implicit operator Voice(string id)
+            => string.IsNullOrWhiteSpace(id) ? null : new Voice(id);
 
         public override string ToString() => Id;
 
@@ -108,5 +112,55 @@ namespace ElevenLabs.Voices
         public static Voice Sam { get; } = new Voice("yoZ06aMxZJJ28mfd3POQ");
 
         #endregion Premade Voices
+
+        public bool Equals(Voice other)
+        {
+            if (ReferenceEquals(null, other))
+            {
+                return string.IsNullOrWhiteSpace(id);
+            }
+
+            if (ReferenceEquals(this, other))
+            {
+                return true;
+            }
+
+            return name == other.name &&
+                   id == other.id &&
+                   Equals(Samples, other.Samples) &&
+                   Category == other.Category &&
+                   Equals(Labels, other.Labels) &&
+                   PreviewUrl == other.PreviewUrl &&
+                   Equals(AvailableForTiers, other.AvailableForTiers) &&
+                   Equals(Settings, other.Settings);
+        }
+
+        public override bool Equals(object voice)
+            => ReferenceEquals(this, voice) || voice is Voice other && Equals(other);
+
+        public override int GetHashCode()
+            => HashCode.Combine(name, id, Samples, Category, Labels, PreviewUrl, AvailableForTiers, Settings);
+
+        public static bool operator !=(Voice left, Voice right) => !(left == right);
+
+        public static bool operator ==(Voice left, Voice right)
+        {
+            if (left is null && right is null)
+            {
+                return true;
+            }
+
+            if (left is null)
+            {
+                return string.IsNullOrWhiteSpace(right.id);
+            }
+
+            if (right is null)
+            {
+                return string.IsNullOrWhiteSpace(left.id);
+            }
+
+            return left.Equals(right);
+        }
     }
 }
