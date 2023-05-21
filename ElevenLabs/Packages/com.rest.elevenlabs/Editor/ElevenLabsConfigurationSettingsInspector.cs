@@ -1,61 +1,25 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.IO;
 using UnityEditor;
 using UnityEngine;
-using Object = UnityEngine.Object;
+using Utilities.Rest.Editor;
 
 namespace ElevenLabs.Editor
 {
     [CustomEditor(typeof(ElevenLabsConfiguration))]
-    internal class ElevenLabsConfigurationInspector : UnityEditor.Editor
+    internal class ElevenLabsConfigurationInspector : BaseConfigurationInspector<ElevenLabsConfiguration>
     {
+        private static bool triggerReload;
+
         private SerializedProperty apiKey;
         private SerializedProperty proxyDomain;
         private SerializedProperty apiVersion;
 
-        private static bool itemsUpdated;
-
         #region Project Settings Window
 
         [SettingsProvider]
-        private static SettingsProvider Preferences()
-            => new SettingsProvider($"Project/{nameof(ElevenLabs)}", SettingsScope.Project, new[] { nameof(ElevenLabs) })
-            {
-                label = nameof(ElevenLabs),
-                guiHandler = OnPreferencesGui,
-                keywords = new[] { nameof(ElevenLabs) },
-                deactivateHandler = DeactivateHandler
-            };
-
-        private static void DeactivateHandler()
-        {
-            if (itemsUpdated)
-            {
-                itemsUpdated = false;
-                EditorUtility.RequestScriptReload();
-            }
-        }
-
-        private static void OnPreferencesGui(string searchContext)
-        {
-            if (EditorApplication.isPlaying ||
-                EditorApplication.isCompiling)
-            {
-                return;
-            }
-
-            var instance = GetOrCreateInstance();
-
-            if (Selection.activeObject != instance)
-            {
-                Selection.activeObject = instance;
-            }
-
-            var instanceEditor = CreateEditor(instance);
-            instanceEditor.OnInspectorGUI();
-        }
+        private static SettingsProvider Preferences() => GetSettingsProvider(nameof(ElevenLabs), CheckReload);
 
         #endregion Project Settings Window
 
@@ -77,14 +41,7 @@ namespace ElevenLabs.Editor
             }
         }
 
-        private void OnDisable()
-        {
-            if (itemsUpdated)
-            {
-                itemsUpdated = false;
-                EditorUtility.RequestScriptReload();
-            }
-        }
+        private void OnDisable() => CheckReload();
 
         public override void OnInspectorGUI()
         {
@@ -94,8 +51,8 @@ namespace ElevenLabs.Editor
 
             EditorGUI.BeginChangeCheck();
             EditorGUILayout.PropertyField(apiKey);
-
             EditorGUILayout.PropertyField(proxyDomain);
+
             GUI.enabled = false;
 
             if (string.IsNullOrWhiteSpace(apiVersion.stringValue) ||
@@ -109,7 +66,7 @@ namespace ElevenLabs.Editor
 
             if (EditorGUI.EndChangeCheck())
             {
-                itemsUpdated = true;
+                triggerReload = true;
             }
 
             EditorGUI.indentLevel--;
@@ -117,76 +74,13 @@ namespace ElevenLabs.Editor
         }
 
         #endregion Inspector Window
-
-        private static ElevenLabsConfiguration GetOrCreateInstance(Object target = null)
+        private static void CheckReload()
         {
-            var update = false;
-            ElevenLabsConfiguration instance;
-
-            if (!Directory.Exists("Assets/Resources"))
+            if (triggerReload)
             {
-                Directory.CreateDirectory("Assets/Resources");
-                update = true;
+                triggerReload = false;
+                EditorUtility.RequestScriptReload();
             }
-
-            if (target != null)
-            {
-                instance = target as ElevenLabsConfiguration;
-
-                var currentPath = AssetDatabase.GetAssetPath(instance);
-
-                if (string.IsNullOrWhiteSpace(currentPath))
-                {
-                    return instance;
-                }
-
-                if (!currentPath.Contains("Resources"))
-                {
-                    var newPath = $"Assets/Resources/{instance!.name}.asset";
-
-                    if (!File.Exists(newPath))
-                    {
-                        File.Move(Path.GetFullPath(currentPath), Path.GetFullPath(newPath));
-                        File.Move(Path.GetFullPath($"{currentPath}.meta"), Path.GetFullPath($"{newPath}.meta"));
-                    }
-                    else
-                    {
-                        AssetDatabase.DeleteAsset(currentPath);
-                        var instances = AssetDatabase.FindAssets($"t:{nameof(ElevenLabsConfiguration)}");
-                        var path = AssetDatabase.GUIDToAssetPath(instances[0]);
-                        instance = AssetDatabase.LoadAssetAtPath<ElevenLabsConfiguration>(path);
-                    }
-
-                    update = true;
-                }
-            }
-            else
-            {
-                var instances = AssetDatabase.FindAssets($"t:{nameof(ElevenLabsConfiguration)}");
-
-                if (instances.Length > 0)
-                {
-                    var path = AssetDatabase.GUIDToAssetPath(instances[0]);
-                    instance = AssetDatabase.LoadAssetAtPath<ElevenLabsConfiguration>(path);
-                }
-                else
-                {
-                    instance = CreateInstance<ElevenLabsConfiguration>();
-                    AssetDatabase.CreateAsset(instance, $"Assets/Resources/{nameof(ElevenLabsConfiguration)}.asset");
-                    update = true;
-                }
-            }
-
-            if (update)
-            {
-                EditorApplication.delayCall += () =>
-                {
-                    AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
-                    EditorGUIUtility.PingObject(instance);
-                };
-            }
-
-            return instance;
         }
     }
 }
