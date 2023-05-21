@@ -46,6 +46,12 @@ namespace ElevenLabs.TextToSpeech
                 throw new ArgumentNullException(nameof(voice));
             }
 
+            if (string.IsNullOrWhiteSpace(voice.Name))
+            {
+                Debug.LogWarning("Voice details not found! To speed up this call, cache the voice details before making this request.");
+                voice = await Api.VoicesEndpoint.GetVoiceAsync(voice, cancellationToken: cancellationToken);
+            }
+
             await Rest.ValidateCacheDirectoryAsync();
 
             var rootDirectory = (saveDirectory ?? Rest.DownloadCacheDirectory).CreateNewDirectory(nameof(ElevenLabs));
@@ -134,6 +140,12 @@ namespace ElevenLabs.TextToSpeech
             if (voice == null)
             {
                 throw new ArgumentNullException(nameof(voice));
+            }
+
+            if (string.IsNullOrWhiteSpace(voice.Name))
+            {
+                Debug.LogWarning("Voice details not found! To speed up this call, cache the voice details before making this request.");
+                voice = await Api.VoicesEndpoint.GetVoiceAsync(voice, cancellationToken: cancellationToken);
             }
 
             await Rest.ValidateCacheDirectoryAsync();
