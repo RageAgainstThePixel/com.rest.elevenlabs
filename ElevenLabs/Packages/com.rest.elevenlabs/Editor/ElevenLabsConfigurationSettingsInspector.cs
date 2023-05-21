@@ -9,7 +9,7 @@ using Object = UnityEngine.Object;
 namespace ElevenLabs.Editor
 {
     [CustomEditor(typeof(ElevenLabsConfiguration))]
-    internal class ElevenLabsConfigurationSettingsInspector : UnityEditor.Editor
+    internal class ElevenLabsConfigurationInspector : UnityEditor.Editor
     {
         private SerializedProperty apiKey;
         private SerializedProperty proxyDomain;
