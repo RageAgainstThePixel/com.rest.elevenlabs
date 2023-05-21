@@ -49,7 +49,7 @@ namespace ElevenLabs.TextToSpeech
             if (string.IsNullOrWhiteSpace(voice.Name))
             {
                 Debug.LogWarning("Voice details not found! To speed up this call, cache the voice details before making this request.");
-                voice = await client.VoicesEndpoint.GetVoiceAsync(voice, cancellationToken: cancellationToken);
+                voice = await Api.VoicesEndpoint.GetVoiceAsync(voice, cancellationToken: cancellationToken);
             }
 
             await Rest.ValidateCacheDirectoryAsync();
@@ -145,7 +145,7 @@ namespace ElevenLabs.TextToSpeech
             if (string.IsNullOrWhiteSpace(voice.Name))
             {
                 Debug.LogWarning("Voice details not found! To speed up this call, cache the voice details before making this request.");
-                voice = await client.VoicesEndpoint.GetVoiceAsync(voice, cancellationToken: cancellationToken);
+                voice = await Api.VoicesEndpoint.GetVoiceAsync(voice, cancellationToken: cancellationToken);
             }
 
             await Rest.ValidateCacheDirectoryAsync();
