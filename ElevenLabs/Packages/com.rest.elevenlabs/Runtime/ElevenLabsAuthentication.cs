@@ -13,25 +13,13 @@ namespace ElevenLabs
     /// </summary>
     public sealed class ElevenLabsAuthentication : AbstractAuthentication<ElevenLabsAuthentication, ElevenLabsAuthInfo>
     {
-        private const string ELEVEN_LABS_API_KEY = "ELEVEN_LABS_API_KEY";
+        private const string ELEVEN_LABS_API_KEY = nameof(ELEVEN_LABS_API_KEY);
 
         /// <summary>
-        /// Allows implicit casting from a string, so that a simple string API key can be provided in place of an instance of <see cref="ElevenLabsAuthentication"/>.
+        /// Allows implicit casting from a string, so that a simple string API key can be provided in place of an instance of Authentication.
         /// </summary>
-        /// <param name="key">The API key to convert into a <see cref="ElevenLabsAuthentication"/>.</param>
-        public static implicit operator ElevenLabsAuthentication(string key) => new ElevenLabsAuthentication(key);
-
-        /// <summary>
-        /// Instantiates a new Authentication object with the given <paramref name="authInfo"/>, which may be <see langword="null"/>.
-        /// </summary>
-        /// <param name="authInfo"></param>
-        public ElevenLabsAuthentication(ElevenLabsAuthInfo authInfo) => this.authInfo = authInfo;
-
-        /// <summary>
-        /// Instantiates a new Authentication object with the given <paramref name="apiKey"/>, which may be <see langword="null"/>.
-        /// </summary>
-        /// <param name="apiKey">The API key, required to access the API endpoint.</param>
-        public ElevenLabsAuthentication(string apiKey) => authInfo = new ElevenLabsAuthInfo(apiKey);
+        /// <param name="apiKey">The API key.</param>
+        public static implicit operator ElevenLabsAuthentication(string apiKey) => new ElevenLabsAuthentication(apiKey);
 
         /// <summary>
         /// Instantiates a new Authentication object that will load the default config.
@@ -41,6 +29,23 @@ namespace ElevenLabs
                                   LoadFromDirectory()) ??
                                   LoadFromDirectory(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)) ??
                                   LoadFromEnvironment();
+
+        /// <summary>
+        /// Instantiates a new Authentication object with the given <paramref name="apiKey"/>, which may be <see langword="null"/>.
+        /// </summary>
+        /// <param name="apiKey">The API key, required to access the API endpoint.</param>
+        public ElevenLabsAuthentication(string apiKey) => authInfo = new ElevenLabsAuthInfo(apiKey);
+
+        /// <summary>
+        /// Instantiates a new Authentication object with the given <paramref name="authInfo"/>, which may be <see langword="null"/>.
+        /// </summary>
+        /// <param name="authInfo"></param>
+        public ElevenLabsAuthentication(ElevenLabsAuthInfo authInfo) => this.authInfo = authInfo;
+
+        private readonly ElevenLabsAuthInfo authInfo;
+
+        /// <inheritdoc />
+        public override ElevenLabsAuthInfo Info => authInfo ?? Default.Info;
 
         private static ElevenLabsAuthentication cachedDefault;
 
@@ -54,11 +59,6 @@ namespace ElevenLabs
             get => cachedDefault ?? new ElevenLabsAuthentication();
             internal set => cachedDefault = value;
         }
-
-        private readonly ElevenLabsAuthInfo authInfo;
-
-        /// <inheritdoc />
-        public override ElevenLabsAuthInfo Info => authInfo ?? Default.Info;
 
         [Obsolete("Use ElevenLabsAuthentication.Info.ApiKey")]
         public string ApiKey => authInfo.ApiKey;
@@ -90,11 +90,11 @@ namespace ElevenLabs
                 directory = Environment.CurrentDirectory;
             }
 
-            ElevenLabsAuthInfo elevenLabsAuthInfo = null;
+            ElevenLabsAuthInfo tempAuthInfo = null;
 
             var currentDirectory = new DirectoryInfo(directory);
 
-            while (elevenLabsAuthInfo == null && currentDirectory.Parent != null)
+            while (tempAuthInfo == null && currentDirectory.Parent != null)
             {
                 var filePath = Path.Combine(currentDirectory.FullName, filename);
 
@@ -102,7 +102,7 @@ namespace ElevenLabs
                 {
                     try
                     {
-                        elevenLabsAuthInfo = JsonUtility.FromJson<ElevenLabsAuthInfo>(File.ReadAllText(filePath));
+                        tempAuthInfo = JsonUtility.FromJson<ElevenLabsAuthInfo>(File.ReadAllText(filePath));
                         break;
                     }
                     catch (Exception)
@@ -131,7 +131,7 @@ namespace ElevenLabs
                         }
                     }
 
-                    elevenLabsAuthInfo = new ElevenLabsAuthInfo(apiKey);
+                    tempAuthInfo = new ElevenLabsAuthInfo(apiKey);
                 }
 
                 if (searchUp)
@@ -144,13 +144,13 @@ namespace ElevenLabs
                 }
             }
 
-            if (elevenLabsAuthInfo == null ||
-                string.IsNullOrEmpty(elevenLabsAuthInfo.ApiKey))
+            if (tempAuthInfo == null ||
+                string.IsNullOrEmpty(tempAuthInfo.ApiKey))
             {
                 return null;
             }
 
-            return new ElevenLabsAuthentication(elevenLabsAuthInfo);
+            return new ElevenLabsAuthentication(tempAuthInfo);
         }
 
         [Obsolete("use ElevenLabsAuthentication.Default.LoadFromEnvironment")]
