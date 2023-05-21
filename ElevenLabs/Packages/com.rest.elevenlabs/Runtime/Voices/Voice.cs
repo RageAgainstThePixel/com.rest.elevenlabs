@@ -85,31 +85,31 @@ namespace ElevenLabs.Voices
         #region Premade Voices
 
         [JsonIgnore]
-        public static Voice Adam { get; } = new Voice("pNInz6obpgDQGcFmaJgB");
+        public static Voice Adam { get; } = new Voice("pNInz6obpgDQGcFmaJgB") { Name = nameof(Adam) };
 
         [JsonIgnore]
-        public static Voice Antoni { get; } = new Voice("ErXwobaYiN019PkySvjV");
+        public static Voice Antoni { get; } = new Voice("ErXwobaYiN019PkySvjV") { Name = nameof(Antoni) };
 
         [JsonIgnore]
-        public static Voice Arnold { get; } = new Voice("VR6AewLTigWG4xSOukaG");
+        public static Voice Arnold { get; } = new Voice("VR6AewLTigWG4xSOukaG") { Name = nameof(Arnold) };
 
         [JsonIgnore]
-        public static Voice Bella { get; } = new Voice("EXAVITQu4vr4xnSDxMaL");
+        public static Voice Bella { get; } = new Voice("EXAVITQu4vr4xnSDxMaL") { Name = nameof(Bella) };
 
         [JsonIgnore]
-        public static Voice Domi { get; } = new Voice("AZnzlk1XvdvUeBnXmlld");
+        public static Voice Domi { get; } = new Voice("AZnzlk1XvdvUeBnXmlld") { Name = nameof(Domi) };
 
         [JsonIgnore]
-        public static Voice Elli { get; } = new Voice("MF3mGyEYCl7XYWbV9V6O");
+        public static Voice Elli { get; } = new Voice("MF3mGyEYCl7XYWbV9V6O") { Name = nameof(Elli) };
 
         [JsonIgnore]
-        public static Voice Josh { get; } = new Voice("TxGEqnHWrfWFTfGW9XjX");
+        public static Voice Josh { get; } = new Voice("TxGEqnHWrfWFTfGW9XjX") { Name = nameof(Josh) };
 
         [JsonIgnore]
-        public static Voice Rachel { get; } = new Voice("21m00Tcm4TlvDq8ikWAM");
+        public static Voice Rachel { get; } = new Voice("21m00Tcm4TlvDq8ikWAM") { Name = nameof(Rachel) };
 
         [JsonIgnore]
-        public static Voice Sam { get; } = new Voice("yoZ06aMxZJJ28mfd3POQ");
+        public static Voice Sam { get; } = new Voice("yoZ06aMxZJJ28mfd3POQ") { Name = nameof(Sam) };
 
         #endregion Premade Voices
 
