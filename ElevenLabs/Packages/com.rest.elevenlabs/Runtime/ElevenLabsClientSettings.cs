@@ -34,8 +34,8 @@ namespace ElevenLabs
                 domain = ElevenLabsSettingsInfo.ElevenLabsDomain;
             }
 
-            if (!domain.Contains(".") &&
-                !domain.Contains(":"))
+            if (!domain.Contains('.') &&
+                !domain.Contains(':'))
             {
                 throw new ArgumentException($"You're attempting to pass a \"resourceName\" parameter to \"{nameof(domain)}\". Please specify \"resourceName:\" for this parameter in constructor.");
             }

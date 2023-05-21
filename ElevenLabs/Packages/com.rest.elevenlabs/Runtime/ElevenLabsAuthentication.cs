@@ -47,7 +47,7 @@ namespace ElevenLabs
         /// <summary>
         /// The default authentication to use when no other auth is specified.
         /// This can be set manually, or automatically loaded via environment variables or a config file.
-        /// <seealso cref="LoadFromEnv"/><seealso cref="LoadFromDirectory"/>
+        /// <seealso cref="LoadFromEnvironment"/><seealso cref="LoadFromDirectory"/>
         /// </summary>
         public static ElevenLabsAuthentication Default
         {
@@ -64,8 +64,22 @@ namespace ElevenLabs
         public string ApiKey => authInfo.ApiKey;
 
         /// <inheritdoc />
-        public override ElevenLabsAuthentication LoadFromPath(string path)
-            => LoadFromDirectory(Path.GetDirectoryName(path), Path.GetFileName(path), false);
+        public override ElevenLabsAuthentication LoadFromAsset<T>()
+            => Resources.LoadAll<T>(string.Empty)
+                .Where(asset => asset != null)
+                .Where(asset => asset is ElevenLabsConfiguration config &&
+                                !string.IsNullOrWhiteSpace(config.ApiKey))
+                .Select(asset => asset is ElevenLabsConfiguration config
+                    ? new ElevenLabsAuthentication(config.ApiKey)
+                    : null)
+                .FirstOrDefault();
+
+        /// <inheritdoc />
+        public override ElevenLabsAuthentication LoadFromEnvironment()
+        {
+            var apiKey = Environment.GetEnvironmentVariable(ELEVEN_LABS_API_KEY);
+            return string.IsNullOrEmpty(apiKey) ? null : new ElevenLabsAuthentication(apiKey);
+        }
 
         /// <inheritdoc />
         /// ReSharper disable once OptionalParameterHierarchyMismatch
@@ -139,26 +153,7 @@ namespace ElevenLabs
             return new ElevenLabsAuthentication(elevenLabsAuthInfo);
         }
 
-        /// <inheritdoc />
-        public override ElevenLabsAuthentication LoadFromAsset<T>()
-            => Resources.LoadAll<T>(string.Empty)
-                .Where(asset => asset != null)
-                .Where(asset => asset is ElevenLabsConfiguration config &&
-                                !string.IsNullOrWhiteSpace(config.ApiKey))
-                .Select(asset => asset is ElevenLabsConfiguration config
-                    ? new ElevenLabsAuthentication(config.ApiKey)
-                    : null)
-                .FirstOrDefault();
-
         [Obsolete("use ElevenLabsAuthentication.Default.LoadFromEnvironment")]
         public static ElevenLabsAuthentication LoadFromEnv() => Default.LoadFromEnvironment();
-
-        /// <inheritdoc />
-        public override ElevenLabsAuthentication LoadFromEnvironment()
-        {
-            var apiKey = Environment.GetEnvironmentVariable(ELEVEN_LABS_API_KEY);
-            return string.IsNullOrEmpty(apiKey) ? null : new ElevenLabsAuthentication(apiKey);
-        }
-
     }
 }
