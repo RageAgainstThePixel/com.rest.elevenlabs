@@ -19,7 +19,8 @@ namespace ElevenLabs.Editor
         #region Project Settings Window
 
         [SettingsProvider]
-        private static SettingsProvider Preferences() => GetSettingsProvider(nameof(ElevenLabs), CheckReload);
+        private static SettingsProvider Preferences()
+            => GetSettingsProvider(nameof(ElevenLabs), CheckReload);
 
         #endregion Project Settings Window
 
