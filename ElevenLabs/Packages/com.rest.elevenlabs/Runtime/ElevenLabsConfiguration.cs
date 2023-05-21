@@ -1,15 +1,16 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using UnityEngine;
+using Utilities.WebRequestRest.Interfaces;
 
 namespace ElevenLabs
 {
-    [CreateAssetMenu(fileName = nameof(ElevenLabsConfigurationSettings), menuName = nameof(ElevenLabs) + "/" + nameof(ElevenLabsConfigurationSettings), order = 0)]
-    internal sealed class ElevenLabsConfigurationSettings : ScriptableObject
+    [CreateAssetMenu(fileName = nameof(ElevenLabsConfiguration), menuName = nameof(ElevenLabs) + "/" + nameof(ElevenLabsConfiguration), order = 0)]
+    public sealed class ElevenLabsConfiguration : ScriptableObject, IConfiguration
     {
         [SerializeField]
         [Tooltip("The xi api key.")]
-        internal string apiKey;
+        private string apiKey;
 
         public string ApiKey => apiKey;
 
@@ -21,7 +22,7 @@ namespace ElevenLabs
 
         [SerializeField]
         [Tooltip("The api version, Defaults to v1")]
-        private string apiVersion = ElevenLabsClientSettings.DefaultApiVersion;
+        private string apiVersion = ElevenLabsSettingsInfo.DefaultApiVersion;
 
         public string ApiVersion => apiVersion;
     }

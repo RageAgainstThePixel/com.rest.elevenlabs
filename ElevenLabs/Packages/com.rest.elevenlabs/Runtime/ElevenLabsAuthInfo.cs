@@ -2,13 +2,14 @@
 
 using System;
 using UnityEngine;
+using Utilities.WebRequestRest.Interfaces;
 
 namespace ElevenLabs
 {
     [Serializable]
-    internal class AuthInfo
+    public sealed class ElevenLabsAuthInfo : IAuthInfo
     {
-        public AuthInfo(string apiKey)
+        public ElevenLabsAuthInfo(string apiKey)
         {
             this.apiKey = apiKey;
         }

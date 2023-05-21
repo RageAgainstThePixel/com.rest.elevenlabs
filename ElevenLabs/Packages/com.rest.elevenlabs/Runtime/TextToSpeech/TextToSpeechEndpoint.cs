@@ -17,9 +17,9 @@ namespace ElevenLabs.TextToSpeech
     /// <summary>
     /// Access to convert text to synthesized speech.
     /// </summary>
-    public sealed class TextToSpeechEndpoint : BaseEndPoint
+    public sealed class TextToSpeechEndpoint : ElevenLabsBaseEndPoint
     {
-        public TextToSpeechEndpoint(ElevenLabsClient api) : base(api) { }
+        public TextToSpeechEndpoint(ElevenLabsClient client) : base(client) { }
 
         protected override string Root => "text-to-speech";
 
@@ -74,9 +74,9 @@ namespace ElevenLabs.TextToSpeech
 
             if (!File.Exists(filePath))
             {
-                var defaultVoiceSettings = voiceSettings ?? voice.Settings ?? await Api.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken);
+                var defaultVoiceSettings = voiceSettings ?? voice.Settings ?? await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken);
                 var payload = JsonConvert.SerializeObject(new TextToSpeechRequest(text, model ?? Model.MonoLingualV1, defaultVoiceSettings)).ToJsonStringContent();
-                var response = await Api.Client.PostAsync(GetUrl($"/{voice.Id}"), payload, cancellationToken);
+                var response = await client.Client.PostAsync(GetUrl($"/{voice.Id}"), payload, cancellationToken);
                 await response.CheckResponseAsync();
                 var responseStream = await response.Content.ReadAsStreamAsync();
 
@@ -165,13 +165,13 @@ namespace ElevenLabs.TextToSpeech
 
             if (!File.Exists(filePath))
             {
-                var defaultVoiceSettings = voiceSettings ?? voice.Settings ?? await Api.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken);
-                var payload = JsonConvert.SerializeObject(new TextToSpeechRequest(text, model ?? Model.MonoLingualV1, defaultVoiceSettings), Api.JsonSerializationOptions).ToJsonStringContent();
+                var defaultVoiceSettings = voiceSettings ?? voice.Settings ?? await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken);
+                var payload = JsonConvert.SerializeObject(new TextToSpeechRequest(text, model ?? Model.MonoLingualV1, defaultVoiceSettings), client.JsonSerializationOptions).ToJsonStringContent();
                 using var request = new HttpRequestMessage(HttpMethod.Post, GetUrl($"/{voice.Id}/stream"))
                 {
                     Content = payload
                 };
-                using var response = await Api.Client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                using var response = await client.Client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
                 await response.CheckResponseAsync();
                 await using var stream = await response.Content.ReadAsStreamAsync();
 

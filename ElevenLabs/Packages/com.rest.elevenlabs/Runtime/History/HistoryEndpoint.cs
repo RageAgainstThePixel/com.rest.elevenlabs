@@ -19,7 +19,7 @@ namespace ElevenLabs.History
     /// <summary>
     /// Access to your history. Your history is a list of all your created audio including its metadata.
     /// </summary>
-    public sealed class HistoryEndpoint : BaseEndPoint
+    public sealed class HistoryEndpoint : ElevenLabsBaseEndPoint
     {
         private class HistoryInfo
         {
@@ -33,7 +33,7 @@ namespace ElevenLabs.History
             public IReadOnlyList<HistoryItem> History { get; }
         }
 
-        public HistoryEndpoint(ElevenLabsClient api) : base(api) { }
+        public HistoryEndpoint(ElevenLabsClient client) : base(client) { }
 
         protected override string Root => "history";
 
@@ -44,9 +44,9 @@ namespace ElevenLabs.History
         /// <returns>A list of history items containing metadata about generated audio.</returns>
         public async Task<IReadOnlyList<HistoryItem>> GetHistoryAsync(CancellationToken cancellationToken = default)
         {
-            var result = await Api.Client.GetAsync(GetUrl(), cancellationToken);
+            var result = await client.Client.GetAsync(GetUrl(), cancellationToken);
             var resultAsString = await result.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<HistoryInfo>(resultAsString, Api.JsonSerializationOptions)?.History;
+            return JsonConvert.DeserializeObject<HistoryInfo>(resultAsString, client.JsonSerializationOptions)?.History;
         }
 
         /// <summary>
@@ -70,7 +70,7 @@ namespace ElevenLabs.History
                 File.Delete(filePath);
             }
 
-            var response = await Api.Client.GetAsync(GetUrl($"/{historyItem.Id}/audio"), cancellationToken);
+            var response = await client.Client.GetAsync(GetUrl($"/{historyItem.Id}/audio"), cancellationToken);
             await response.CheckResponseAsync();
 
             var responseStream = await response.Content.ReadAsStreamAsync();
@@ -115,7 +115,7 @@ namespace ElevenLabs.History
         /// <returns>True, if history item was successfully deleted.</returns>
         public async Task<bool> DeleteHistoryItemAsync(string historyId, CancellationToken cancellationToken = default)
         {
-            var response = await Api.Client.DeleteAsync(GetUrl($"/{historyId}"), cancellationToken);
+            var response = await client.Client.DeleteAsync(GetUrl($"/{historyId}"), cancellationToken);
             await response.ReadAsStringAsync();
             return response.IsSuccessStatusCode;
         }
@@ -148,7 +148,7 @@ namespace ElevenLabs.History
             else
             {
                 var jsonContent = $"{{\"history_item_ids\":[\"{string.Join("\",\"", historyItemIds)}\"]}}".ToJsonStringContent();
-                var response = await Api.Client.PostAsync(GetUrl("/download"), jsonContent, cancellationToken);
+                var response = await client.Client.PostAsync(GetUrl("/download"), jsonContent, cancellationToken);
                 await response.CheckResponseAsync();
                 var unZipTasks = new List<Task>();
                 var responseStream = await response.Content.ReadAsStreamAsync();

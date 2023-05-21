@@ -8,7 +8,7 @@ using Object = UnityEngine.Object;
 
 namespace ElevenLabs.Editor
 {
-    [CustomEditor(typeof(ElevenLabsConfigurationSettings))]
+    [CustomEditor(typeof(ElevenLabsConfiguration))]
     internal class ElevenLabsConfigurationSettingsInspector : UnityEditor.Editor
     {
         private SerializedProperty apiKey;
@@ -99,9 +99,9 @@ namespace ElevenLabs.Editor
             GUI.enabled = false;
 
             if (string.IsNullOrWhiteSpace(apiVersion.stringValue) ||
-                apiVersion.stringValue != ElevenLabsClientSettings.DefaultApiVersion)
+                apiVersion.stringValue != ElevenLabsSettingsInfo.DefaultApiVersion)
             {
-                apiVersion.stringValue = ElevenLabsClientSettings.DefaultApiVersion;
+                apiVersion.stringValue = ElevenLabsSettingsInfo.DefaultApiVersion;
             }
 
             EditorGUILayout.PropertyField(apiVersion);
@@ -118,10 +118,10 @@ namespace ElevenLabs.Editor
 
         #endregion Inspector Window
 
-        private static ElevenLabsConfigurationSettings GetOrCreateInstance(Object target = null)
+        private static ElevenLabsConfiguration GetOrCreateInstance(Object target = null)
         {
             var update = false;
-            ElevenLabsConfigurationSettings instance;
+            ElevenLabsConfiguration instance;
 
             if (!Directory.Exists("Assets/Resources"))
             {
@@ -131,7 +131,7 @@ namespace ElevenLabs.Editor
 
             if (target != null)
             {
-                instance = target as ElevenLabsConfigurationSettings;
+                instance = target as ElevenLabsConfiguration;
 
                 var currentPath = AssetDatabase.GetAssetPath(instance);
 
@@ -152,9 +152,9 @@ namespace ElevenLabs.Editor
                     else
                     {
                         AssetDatabase.DeleteAsset(currentPath);
-                        var instances = AssetDatabase.FindAssets($"t:{nameof(ElevenLabsConfigurationSettings)}");
+                        var instances = AssetDatabase.FindAssets($"t:{nameof(ElevenLabsConfiguration)}");
                         var path = AssetDatabase.GUIDToAssetPath(instances[0]);
-                        instance = AssetDatabase.LoadAssetAtPath<ElevenLabsConfigurationSettings>(path);
+                        instance = AssetDatabase.LoadAssetAtPath<ElevenLabsConfiguration>(path);
                     }
 
                     update = true;
@@ -162,17 +162,17 @@ namespace ElevenLabs.Editor
             }
             else
             {
-                var instances = AssetDatabase.FindAssets($"t:{nameof(ElevenLabsConfigurationSettings)}");
+                var instances = AssetDatabase.FindAssets($"t:{nameof(ElevenLabsConfiguration)}");
 
                 if (instances.Length > 0)
                 {
                     var path = AssetDatabase.GUIDToAssetPath(instances[0]);
-                    instance = AssetDatabase.LoadAssetAtPath<ElevenLabsConfigurationSettings>(path);
+                    instance = AssetDatabase.LoadAssetAtPath<ElevenLabsConfiguration>(path);
                 }
                 else
                 {
-                    instance = CreateInstance<ElevenLabsConfigurationSettings>();
-                    AssetDatabase.CreateAsset(instance, $"Assets/Resources/{nameof(ElevenLabsConfigurationSettings)}.asset");
+                    instance = CreateInstance<ElevenLabsConfiguration>();
+                    AssetDatabase.CreateAsset(instance, $"Assets/Resources/{nameof(ElevenLabsConfiguration)}.asset");
                     update = true;
                 }
             }

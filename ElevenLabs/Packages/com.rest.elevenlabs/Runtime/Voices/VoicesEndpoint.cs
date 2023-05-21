@@ -17,7 +17,7 @@ namespace ElevenLabs.Voices
     /// <summary>
     /// Access to voices created either by you or us.
     /// </summary>
-    public sealed class VoicesEndpoint : BaseEndPoint
+    public sealed class VoicesEndpoint : ElevenLabsBaseEndPoint
     {
         private class VoiceList
         {
@@ -43,7 +43,7 @@ namespace ElevenLabs.Voices
             public string VoiceId { get; }
         }
 
-        public VoicesEndpoint(ElevenLabsClient api) : base(api) { }
+        public VoicesEndpoint(ElevenLabsClient client) : base(client) { }
 
         protected override string Root => "voices";
 
@@ -54,9 +54,9 @@ namespace ElevenLabs.Voices
         /// <returns><see cref="IReadOnlyList{T}"/> of <see cref="Voice"/>s.</returns>
         public async Task<IReadOnlyList<Voice>> GetAllVoicesAsync(CancellationToken cancellationToken = default)
         {
-            var response = await Api.Client.GetAsync(GetUrl(), cancellationToken);
+            var response = await client.Client.GetAsync(GetUrl(), cancellationToken);
             var responseAsString = await response.ReadAsStringAsync();
-            var voices = JsonConvert.DeserializeObject<VoiceList>(responseAsString, Api.JsonSerializationOptions).Voices;
+            var voices = JsonConvert.DeserializeObject<VoiceList>(responseAsString, client.JsonSerializationOptions).Voices;
             var voiceSettingsTasks = new List<Task>();
 
             foreach (var voice in voices)
@@ -80,9 +80,9 @@ namespace ElevenLabs.Voices
         /// <returns><see cref="VoiceSettings"/>.</returns>
         public async Task<VoiceSettings> GetDefaultVoiceSettingsAsync(CancellationToken cancellationToken = default)
         {
-            var response = await Api.Client.GetAsync(GetUrl("/settings/default"), cancellationToken);
+            var response = await client.Client.GetAsync(GetUrl("/settings/default"), cancellationToken);
             var responseAsString = await response.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<VoiceSettings>(responseAsString, Api.JsonSerializationOptions);
+            return JsonConvert.DeserializeObject<VoiceSettings>(responseAsString, client.JsonSerializationOptions);
         }
 
         /// <summary>
@@ -98,9 +98,9 @@ namespace ElevenLabs.Voices
                 throw new ArgumentNullException(nameof(voiceId));
             }
 
-            var response = await Api.Client.GetAsync(GetUrl($"/{voiceId}/settings"), cancellationToken);
+            var response = await client.Client.GetAsync(GetUrl($"/{voiceId}/settings"), cancellationToken);
             var responseAsString = await response.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<VoiceSettings>(responseAsString, Api.JsonSerializationOptions);
+            return JsonConvert.DeserializeObject<VoiceSettings>(responseAsString, client.JsonSerializationOptions);
         }
 
         /// <summary>
@@ -117,9 +117,9 @@ namespace ElevenLabs.Voices
                 throw new ArgumentNullException(nameof(voiceId));
             }
 
-            var response = await Api.Client.GetAsync(GetUrl($"/{voiceId}?with_settings={withSettings}"), cancellationToken);
+            var response = await client.Client.GetAsync(GetUrl($"/{voiceId}?with_settings={withSettings}"), cancellationToken);
             var responseAsString = await response.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<Voice>(responseAsString, Api.JsonSerializationOptions);
+            return JsonConvert.DeserializeObject<Voice>(responseAsString, client.JsonSerializationOptions);
         }
 
         /// <summary>
@@ -137,7 +137,7 @@ namespace ElevenLabs.Voices
             }
 
             var payload = JsonConvert.SerializeObject(voiceSettings).ToJsonStringContent();
-            var response = await Api.Client.PostAsync(GetUrl($"/{voiceId}/settings/edit"), payload, cancellationToken);
+            var response = await client.Client.PostAsync(GetUrl($"/{voiceId}/settings/edit"), payload, cancellationToken);
             await response.ReadAsStringAsync();
             return response.IsSuccessStatusCode;
         }
@@ -188,9 +188,9 @@ namespace ElevenLabs.Voices
                 form.Add(new StringContent(JsonConvert.SerializeObject(labels)), "labels");
             }
 
-            var response = await Api.Client.PostAsync(GetUrl("/add"), form, cancellationToken);
+            var response = await client.Client.PostAsync(GetUrl("/add"), form, cancellationToken);
             var responseAsString = await response.ReadAsStringAsync();
-            var voiceResponse = JsonConvert.DeserializeObject<VoiceResponse>(responseAsString, Api.JsonSerializationOptions);
+            var voiceResponse = JsonConvert.DeserializeObject<VoiceResponse>(responseAsString, client.JsonSerializationOptions);
             var voice = await GetVoiceAsync(voiceResponse.VoiceId, cancellationToken: cancellationToken);
             return voice;
         }
@@ -242,7 +242,7 @@ namespace ElevenLabs.Voices
                 form.Add(new StringContent(JsonConvert.SerializeObject(labels)), "labels");
             }
 
-            var response = await Api.Client.PostAsync(GetUrl($"/{voice.Id}/edit"), form, cancellationToken);
+            var response = await client.Client.PostAsync(GetUrl($"/{voice.Id}/edit"), form, cancellationToken);
             await response.CheckResponseAsync();
             return response.IsSuccessStatusCode;
         }
@@ -260,7 +260,7 @@ namespace ElevenLabs.Voices
                 throw new ArgumentNullException(nameof(voiceId));
             }
 
-            var response = await Api.Client.DeleteAsync(GetUrl($"/{voiceId}"), cancellationToken);
+            var response = await client.Client.DeleteAsync(GetUrl($"/{voiceId}"), cancellationToken);
             await response.CheckResponseAsync();
             return response.IsSuccessStatusCode;
         }
@@ -287,7 +287,7 @@ namespace ElevenLabs.Voices
                 throw new ArgumentNullException(nameof(sampleId));
             }
 
-            var response = await Api.Client.GetAsync(GetUrl($"/{voiceId}/samples/{sampleId}/audio"), cancellationToken);
+            var response = await client.Client.GetAsync(GetUrl($"/{voiceId}/samples/{sampleId}/audio"), cancellationToken);
             await response.CheckResponseAsync();
 
             await Rest.ValidateCacheDirectoryAsync();
@@ -354,7 +354,7 @@ namespace ElevenLabs.Voices
                 throw new ArgumentNullException(nameof(sampleId));
             }
 
-            var response = await Api.Client.DeleteAsync(GetUrl($"/{voiceId}/samples/{sampleId}"), cancellationToken);
+            var response = await client.Client.DeleteAsync(GetUrl($"/{voiceId}/samples/{sampleId}"), cancellationToken);
             await response.CheckResponseAsync();
             return response.IsSuccessStatusCode;
         }

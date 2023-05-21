@@ -15,7 +15,7 @@ namespace ElevenLabs.Voice.Tests
         [Test]
         public async Task Test_01_GetVoiceGenerationOptions()
         {
-            var api = new ElevenLabsClient(ElevenLabsAuthentication.LoadFromEnv());
+            var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
             Assert.NotNull(api.VoiceGenerationEndpoint);
             var options = await api.VoiceGenerationEndpoint.GetVoiceGenerationOptionsAsync();
             Assert.NotNull(options);
@@ -25,7 +25,7 @@ namespace ElevenLabs.Voice.Tests
         [Test]
         public async Task Test_02_GenerateVoice()
         {
-            var api = new ElevenLabsClient(ElevenLabsAuthentication.LoadFromEnv());
+            var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
             Assert.NotNull(api.VoiceGenerationEndpoint);
             var options = await api.VoiceGenerationEndpoint.GetVoiceGenerationOptionsAsync();
             var generateRequest = new GeneratedVoiceRequest("First we thought the PC was a calculator. Then we found out how to turn numbers into letters and we thought it was a typewriter.", options.Genders.FirstOrDefault(), options.Accents.FirstOrDefault(), options.Ages.FirstOrDefault());

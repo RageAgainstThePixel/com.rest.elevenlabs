@@ -569,10 +569,9 @@ namespace ElevenLabs.Editor
                 EditorGUILayout.LabelField("Eleven Labs Dashboard", BoldCenteredHeaderStyle);
                 EditorGUILayout.Space();
 
-                if (api == null ||
-                    string.IsNullOrWhiteSpace(api.ElevenLabsAuthentication.ApiKey))
+                if (api is not { HasValidAuthentication: true })
                 {
-                    EditorGUILayout.HelpBox($"No valid {nameof(ElevenLabsConfigurationSettings)} was found. This tool requires that you set your API key.", MessageType.Error);
+                    EditorGUILayout.HelpBox($"No valid {nameof(ElevenLabsConfiguration)} was found. This tool requires that you set your API key.", MessageType.Error);
                     return;
                 }
 
