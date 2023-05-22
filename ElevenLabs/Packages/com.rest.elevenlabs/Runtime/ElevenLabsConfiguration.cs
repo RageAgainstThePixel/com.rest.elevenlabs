@@ -12,7 +12,11 @@ namespace ElevenLabs
         [Tooltip("The xi api key.")]
         private string apiKey;
 
-        public string ApiKey => apiKey;
+        public string ApiKey
+        {
+            get => apiKey;
+            internal set => apiKey = value;
+        }
 
         [SerializeField]
         [Tooltip("Optional proxy domain to make requests though.")]
