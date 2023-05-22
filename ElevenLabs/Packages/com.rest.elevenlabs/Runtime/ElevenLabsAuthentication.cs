@@ -13,6 +13,7 @@ namespace ElevenLabs
     /// </summary>
     public sealed class ElevenLabsAuthentication : AbstractAuthentication<ElevenLabsAuthentication, ElevenLabsAuthInfo>
     {
+        internal const string CONFIG_FILE = ".elevenlabs";
         private const string ELEVEN_LABS_API_KEY = nameof(ELEVEN_LABS_API_KEY);
 
         /// <summary>
@@ -83,7 +84,7 @@ namespace ElevenLabs
 
         /// <inheritdoc />
         /// ReSharper disable once OptionalParameterHierarchyMismatch
-        public override ElevenLabsAuthentication LoadFromDirectory(string directory = null, string filename = ".elevenlabs", bool searchUp = true)
+        public override ElevenLabsAuthentication LoadFromDirectory(string directory = null, string filename = CONFIG_FILE, bool searchUp = true)
         {
             if (string.IsNullOrWhiteSpace(directory))
             {

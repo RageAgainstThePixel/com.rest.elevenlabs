@@ -16,7 +16,7 @@ namespace ElevenLabs.Voice.Tests
         {
             var authJson = new ElevenLabsAuthInfo("key-test12");
             var authText = JsonUtility.ToJson(authJson, true);
-            File.WriteAllText(".elevenlabs", authText);
+            File.WriteAllText(ElevenLabsAuthentication.CONFIG_FILE, authText);
         }
 
         [Test]
@@ -44,33 +44,36 @@ namespace ElevenLabs.Voice.Tests
             Assert.IsNull(auth);
         }
 
-
         [Test]
         public void Test_04_GetAuthFromConfiguration()
         {
-            var config = ScriptableObject.CreateInstance<ElevenLabsConfiguration>();
-            config.ApiKey = "key-test12";
+            var configPath = $"Assets/Resources/{nameof(ElevenLabsConfiguration)}.asset";
             var cleanup = false;
 
-            if (!Directory.Exists($"{Application.dataPath}/Resources"))
+            if (!File.Exists(Path.GetFullPath(configPath)))
             {
-                Directory.CreateDirectory($"{Application.dataPath}/Resources");
+                if (!Directory.Exists($"{Application.dataPath}/Resources"))
+                {
+                    Directory.CreateDirectory($"{Application.dataPath}/Resources");
+                }
+
+                var instance = ScriptableObject.CreateInstance<ElevenLabsConfiguration>();
+                instance.ApiKey = "key-test12";
+                AssetDatabase.CreateAsset(instance, configPath);
                 cleanup = true;
             }
 
-            AssetDatabase.CreateAsset(config, $"Assets/Resources/{nameof(ElevenLabsConfiguration)}-Test.asset");
-
-            var configPath = AssetDatabase.GetAssetPath(config);
-            var auth = ElevenLabsAuthentication.Default;
+            var config = AssetDatabase.LoadAssetAtPath<ElevenLabsConfiguration>(configPath);
+            var auth = ElevenLabsAuthentication.Default.LoadFromAsset<ElevenLabsConfiguration>();
 
             Assert.IsNotNull(auth);
             Assert.IsNotNull(auth.Info.ApiKey);
             Assert.IsNotEmpty(auth.Info.ApiKey);
             Assert.AreEqual(auth.Info.ApiKey, config.ApiKey);
-            AssetDatabase.DeleteAsset(configPath);
 
             if (cleanup)
             {
+                AssetDatabase.DeleteAsset(configPath);
                 AssetDatabase.DeleteAsset("Assets/Resources");
             }
         }
@@ -143,9 +146,9 @@ namespace ElevenLabs.Voice.Tests
         [TearDown]
         public void TearDown()
         {
-            if (File.Exists(".elevenlabs"))
+            if (File.Exists(ElevenLabsAuthentication.CONFIG_FILE))
             {
-                File.Delete(".elevenlabs");
+                File.Delete(ElevenLabsAuthentication.CONFIG_FILE);
             }
         }
     }
