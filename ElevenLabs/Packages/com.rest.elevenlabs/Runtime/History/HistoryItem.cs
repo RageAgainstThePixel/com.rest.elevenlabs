@@ -3,13 +3,17 @@
 using ElevenLabs.Extensions;
 using Newtonsoft.Json;
 using System;
+using UnityEngine.Scripting;
 
 namespace ElevenLabs.History
 {
+    [Preserve]
     public sealed class HistoryItem
     {
+        [Preserve]
         public static implicit operator string(HistoryItem historyItem) => historyItem.Id;
 
+        [Preserve]
         [JsonConstructor]
         public HistoryItem(
             [JsonProperty("history_item_id")] string id,
@@ -34,36 +38,47 @@ namespace ElevenLabs.History
             State = state;
         }
 
+        [Preserve]
         [JsonProperty("history_item_id")]
         public string Id { get; }
 
+        [Preserve]
         [JsonProperty("voice_id")]
         public string VoiceId { get; }
 
+        [Preserve]
         [JsonProperty("voice_name")]
         public string VoiceName { get; }
 
+        [Preserve]
         [JsonProperty("text")]
         public string Text { get; }
 
+        [Preserve]
         [JsonIgnore]
         public string TextHash { get; }
 
+        [Preserve]
         [JsonProperty("date_unix")]
         public int DateUnix { get; }
 
+        [Preserve]
         [JsonIgnore]
         public DateTime Date => DateTimeOffset.FromUnixTimeSeconds(DateUnix).DateTime;
 
+        [Preserve]
         [JsonProperty("character_count_change_from")]
         public int CharacterCountChangeFrom { get; }
 
+        [Preserve]
         [JsonProperty("character_count_change_to")]
         public int CharacterCountChangeTo { get; }
 
+        [Preserve]
         [JsonProperty("content_type")]
         public string ContentType { get; }
 
+        [Preserve]
         [JsonProperty("state")]
         public string State { get; }
     }

@@ -99,7 +99,7 @@ namespace ElevenLabs.VoiceGeneration
         /// <returns><see cref="Voice"/>.</returns>
         public async Task<Voice> CreateVoiceAsync(CreateVoiceRequest createVoiceRequest, CancellationToken cancellationToken = default)
         {
-            var payload = JsonConvert.SerializeObject(createVoiceRequest).ToJsonStringContent();
+            var payload = JsonConvert.SerializeObject(createVoiceRequest, client.JsonSerializationOptions).ToJsonStringContent();
             var response = await client.Client.PostAsync(GetUrl("/create-voice"), payload, cancellationToken);
             var responseAsString = await response.ReadAsStringAsync();
             return JsonConvert.DeserializeObject<Voice>(responseAsString, client.JsonSerializationOptions);

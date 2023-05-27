@@ -1,6 +1,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using ElevenLabs.Extensions;
+using ElevenLabs.Models;
 using ElevenLabs.Voices;
 using Newtonsoft.Json;
 using System;
@@ -8,7 +9,6 @@ using System.IO;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using ElevenLabs.Models;
 using UnityEngine;
 using Utilities.WebRequestRest;
 
@@ -41,7 +41,8 @@ namespace ElevenLabs.TextToSpeech
                 throw new ArgumentOutOfRangeException(nameof(text), $"{nameof(text)} cannot exceed 5000 characters");
             }
 
-            if (voice == null)
+            if (voice == null ||
+                string.IsNullOrWhiteSpace(voice.Id))
             {
                 throw new ArgumentNullException(nameof(voice));
             }
@@ -81,7 +82,8 @@ namespace ElevenLabs.TextToSpeech
             if (!File.Exists(filePath))
             {
                 var defaultVoiceSettings = voiceSettings ?? voice.Settings ?? await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken);
-                var payload = JsonConvert.SerializeObject(new TextToSpeechRequest(text, model ?? Model.MonoLingualV1, defaultVoiceSettings)).ToJsonStringContent();
+                var request = new TextToSpeechRequest(text, model ?? Model.MonoLingualV1, defaultVoiceSettings);
+                var payload = JsonConvert.SerializeObject(request, client.JsonSerializationOptions).ToJsonStringContent();
                 var response = await client.Client.PostAsync(GetUrl($"/{voice.Id}"), payload, cancellationToken);
                 await response.CheckResponseAsync();
                 var responseStream = await response.Content.ReadAsStreamAsync();
@@ -178,12 +180,13 @@ namespace ElevenLabs.TextToSpeech
             if (!File.Exists(filePath))
             {
                 var defaultVoiceSettings = voiceSettings ?? voice.Settings ?? await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken);
-                var payload = JsonConvert.SerializeObject(new TextToSpeechRequest(text, model ?? Model.MonoLingualV1, defaultVoiceSettings), client.JsonSerializationOptions).ToJsonStringContent();
-                using var request = new HttpRequestMessage(HttpMethod.Post, GetUrl($"/{voice.Id}/stream"))
+                var request = new TextToSpeechRequest(text, model ?? Model.MonoLingualV1, defaultVoiceSettings);
+                var payload = JsonConvert.SerializeObject(request, client.JsonSerializationOptions).ToJsonStringContent();
+                using var requestMessage = new HttpRequestMessage(HttpMethod.Post, GetUrl($"/{voice.Id}/stream"))
                 {
                     Content = payload
                 };
-                using var response = await client.Client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                using var response = await client.Client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
                 await response.CheckResponseAsync();
                 await using var stream = await response.Content.ReadAsStreamAsync();
 

@@ -2,9 +2,11 @@
 
 using Newtonsoft.Json;
 using System;
+using UnityEngine.Scripting;
 
 namespace ElevenLabs.VoiceGeneration
 {
+    [Preserve]
     public sealed class GeneratedVoiceRequest
     {
         /// <summary>
@@ -16,7 +18,14 @@ namespace ElevenLabs.VoiceGeneration
         /// <param name="accent">The accent of the voice to generate.</param>
         /// <param name="age">The age of the voice to generate.</param>
         /// <param name="accentStrength">Optional, accept strength, between 0.3 - 2.</param>
-        public GeneratedVoiceRequest(string text, Gender gender, Accent accent, Age age, double accentStrength = 1)
+        [Preserve]
+        [JsonConstructor]
+        public GeneratedVoiceRequest(
+            [JsonProperty("text")] string text,
+            [JsonProperty("gender")] Gender gender,
+            [JsonProperty("accent")] Accent accent,
+            [JsonProperty("age")] Age age,
+            [JsonProperty("accent_strength")] double accentStrength = 1)
         {
             switch (text.Length)
             {
@@ -48,18 +57,23 @@ namespace ElevenLabs.VoiceGeneration
             AccentStrength = accentStrength;
         }
 
+        [Preserve]
         [JsonProperty("text")]
         public string Text { get; }
 
+        [Preserve]
         [JsonProperty("gender")]
         public string Gender { get; }
 
+        [Preserve]
         [JsonProperty("accent")]
         public string Accent { get; }
 
+        [Preserve]
         [JsonProperty("age")]
         public string Age { get; }
 
+        [Preserve]
         [JsonProperty("accent_strength")]
         public double AccentStrength { get; }
     }

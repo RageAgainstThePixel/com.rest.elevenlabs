@@ -4,5 +4,8 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Demo/TextToSpeechDemo.unity
+    guid: 3b842cda17469c742bf556fdc78710f2
   m_configObjects: {}

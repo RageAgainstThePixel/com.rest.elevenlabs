@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Unity.SharpZipLib.Zip;
 using UnityEngine;
+using UnityEngine.Scripting;
 using Utilities.Async;
 using Utilities.WebRequestRest;
 
@@ -21,14 +22,17 @@ namespace ElevenLabs.History
     /// </summary>
     public sealed class HistoryEndpoint : ElevenLabsBaseEndPoint
     {
+        [Preserve]
         private class HistoryInfo
         {
+            [Preserve]
             [JsonConstructor]
             public HistoryInfo([JsonProperty(nameof(History))] List<HistoryItem> history)
             {
                 History = history;
             }
 
+            [Preserve]
             [JsonProperty(nameof(History))]
             public IReadOnlyList<HistoryItem> History { get; }
         }
