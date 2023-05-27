@@ -1,14 +1,17 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System;
 using Newtonsoft.Json;
+using System;
 using UnityEngine;
+using UnityEngine.Scripting;
 
 namespace ElevenLabs.Voices
 {
+    [Preserve]
     [Serializable]
     public sealed class VoiceSettings
     {
+        [Preserve]
         [JsonConstructor]
         public VoiceSettings(
             [JsonProperty("stability")] float stability,
@@ -22,6 +25,7 @@ namespace ElevenLabs.Voices
         [SerializeField]
         private float stability = 0.75f;
 
+        [Preserve]
         [JsonProperty("stability")]
         public float Stability
         {
@@ -33,6 +37,7 @@ namespace ElevenLabs.Voices
         [SerializeField]
         private float similarityBoost = 0.75f;
 
+        [Preserve]
         [JsonProperty("similarity_boost")]
         public float SimilarityBoost
         {

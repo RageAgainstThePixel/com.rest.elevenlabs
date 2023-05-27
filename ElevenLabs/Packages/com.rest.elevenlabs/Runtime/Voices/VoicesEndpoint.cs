@@ -10,6 +10,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Scripting;
 using Utilities.WebRequestRest;
 
 namespace ElevenLabs.Voices
@@ -19,26 +20,32 @@ namespace ElevenLabs.Voices
     /// </summary>
     public sealed class VoicesEndpoint : BaseEndPoint
     {
+        [Preserve]
         private class VoiceList
         {
+            [Preserve]
             [JsonConstructor]
             public VoiceList([JsonProperty("voices")] List<Voice> voices)
             {
                 Voices = voices;
             }
 
+            [Preserve]
             [JsonProperty("voices")]
             public IReadOnlyList<Voice> Voices { get; }
         }
 
+        [Preserve]
         private class VoiceResponse
         {
+            [Preserve]
             [JsonConstructor]
             public VoiceResponse([JsonProperty("voice_id")] string voiceId)
             {
                 VoiceId = voiceId;
             }
 
+            [Preserve]
             [JsonProperty("voice_id")]
             public string VoiceId { get; }
         }
@@ -136,7 +143,7 @@ namespace ElevenLabs.Voices
                 throw new ArgumentNullException(nameof(voiceId));
             }
 
-            var payload = JsonConvert.SerializeObject(voiceSettings).ToJsonStringContent();
+            var payload = JsonConvert.SerializeObject(voiceSettings, Api.JsonSerializationOptions).ToJsonStringContent();
             var response = await Api.Client.PostAsync(GetUrl($"/{voiceId}/settings/edit"), payload, cancellationToken);
             await response.ReadAsStringAsync();
             return response.IsSuccessStatusCode;
@@ -185,7 +192,7 @@ namespace ElevenLabs.Voices
 
             if (labels != null)
             {
-                form.Add(new StringContent(JsonConvert.SerializeObject(labels)), "labels");
+                form.Add(new StringContent(JsonConvert.SerializeObject(labels, Api.JsonSerializationOptions)), "labels");
             }
 
             var response = await Api.Client.PostAsync(GetUrl("/add"), form, cancellationToken);
@@ -239,7 +246,7 @@ namespace ElevenLabs.Voices
 
             if (labels != null)
             {
-                form.Add(new StringContent(JsonConvert.SerializeObject(labels)), "labels");
+                form.Add(new StringContent(JsonConvert.SerializeObject(labels, Api.JsonSerializationOptions)), "labels");
             }
 
             var response = await Api.Client.PostAsync(GetUrl($"/{voice.Id}/edit"), form, cancellationToken);
