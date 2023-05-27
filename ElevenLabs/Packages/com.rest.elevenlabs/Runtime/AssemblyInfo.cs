@@ -3,7 +3,6 @@
 using System.Runtime.CompilerServices;
 using UnityEngine.Scripting;
 
-[assembly: Preserve]
 [assembly: AlwaysLinkAssembly]
 [assembly: InternalsVisibleTo("ElevenLabs.Editor")]
 [assembly: InternalsVisibleTo("ElevenLabs.Tests")]

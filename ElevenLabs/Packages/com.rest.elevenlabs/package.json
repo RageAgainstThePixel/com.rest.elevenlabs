@@ -3,7 +3,7 @@
   "displayName": "ElevenLabs",
   "description": "A non-official Eleven Labs voice synthesis RESTful client.",
   "keywords": [],
-  "version": "1.3.3",
+  "version": "1.3.4",
   "unity": "2021.3",
   "documentationUrl": "https://github.com/RageAgainstThePixel/com.rest.elevenlabs#documentation",
   "changelogUrl": "https://github.com/RageAgainstThePixel/com.rest.elevenlabs/releases",

@@ -1,0 +1,17 @@
+{
+    "name": "ElevenLabs.Demo",
+    "rootNamespace": "ElevenLabs.Demo",
+    "references": [
+        "GUID:85797d0f100db6c43bf118660781167b",
+        "GUID:a6609af893242c7438d701ddd4cce46a"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
