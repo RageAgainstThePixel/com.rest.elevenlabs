@@ -22,12 +22,12 @@ namespace ElevenLabs
             if (config != null)
             {
                 Info = new ElevenLabsSettingsInfo(config.ProxyDomain, config.ApiVersion);
-                Default = new ElevenLabsSettings(Info);
+                cachedDefault = new ElevenLabsSettings(Info);
             }
             else
             {
                 Info = new ElevenLabsSettingsInfo();
-                Default = new ElevenLabsSettings(Info);
+                cachedDefault = new ElevenLabsSettings(Info);
             }
         }
 

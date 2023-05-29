@@ -27,10 +27,7 @@ namespace ElevenLabs
         /// </summary>
         public ElevenLabsAuthentication()
         {
-            if (cachedDefault != null)
-            {
-                return;
-            }
+            if (cachedDefault != null) { return; }
 
             cachedDefault = (LoadFromAsset<ElevenLabsConfiguration>() ??
                              LoadFromDirectory()) ??
