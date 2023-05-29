@@ -30,7 +30,7 @@ namespace ElevenLabs.TextToSpeech
         /// <param name="voice"><see cref="Voice"/> to use.</param>
         /// <param name="voiceSettings">Optional, <see cref="VoiceSettings"/> that will override the default settings in <see cref="Voice.Settings"/>.</param>
         /// <param name="model">Optional, <see cref="Model"/> to use. Defaults to <see cref="Model.MonoLingualV1"/>.</param>
-        /// <param name="saveDirectory">Optional, save directory to save the audio clip. Defaults to <see cref="Rest.DownloadCacheDirectory"/></param>
+        /// <param name="saveDirectory">Optional, The save directory to save the audio clip. Defaults to <see cref="Rest.DownloadCacheDirectory"/></param>
         /// <param name="deleteCachedFile">Optional, deletes the cached file for this text string. Default is false.</param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         /// <returns>Downloaded clip path, and the loaded audio clip.</returns>
