@@ -21,13 +21,13 @@ namespace ElevenLabs
 
             if (config != null)
             {
-                Default = new ElevenLabsSettings(new ElevenLabsSettingsInfo(
-                    config.ProxyDomain,
-                    config.ApiVersion));
+                Info = new ElevenLabsSettingsInfo(config.ProxyDomain, config.ApiVersion);
+                Default = new ElevenLabsSettings(Info);
             }
             else
             {
-                Default = new ElevenLabsSettings(new ElevenLabsSettingsInfo());
+                Info = new ElevenLabsSettingsInfo();
+                Default = new ElevenLabsSettings(Info);
             }
         }
 
@@ -36,7 +36,7 @@ namespace ElevenLabs
         /// </summary>
         /// <param name="settingsInfo"></param>
         public ElevenLabsSettings(ElevenLabsSettingsInfo settingsInfo)
-            => this.settingsInfo = settingsInfo;
+            => Info = settingsInfo;
 
         /// <summary>
         /// Creates a new instance of <see cref="ElevenLabsSettings"/> for use with ElevenLabs.
@@ -44,10 +44,10 @@ namespace ElevenLabs
         /// <param name="domain">Base api domain.</param>
         /// <param name="apiVersion">The version of the ElevenLabs api you want to use.</param>
         public ElevenLabsSettings(string domain, string apiVersion = ElevenLabsSettingsInfo.DefaultApiVersion)
-            => settingsInfo = new ElevenLabsSettingsInfo(domain, apiVersion);
+            => Info = new ElevenLabsSettingsInfo(domain, apiVersion);
 
         [Obsolete("Obsolete")]
-        internal ElevenLabsSettings(ElevenLabsClientSettings clientSettings) => settingsInfo = new ElevenLabsSettingsInfo(clientSettings);
+        internal ElevenLabsSettings(ElevenLabsClientSettings clientSettings) => Info = new ElevenLabsSettingsInfo(clientSettings);
 
         private static ElevenLabsSettings cachedDefault;
 
@@ -57,9 +57,7 @@ namespace ElevenLabs
             internal set => cachedDefault = value;
         }
 
-        private readonly ElevenLabsSettingsInfo settingsInfo;
-
-        public ElevenLabsSettingsInfo Info => settingsInfo ?? Default.Info;
+        public ElevenLabsSettingsInfo Info { get; }
 
         public string BaseRequestUrlFormat => Info.BaseRequestUrlFormat;
     }

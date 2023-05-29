@@ -81,15 +81,19 @@ namespace ElevenLabs.Voice.Tests
         [Test]
         public void Test_05_Authentication()
         {
-            var defaultAuth = new ElevenLabsAuthentication();
+            var defaultAuth = ElevenLabsAuthentication.Default;
+            var manualAuth = new ElevenLabsAuthentication("key-testAA");
+
             Assert.IsNotNull(defaultAuth);
             Assert.IsNotNull(defaultAuth.Info.ApiKey);
-            Assert.AreEqual(defaultAuth.Info.ApiKey, defaultAuth.Info.ApiKey);
+            Assert.AreEqual(defaultAuth.Info.ApiKey, ElevenLabsAuthentication.Default.Info.ApiKey);
 
-            var manualAuth = new ElevenLabsAuthentication("key-testAA");
+            ElevenLabsAuthentication.Default = new ElevenLabsAuthentication("key-testAA");
             Assert.IsNotNull(manualAuth);
             Assert.IsNotNull(manualAuth.Info.ApiKey);
-            Assert.AreEqual(manualAuth.Info.ApiKey, manualAuth.Info.ApiKey);
+            Assert.AreEqual(manualAuth.Info.ApiKey, ElevenLabsAuthentication.Default.Info.ApiKey);
+
+            ElevenLabsAuthentication.Default = defaultAuth;
         }
 
         [Test]

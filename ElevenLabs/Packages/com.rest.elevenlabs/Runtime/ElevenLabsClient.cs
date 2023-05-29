@@ -56,7 +56,7 @@ namespace ElevenLabs
             }
         }
 
-        public override bool HasValidAuthentication => !string.IsNullOrWhiteSpace(Authentication.Info.ApiKey);
+        public override bool HasValidAuthentication => !string.IsNullOrWhiteSpace(Authentication?.Info?.ApiKey);
 
         /// <summary>
         /// The <see cref="JsonSerializationOptions"/> to use when making calls to the API.

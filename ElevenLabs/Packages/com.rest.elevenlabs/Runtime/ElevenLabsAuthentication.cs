@@ -26,27 +26,33 @@ namespace ElevenLabs
         /// Instantiates a new Authentication object that will load the default config.
         /// </summary>
         public ElevenLabsAuthentication()
-            => cachedDefault ??= (LoadFromAsset<ElevenLabsConfiguration>() ??
-                                  LoadFromDirectory()) ??
-                                  LoadFromDirectory(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)) ??
-                                  LoadFromEnvironment();
+        {
+            if (cachedDefault != null)
+            {
+                return;
+            }
+
+            cachedDefault = (LoadFromAsset<ElevenLabsConfiguration>() ??
+                             LoadFromDirectory()) ??
+                             LoadFromDirectory(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)) ??
+                             LoadFromEnvironment();
+            Info = cachedDefault?.Info;
+        }
 
         /// <summary>
         /// Instantiates a new Authentication object with the given <paramref name="apiKey"/>, which may be <see langword="null"/>.
         /// </summary>
         /// <param name="apiKey">The API key, required to access the API endpoint.</param>
-        public ElevenLabsAuthentication(string apiKey) => authInfo = new ElevenLabsAuthInfo(apiKey);
+        public ElevenLabsAuthentication(string apiKey) => Info = new ElevenLabsAuthInfo(apiKey);
 
         /// <summary>
         /// Instantiates a new Authentication object with the given <paramref name="authInfo"/>, which may be <see langword="null"/>.
         /// </summary>
         /// <param name="authInfo"></param>
-        public ElevenLabsAuthentication(ElevenLabsAuthInfo authInfo) => this.authInfo = authInfo;
-
-        private readonly ElevenLabsAuthInfo authInfo;
+        public ElevenLabsAuthentication(ElevenLabsAuthInfo authInfo) => this.Info = authInfo;
 
         /// <inheritdoc />
-        public override ElevenLabsAuthInfo Info => authInfo ?? Default.Info;
+        public override ElevenLabsAuthInfo Info { get; }
 
         private static ElevenLabsAuthentication cachedDefault;
 
@@ -62,7 +68,7 @@ namespace ElevenLabs
         }
 
         [Obsolete("Use ElevenLabsAuthentication.Info.ApiKey")]
-        public string ApiKey => authInfo.ApiKey;
+        public string ApiKey => Info.ApiKey;
 
         /// <inheritdoc />
         public override ElevenLabsAuthentication LoadFromAsset<T>()
