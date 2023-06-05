@@ -188,7 +188,8 @@ namespace ElevenLabs.TextToSpeech
                 };
                 using var response = await client.Client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
                 await response.CheckResponseAsync();
-                await using var stream = await response.Content.ReadAsStreamAsync();
+
+                var responseStream = await response.Content.ReadAsStreamAsync();
 
                 try
                 {
