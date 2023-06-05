@@ -193,12 +193,13 @@ namespace ElevenLabs.TextToSpeech
                 try
                 {
                     await using var fileStream = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
+
                     int bytesRead;
                     Task loadTask = null;
-                    var buffer = new byte[1024];
                     var canInvoke = true;
+                    var buffer = new byte[1024];
 
-                    while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, cancellationToken)) > 0)
+                    while ((bytesRead = await responseStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken)) > 0)
                     {
                         await fileStream.WriteAsync(buffer, 0, bytesRead, cancellationToken);
 
@@ -209,7 +210,12 @@ namespace ElevenLabs.TextToSpeech
                             canInvoke = false;
                             loadTask = Task.Run(async () =>
                             {
-                                audioClip = await Rest.StreamAudioAsync($"file://{filePath}", AudioType.MPEG, resultHandler, playbackAmountThreshold: playbackAmountThreshold, cancellationToken: cancellationToken);
+                                audioClip = await Rest.StreamAudioAsync(
+                                    url: $"file://{filePath}",
+                                    audioType: AudioType.MPEG,
+                                    onStreamPlaybackReady: resultHandler,
+                                    playbackAmountThreshold: playbackAmountThreshold,
+                                    cancellationToken: cancellationToken);
                             }, cancellationToken);
                         }
                     }
@@ -224,6 +230,10 @@ namespace ElevenLabs.TextToSpeech
                 catch (Exception e)
                 {
                     Debug.LogError(e);
+                }
+                finally
+                {
+                    await responseStream.DisposeAsync();
                 }
             }
             else

@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading;
 using ElevenLabs.Voices;
 using UnityEngine;
 
@@ -11,11 +12,14 @@ namespace ElevenLabs.Demo
         [SerializeField]
         private Voice voice;
 
+        [TextArea(3, 10)]
         [SerializeField]
         private string message;
 
         [SerializeField]
         private AudioSource audioSource;
+
+        private CancellationTokenSource lifetimeCancellationTokenSource;
 
         private void OnValidate()
         {
@@ -28,6 +32,7 @@ namespace ElevenLabs.Demo
         private async void Start()
         {
             OnValidate();
+            lifetimeCancellationTokenSource = new CancellationTokenSource();
 
             try
             {
@@ -35,17 +40,36 @@ namespace ElevenLabs.Demo
 
                 if (voice == null)
                 {
-                    voice = (await api.VoicesEndpoint.GetAllVoicesAsync()).FirstOrDefault();
+                    voice = (await api.VoicesEndpoint.GetAllVoicesAsync(lifetimeCancellationTokenSource.Token)).FirstOrDefault();
                 }
 
-                var (_, clip) = await api.TextToSpeechEndpoint.TextToSpeechAsync(message, voice, deleteCachedFile: true);
-                audioSource.PlayOneShot(clip);
+                var clipOffset = 0;
+                var (_, clip) = await api.TextToSpeechEndpoint.StreamTextToSpeechAsync(message, voice, audioClip =>
+                    {
+                        audioSource.PlayOneShot(audioClip);
+                        clipOffset = audioClip.samples;
+                        Debug.Log($"Stream Playback {clipOffset}");
+                    },
+                    deleteCachedFile: true,
+                    cancellationToken: lifetimeCancellationTokenSource.Token);
 
+                audioSource.clip = clip;
+                Debug.Log($"Stream complete {clip.samples}");
+
+                if (clipOffset != clip.samples)
+                {
+                    Debug.LogWarning($"offset by {clip.samples - clipOffset}");
+                }
             }
             catch (Exception e)
             {
                 Debug.LogError(e);
             }
+        }
+
+        private void OnDestroy()
+        {
+            lifetimeCancellationTokenSource?.Cancel();
         }
     }
 }
