@@ -61,7 +61,7 @@ namespace ElevenLabs.Voices
         public async Task<IReadOnlyList<Voice>> GetAllVoicesAsync(CancellationToken cancellationToken = default)
         {
             var response = await Rest.GetAsync(GetUrl(), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.ValidateResponse();
+            response.Validate();
             var voices = JsonConvert.DeserializeObject<VoiceList>(response.Body, client.JsonSerializationOptions).Voices;
             var voiceSettingsTasks = new List<Task>();
 
@@ -87,7 +87,7 @@ namespace ElevenLabs.Voices
         public async Task<VoiceSettings> GetDefaultVoiceSettingsAsync(CancellationToken cancellationToken = default)
         {
             var response = await Rest.GetAsync(GetUrl("/settings/default"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.ValidateResponse();
+            response.Validate();
             return JsonConvert.DeserializeObject<VoiceSettings>(response.Body, client.JsonSerializationOptions);
         }
 
@@ -105,7 +105,7 @@ namespace ElevenLabs.Voices
             }
 
             var response = await Rest.GetAsync(GetUrl($"/{voiceId}/settings"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.ValidateResponse();
+            response.Validate();
             return JsonConvert.DeserializeObject<VoiceSettings>(response.Body, client.JsonSerializationOptions);
         }
 
@@ -124,7 +124,7 @@ namespace ElevenLabs.Voices
             }
 
             var response = await Rest.GetAsync(GetUrl($"/{voiceId}?with_settings={withSettings}"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.ValidateResponse();
+            response.Validate();
             return JsonConvert.DeserializeObject<Voice>(response.Body, client.JsonSerializationOptions);
         }
 
@@ -144,7 +144,7 @@ namespace ElevenLabs.Voices
 
             var payload = JsonConvert.SerializeObject(voiceSettings, client.JsonSerializationOptions);
             var response = await Rest.PostAsync(GetUrl($"/{voiceId}/settings/edit"), payload, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.ValidateResponse();
+            response.Validate();
             return response.Successful;
         }
 
@@ -195,7 +195,7 @@ namespace ElevenLabs.Voices
             }
 
             var response = await Rest.PostAsync(GetUrl("/add"), form, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.ValidateResponse();
+            response.Validate();
             var voiceResponse = JsonConvert.DeserializeObject<VoiceResponse>(response.Body, client.JsonSerializationOptions);
             var voice = await GetVoiceAsync(voiceResponse.VoiceId, cancellationToken: cancellationToken);
             return voice;
@@ -249,7 +249,7 @@ namespace ElevenLabs.Voices
             }
 
             var response = await Rest.PostAsync(GetUrl($"/{voice.Id}/edit"), form, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.ValidateResponse();
+            response.Validate();
             return response.Successful;
         }
 
@@ -267,7 +267,7 @@ namespace ElevenLabs.Voices
             }
 
             var response = await Rest.DeleteAsync(GetUrl($"/{voiceId}"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.ValidateResponse();
+            response.Validate();
             return response.Successful;
         }
 
@@ -294,7 +294,7 @@ namespace ElevenLabs.Voices
             }
 
             var response = await Rest.GetAsync(GetUrl($"/{voiceId}/samples/{sampleId}/audio"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.ValidateResponse();
+            response.Validate();
             await Rest.ValidateCacheDirectoryAsync();
 
             var rootDirectory = (saveDirectory ?? Rest.DownloadCacheDirectory).CreateNewDirectory(nameof(ElevenLabs));
@@ -360,7 +360,7 @@ namespace ElevenLabs.Voices
             }
 
             var response = await Rest.DeleteAsync(GetUrl($"/{voiceId}/samples/{sampleId}"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.ValidateResponse();
+            response.Validate();
             return response.Successful;
         }
 

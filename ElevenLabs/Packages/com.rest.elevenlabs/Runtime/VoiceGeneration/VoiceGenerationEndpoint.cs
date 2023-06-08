@@ -26,7 +26,7 @@ namespace ElevenLabs.VoiceGeneration
         public async Task<GeneratedVoiceOptions> GetVoiceGenerationOptionsAsync(CancellationToken cancellationToken = default)
         {
             var response = await Rest.GetAsync(GetUrl("/generate-voice/parameters"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.ValidateResponse();
+            response.Validate();
             return JsonConvert.DeserializeObject<GeneratedVoiceOptions>(response.Body, client.JsonSerializationOptions);
         }
 
@@ -41,7 +41,7 @@ namespace ElevenLabs.VoiceGeneration
         {
             var payload = JsonConvert.SerializeObject(generatedVoiceRequest, client.JsonSerializationOptions);
             var response = await Rest.PostAsync(GetUrl("/generate-voice"), payload, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.ValidateResponse();
+            response.Validate();
             var generatedVoiceId = response.Headers["generated_voice_id"];
 
             await Rest.ValidateCacheDirectoryAsync();
@@ -99,7 +99,7 @@ namespace ElevenLabs.VoiceGeneration
         {
             var payload = JsonConvert.SerializeObject(createVoiceRequest, client.JsonSerializationOptions);
             var response = await Rest.PostAsync(GetUrl("/create-voice"), payload, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.ValidateResponse();
+            response.Validate();
             return JsonConvert.DeserializeObject<Voice>(response.Body, client.JsonSerializationOptions);
         }
     }

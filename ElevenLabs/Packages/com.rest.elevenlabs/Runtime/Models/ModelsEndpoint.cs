@@ -20,7 +20,7 @@ namespace ElevenLabs.Models
         public async Task<IReadOnlyList<Model>> GetModelsAsync()
         {
             var response = await Rest.GetAsync(GetUrl(), new RestParameters(client.DefaultRequestHeaders));
-            response.ValidateResponse();
+            response.Validate();
             return JsonConvert.DeserializeObject<IReadOnlyList<Model>>(response.Body, client.JsonSerializationOptions);
         }
     }

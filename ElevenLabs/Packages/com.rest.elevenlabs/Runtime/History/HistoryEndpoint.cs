@@ -49,7 +49,7 @@ namespace ElevenLabs.History
         public async Task<IReadOnlyList<HistoryItem>> GetHistoryAsync(CancellationToken cancellationToken = default)
         {
             var response = await Rest.GetAsync(GetUrl(), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.ValidateResponse();
+            response.Validate();
             return JsonConvert.DeserializeObject<HistoryInfo>(response.Body, client.JsonSerializationOptions)?.History;
         }
 
@@ -75,7 +75,7 @@ namespace ElevenLabs.History
             }
 
             var response = await Rest.GetAsync(GetUrl($"/{historyItem.Id}/audio"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.ValidateResponse();
+            response.Validate();
 
             var responseStream = new MemoryStream(response.Data);
 
@@ -120,7 +120,7 @@ namespace ElevenLabs.History
         public async Task<bool> DeleteHistoryItemAsync(string historyId, CancellationToken cancellationToken = default)
         {
             var response = await Rest.DeleteAsync(GetUrl($"/{historyId}"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.ValidateResponse();
+            response.Validate();
             return response.Successful;
         }
 
@@ -153,7 +153,7 @@ namespace ElevenLabs.History
             {
                 var jsonContent = $"{{\"history_item_ids\":[\"{string.Join("\",\"", historyItemIds)}\"]}}";
                 var response = await Rest.PostAsync(GetUrl("/download"), jsonContent, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-                response.ValidateResponse();
+                response.Validate();
                 var unZipTasks = new List<Task>();
                 var responseStream = new MemoryStream(response.Data);
 
