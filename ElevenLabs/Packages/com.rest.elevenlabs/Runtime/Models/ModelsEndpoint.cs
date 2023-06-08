@@ -1,9 +1,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using ElevenLabs.Extensions;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Utilities.WebRequestRest;
 
 namespace ElevenLabs.Models
 {
@@ -19,9 +19,9 @@ namespace ElevenLabs.Models
         /// <returns>A list of <see cref="Model"/>s you can use.</returns>
         public async Task<IReadOnlyList<Model>> GetModelsAsync()
         {
-            var response = await client.Client.GetAsync(GetUrl());
-            var responseAsString = await response.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<IReadOnlyList<Model>>(responseAsString, client.JsonSerializationOptions);
+            var response = await Rest.GetAsync(GetUrl(), new RestParameters(client.DefaultRequestHeaders));
+            response.ValidateResponse();
+            return JsonConvert.DeserializeObject<IReadOnlyList<Model>>(response.ResponseBody, client.JsonSerializationOptions);
         }
     }
 }

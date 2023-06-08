@@ -1,7 +1,7 @@
+using ElevenLabs.Voices;
 using System;
 using System.Linq;
 using System.Threading;
-using ElevenLabs.Voices;
 using UnityEngine;
 
 namespace ElevenLabs.Demo
