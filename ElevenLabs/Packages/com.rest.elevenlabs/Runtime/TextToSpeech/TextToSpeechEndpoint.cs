@@ -85,7 +85,7 @@ namespace ElevenLabs.TextToSpeech
                 var payload = JsonConvert.SerializeObject(request, client.JsonSerializationOptions);
                 var response = await Rest.PostAsync(GetUrl($"/{voice.Id}"), payload, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
                 response.ValidateResponse();
-                var responseStream = new MemoryStream(response.ResponseData);
+                var responseStream = new MemoryStream(response.Data);
 
                 try
                 {
@@ -184,7 +184,7 @@ namespace ElevenLabs.TextToSpeech
                 var response = await Rest.PostAsync(GetUrl($"/{voice.Id}/stream"), payload, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
                 response.ValidateResponse();
 
-                var responseStream = new MemoryStream(response.ResponseData);
+                var responseStream = new MemoryStream(response.Data);
 
                 try
                 {

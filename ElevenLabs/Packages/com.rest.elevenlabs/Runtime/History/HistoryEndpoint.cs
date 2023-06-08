@@ -50,7 +50,7 @@ namespace ElevenLabs.History
         {
             var response = await Rest.GetAsync(GetUrl(), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
             response.ValidateResponse();
-            return JsonConvert.DeserializeObject<HistoryInfo>(response.ResponseBody, client.JsonSerializationOptions)?.History;
+            return JsonConvert.DeserializeObject<HistoryInfo>(response.Body, client.JsonSerializationOptions)?.History;
         }
 
         /// <summary>
@@ -77,7 +77,7 @@ namespace ElevenLabs.History
             var response = await Rest.GetAsync(GetUrl($"/{historyItem.Id}/audio"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
             response.ValidateResponse();
 
-            var responseStream = new MemoryStream(response.ResponseData);
+            var responseStream = new MemoryStream(response.Data);
 
             try
             {
@@ -155,7 +155,7 @@ namespace ElevenLabs.History
                 var response = await Rest.PostAsync(GetUrl("/download"), jsonContent, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
                 response.ValidateResponse();
                 var unZipTasks = new List<Task>();
-                var responseStream = new MemoryStream(response.ResponseData);
+                var responseStream = new MemoryStream(response.Data);
 
                 try
                 {

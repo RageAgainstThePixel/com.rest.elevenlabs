@@ -27,7 +27,7 @@ namespace ElevenLabs.VoiceGeneration
         {
             var response = await Rest.GetAsync(GetUrl("/generate-voice/parameters"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
             response.ValidateResponse();
-            return JsonConvert.DeserializeObject<GeneratedVoiceOptions>(response.ResponseBody, client.JsonSerializationOptions);
+            return JsonConvert.DeserializeObject<GeneratedVoiceOptions>(response.Body, client.JsonSerializationOptions);
         }
 
         /// <summary>
@@ -42,7 +42,7 @@ namespace ElevenLabs.VoiceGeneration
             var payload = JsonConvert.SerializeObject(generatedVoiceRequest, client.JsonSerializationOptions);
             var response = await Rest.PostAsync(GetUrl("/generate-voice"), payload, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
             response.ValidateResponse();
-            var generatedVoiceId = response.ResponseHeaders["generated_voice_id"];
+            var generatedVoiceId = response.Headers["generated_voice_id"];
 
             await Rest.ValidateCacheDirectoryAsync();
 
@@ -55,7 +55,7 @@ namespace ElevenLabs.VoiceGeneration
                 File.Delete(filePath);
             }
 
-            var responseStream = new MemoryStream(response.ResponseData);
+            var responseStream = new MemoryStream(response.Data);
 
             try
             {
@@ -100,7 +100,7 @@ namespace ElevenLabs.VoiceGeneration
             var payload = JsonConvert.SerializeObject(createVoiceRequest, client.JsonSerializationOptions);
             var response = await Rest.PostAsync(GetUrl("/create-voice"), payload, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
             response.ValidateResponse();
-            return JsonConvert.DeserializeObject<Voice>(response.ResponseBody, client.JsonSerializationOptions);
+            return JsonConvert.DeserializeObject<Voice>(response.Body, client.JsonSerializationOptions);
         }
     }
 }

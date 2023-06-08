@@ -62,7 +62,7 @@ namespace ElevenLabs.Voices
         {
             var response = await Rest.GetAsync(GetUrl(), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
             response.ValidateResponse();
-            var voices = JsonConvert.DeserializeObject<VoiceList>(response.ResponseBody, client.JsonSerializationOptions).Voices;
+            var voices = JsonConvert.DeserializeObject<VoiceList>(response.Body, client.JsonSerializationOptions).Voices;
             var voiceSettingsTasks = new List<Task>();
 
             foreach (var voice in voices)
@@ -88,7 +88,7 @@ namespace ElevenLabs.Voices
         {
             var response = await Rest.GetAsync(GetUrl("/settings/default"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
             response.ValidateResponse();
-            return JsonConvert.DeserializeObject<VoiceSettings>(response.ResponseBody, client.JsonSerializationOptions);
+            return JsonConvert.DeserializeObject<VoiceSettings>(response.Body, client.JsonSerializationOptions);
         }
 
         /// <summary>
@@ -106,7 +106,7 @@ namespace ElevenLabs.Voices
 
             var response = await Rest.GetAsync(GetUrl($"/{voiceId}/settings"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
             response.ValidateResponse();
-            return JsonConvert.DeserializeObject<VoiceSettings>(response.ResponseBody, client.JsonSerializationOptions);
+            return JsonConvert.DeserializeObject<VoiceSettings>(response.Body, client.JsonSerializationOptions);
         }
 
         /// <summary>
@@ -125,7 +125,7 @@ namespace ElevenLabs.Voices
 
             var response = await Rest.GetAsync(GetUrl($"/{voiceId}?with_settings={withSettings}"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
             response.ValidateResponse();
-            return JsonConvert.DeserializeObject<Voice>(response.ResponseBody, client.JsonSerializationOptions);
+            return JsonConvert.DeserializeObject<Voice>(response.Body, client.JsonSerializationOptions);
         }
 
         /// <summary>
@@ -196,7 +196,7 @@ namespace ElevenLabs.Voices
 
             var response = await Rest.PostAsync(GetUrl("/add"), form, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
             response.ValidateResponse();
-            var voiceResponse = JsonConvert.DeserializeObject<VoiceResponse>(response.ResponseBody, client.JsonSerializationOptions);
+            var voiceResponse = JsonConvert.DeserializeObject<VoiceResponse>(response.Body, client.JsonSerializationOptions);
             var voice = await GetVoiceAsync(voiceResponse.VoiceId, cancellationToken: cancellationToken);
             return voice;
         }
@@ -306,7 +306,7 @@ namespace ElevenLabs.Voices
                 File.Delete(filePath);
             }
 
-            var responseStream = new MemoryStream(response.ResponseData);
+            var responseStream = new MemoryStream(response.Data);
 
             try
             {

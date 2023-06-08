@@ -22,7 +22,7 @@ namespace ElevenLabs.User
         {
             var response = await Rest.GetAsync(GetUrl(), new RestParameters(client.DefaultRequestHeaders));
             response.ValidateResponse();
-            return JsonConvert.DeserializeObject<UserInfo>(response.ResponseBody, client.JsonSerializationOptions);
+            return JsonConvert.DeserializeObject<UserInfo>(response.Body, client.JsonSerializationOptions);
         }
 
         /// <summary>
@@ -32,7 +32,7 @@ namespace ElevenLabs.User
         {
             var response = await Rest.GetAsync(GetUrl("/subscription"), new RestParameters(client.DefaultRequestHeaders));
             response.ValidateResponse();
-            return JsonConvert.DeserializeObject<SubscriptionInfo>(response.ResponseBody, client.JsonSerializationOptions);
+            return JsonConvert.DeserializeObject<SubscriptionInfo>(response.Body, client.JsonSerializationOptions);
         }
     }
 }

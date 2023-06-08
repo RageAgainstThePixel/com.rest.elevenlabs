@@ -21,7 +21,7 @@ namespace ElevenLabs.Models
         {
             var response = await Rest.GetAsync(GetUrl(), new RestParameters(client.DefaultRequestHeaders));
             response.ValidateResponse();
-            return JsonConvert.DeserializeObject<IReadOnlyList<Model>>(response.ResponseBody, client.JsonSerializationOptions);
+            return JsonConvert.DeserializeObject<IReadOnlyList<Model>>(response.Body, client.JsonSerializationOptions);
         }
     }
 }
