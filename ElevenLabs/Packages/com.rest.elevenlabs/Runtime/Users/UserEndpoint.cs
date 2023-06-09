@@ -1,8 +1,8 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using ElevenLabs.Extensions;
 using Newtonsoft.Json;
 using System.Threading.Tasks;
+using Utilities.WebRequestRest;
 
 namespace ElevenLabs.User
 {
@@ -20,9 +20,9 @@ namespace ElevenLabs.User
         /// </summary>
         public async Task<UserInfo> GetUserInfoAsync()
         {
-            var response = await client.Client.GetAsync(GetUrl());
-            var responseAsString = await response.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<UserInfo>(responseAsString, client.JsonSerializationOptions);
+            var response = await Rest.GetAsync(GetUrl(), new RestParameters(client.DefaultRequestHeaders));
+            response.Validate();
+            return JsonConvert.DeserializeObject<UserInfo>(response.Body, client.JsonSerializationOptions);
         }
 
         /// <summary>
@@ -30,9 +30,9 @@ namespace ElevenLabs.User
         /// </summary>
         public async Task<SubscriptionInfo> GetSubscriptionInfoAsync()
         {
-            var response = await client.Client.GetAsync(GetUrl("/subscription"));
-            var responseAsString = await response.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<SubscriptionInfo>(responseAsString, client.JsonSerializationOptions);
+            var response = await Rest.GetAsync(GetUrl("/subscription"), new RestParameters(client.DefaultRequestHeaders));
+            response.Validate();
+            return JsonConvert.DeserializeObject<SubscriptionInfo>(response.Body, client.JsonSerializationOptions);
         }
     }
 }

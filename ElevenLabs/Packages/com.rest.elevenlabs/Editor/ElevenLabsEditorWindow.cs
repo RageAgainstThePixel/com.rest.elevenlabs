@@ -747,7 +747,7 @@ namespace ElevenLabs.Editor
 
                     if (key != null)
                     {
-                        var audioClip = await Rest.DownloadAudioClipAsync($"file://{clipPath}", AudioType.MPEG, Path.GetFileNameWithoutExtension(clipPath));
+                        var audioClip = await Rest.DownloadAudioClipAsync($"file://{clipPath}", AudioType.MPEG, Path.GetFileNameWithoutExtension(clipPath), parameters: null);
                         downloadedAudioClips.TryAdd(key.Id, audioClip);
                     }
                 }

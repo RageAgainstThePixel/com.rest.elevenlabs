@@ -7,7 +7,7 @@ using ElevenLabs.User;
 using ElevenLabs.VoiceGeneration;
 using ElevenLabs.Voices;
 using Newtonsoft.Json;
-using System.Net.Http;
+using System.Collections.Generic;
 using System.Security.Authentication;
 using Utilities.WebRequestRest;
 
@@ -22,10 +22,9 @@ namespace ElevenLabs
         /// or <see langword="null"/> to attempt to use the <see cref="ElevenLabsAuthentication.Default"/>,
         /// potentially loading from environment vars or from a config file.</param>
         /// <param name="clientSettings">Optional, <see cref="ElevenLabsClientSettings"/> for specifying a proxy domain.</param>
-        /// <param name="httpClient">Optional, <see cref="HttpClient"/>.</param>
         /// <exception cref="AuthenticationException">Raised when authentication details are missing or invalid.</exception>
-        public ElevenLabsClient(ElevenLabsAuthentication elevenLabsAuthentication = null, ElevenLabsSettings clientSettings = null, HttpClient httpClient = null)
-            : base(elevenLabsAuthentication ?? ElevenLabsAuthentication.Default, clientSettings ?? ElevenLabsSettings.Default, httpClient)
+        public ElevenLabsClient(ElevenLabsAuthentication elevenLabsAuthentication = null, ElevenLabsSettings clientSettings = null)
+            : base(elevenLabsAuthentication ?? ElevenLabsAuthentication.Default, clientSettings ?? ElevenLabsSettings.Default)
         {
             JsonSerializationOptions = new JsonSerializerSettings
             {
@@ -39,13 +38,17 @@ namespace ElevenLabs
             TextToSpeechEndpoint = new TextToSpeechEndpoint(this);
             VoiceGenerationEndpoint = new VoiceGenerationEndpoint(this);
         }
-
-        protected override HttpClient SetupClient(HttpClient httpClient = null)
+        protected override void SetupDefaultRequestHeaders()
         {
-            httpClient ??= new HttpClient();
-            httpClient.DefaultRequestHeaders.Add("User-Agent", "com.rest.elevenlabs");
-            httpClient.DefaultRequestHeaders.Add("xi-api-key", Authentication.Info.ApiKey);
-            return httpClient;
+            var headers = new Dictionary<string, string>
+            {
+#if !UNITY_WEBGL
+                { "User-Agent", "com.rest.elevenlabs" },
+#endif
+                { "xi-api-key", Authentication.Info.ApiKey }
+            };
+
+            DefaultRequestHeaders = headers;
         }
 
         protected override void ValidateAuthentication()

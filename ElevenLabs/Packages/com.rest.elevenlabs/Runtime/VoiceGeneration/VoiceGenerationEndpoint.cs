@@ -5,7 +5,6 @@ using ElevenLabs.Voices;
 using Newtonsoft.Json;
 using System;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -26,9 +25,9 @@ namespace ElevenLabs.VoiceGeneration
         /// <returns><see cref="GeneratedVoiceOptions"/>.</returns>
         public async Task<GeneratedVoiceOptions> GetVoiceGenerationOptionsAsync(CancellationToken cancellationToken = default)
         {
-            var response = await client.Client.GetAsync(GetUrl("/generate-voice/parameters"), cancellationToken);
-            var responseAsString = await response.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<GeneratedVoiceOptions>(responseAsString, client.JsonSerializationOptions);
+            var response = await Rest.GetAsync(GetUrl("/generate-voice/parameters"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
+            response.Validate();
+            return JsonConvert.DeserializeObject<GeneratedVoiceOptions>(response.Body, client.JsonSerializationOptions);
         }
 
         /// <summary>
@@ -40,11 +39,10 @@ namespace ElevenLabs.VoiceGeneration
         /// <returns><see cref="Tuple{VoiceId,AudioClip}"/>.</returns>
         public async Task<Tuple<string, AudioClip>> GenerateVoiceAsync(GeneratedVoiceRequest generatedVoiceRequest, string saveDirectory = null, CancellationToken cancellationToken = default)
         {
-            var payload = JsonConvert.SerializeObject(generatedVoiceRequest, client.JsonSerializationOptions).ToJsonStringContent();
-            var response = await client.Client.PostAsync(GetUrl("/generate-voice"), payload, cancellationToken);
-            await response.CheckResponseAsync();
-
-            var generatedVoiceId = response.Headers.FirstOrDefault(pair => pair.Key == "generated_voice_id").Value.FirstOrDefault();
+            var payload = JsonConvert.SerializeObject(generatedVoiceRequest, client.JsonSerializationOptions);
+            var response = await Rest.PostAsync(GetUrl("/generate-voice"), payload, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
+            response.Validate();
+            var generatedVoiceId = response.Headers["generated_voice_id"];
 
             await Rest.ValidateCacheDirectoryAsync();
 
@@ -57,7 +55,7 @@ namespace ElevenLabs.VoiceGeneration
                 File.Delete(filePath);
             }
 
-            var responseStream = await response.Content.ReadAsStreamAsync();
+            var responseStream = new MemoryStream(response.Data);
 
             try
             {
@@ -87,7 +85,7 @@ namespace ElevenLabs.VoiceGeneration
                 await responseStream.DisposeAsync();
             }
 
-            var audioClip = await Rest.DownloadAudioClipAsync($"file://{filePath}", AudioType.MPEG, cancellationToken: cancellationToken);
+            var audioClip = await Rest.DownloadAudioClipAsync($"file://{filePath}", AudioType.MPEG, parameters: null, cancellationToken: cancellationToken);
             return new Tuple<string, AudioClip>(generatedVoiceId, audioClip);
         }
 
@@ -99,10 +97,10 @@ namespace ElevenLabs.VoiceGeneration
         /// <returns><see cref="Voice"/>.</returns>
         public async Task<Voice> CreateVoiceAsync(CreateVoiceRequest createVoiceRequest, CancellationToken cancellationToken = default)
         {
-            var payload = JsonConvert.SerializeObject(createVoiceRequest, client.JsonSerializationOptions).ToJsonStringContent();
-            var response = await client.Client.PostAsync(GetUrl("/create-voice"), payload, cancellationToken);
-            var responseAsString = await response.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<Voice>(responseAsString, client.JsonSerializationOptions);
+            var payload = JsonConvert.SerializeObject(createVoiceRequest, client.JsonSerializationOptions);
+            var response = await Rest.PostAsync(GetUrl("/create-voice"), payload, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
+            response.Validate();
+            return JsonConvert.DeserializeObject<Voice>(response.Body, client.JsonSerializationOptions);
         }
     }
 }
