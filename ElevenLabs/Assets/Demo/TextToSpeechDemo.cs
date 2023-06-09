@@ -44,21 +44,34 @@ namespace ElevenLabs.Demo
                 }
 
                 var clipOffset = 0;
+                var streamCallbackSuccessful = false;
+
                 var (_, clip) = await api.TextToSpeechEndpoint.StreamTextToSpeechAsync(message, voice, audioClip =>
+                {
+                    clipOffset = audioClip.samples;
+
+                    if (clipOffset > 0)
                     {
-                        audioSource.PlayOneShot(audioClip);
-                        clipOffset = audioClip.samples;
                         Debug.Log($"Stream Playback {clipOffset}");
-                    },
-                    deleteCachedFile: true,
-                    cancellationToken: lifetimeCancellationTokenSource.Token);
+                        streamCallbackSuccessful = true;
+                        audioSource.PlayOneShot(audioClip);
+                    }
+                }, deleteCachedFile: true, cancellationToken: lifetimeCancellationTokenSource.Token);
 
                 audioSource.clip = clip;
-                Debug.Log($"Stream complete {clip.samples}");
 
-                if (clipOffset != clip.samples)
+                if (streamCallbackSuccessful)
                 {
-                    Debug.LogWarning($"offset by {clip.samples - clipOffset}");
+                    Debug.Log($"Stream complete {clip.samples}");
+
+                    if (clipOffset != clip.samples)
+                    {
+                        Debug.LogWarning($"offset by {clip.samples - clipOffset}");
+                    }
+                }
+                else
+                {
+                    audioSource.PlayOneShot(clip);
                 }
             }
             catch (Exception e)

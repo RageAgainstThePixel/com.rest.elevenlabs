@@ -1,9 +1,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System;
 using ElevenLabs.Models;
 using ElevenLabs.Voices;
 using Newtonsoft.Json;
+using System;
 using UnityEngine.Scripting;
 
 namespace ElevenLabs.TextToSpeech
@@ -23,8 +23,7 @@ namespace ElevenLabs.TextToSpeech
             }
 
             Text = text;
-
-            Model = model ?? throw new ArgumentNullException(nameof(model));
+            Model = model ?? Models.Model.MonoLingualV1;
             VoiceSettings = voiceSettings ?? throw new ArgumentNullException(nameof(voiceSettings));
         }
 
@@ -38,6 +37,6 @@ namespace ElevenLabs.TextToSpeech
 
         [Preserve]
         [JsonProperty("voice_settings")]
-        public VoiceSettings VoiceSettings { get; }
+        public VoiceSettings VoiceSettings { get; internal set; }
     }
 }

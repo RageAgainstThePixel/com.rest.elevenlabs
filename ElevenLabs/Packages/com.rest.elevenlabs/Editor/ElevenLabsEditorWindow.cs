@@ -1012,7 +1012,7 @@ namespace ElevenLabs.Editor
                     currentVoiceOption,
                     currentVoiceSettings,
                     currentModelOption,
-                    editorDownloadDirectory);
+                    saveDirectory: editorDownloadDirectory);
 
                 await Awaiters.UnityMainThread;
 

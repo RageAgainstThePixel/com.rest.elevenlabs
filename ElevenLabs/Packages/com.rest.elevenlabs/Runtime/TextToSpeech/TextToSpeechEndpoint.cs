@@ -25,15 +25,40 @@ namespace ElevenLabs.TextToSpeech
         /// <summary>
         /// Converts text into speech using a voice of your choice and returns audio.
         /// </summary>
-        /// <param name="text">Text input to synthesize speech for. Maximum 5000 characters.</param>
-        /// <param name="voice"><see cref="Voice"/> to use.</param>
-        /// <param name="voiceSettings">Optional, <see cref="VoiceSettings"/> that will override the default settings in <see cref="Voice.Settings"/>.</param>
-        /// <param name="model">Optional, <see cref="Model"/> to use. Defaults to <see cref="Model.MonoLingualV1"/>.</param>
-        /// <param name="saveDirectory">Optional, The save directory to save the audio clip. Defaults to <see cref="Rest.DownloadCacheDirectory"/></param>
-        /// <param name="deleteCachedFile">Optional, deletes the cached file for this text string. Default is false.</param>
-        /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
+        /// <param name="text">
+        /// Text input to synthesize speech for. Maximum 5000 characters.
+        /// </param>
+        /// <param name="voice">
+        /// <see cref="Voice"/> to use.
+        /// </param>
+        /// <param name="voiceSettings">
+        /// Optional, <see cref="VoiceSettings"/> that will override the default settings in <see cref="Voice.Settings"/>.
+        /// </param>
+        /// <param name="model">
+        /// Optional, <see cref="Model"/> to use. Defaults to <see cref="Model.MonoLingualV1"/>.
+        /// </param>
+        /// <param name="optimizeStreamingLatency">
+        /// Optional, You can turn on latency optimizations at some cost of quality.
+        /// The best possible final latency varies by model.<br/>
+        /// Possible values:<br/>
+        /// 0 - default mode (no latency optimizations)<br/>
+        /// 1 - normal latency optimizations (about 50% of possible latency improvement of option 3)<br/>
+        /// 2 - strong latency optimizations (about 75% of possible latency improvement of option 3)<br/>
+        /// 3 - max latency optimizations<br/>
+        /// 4 - max latency optimizations, but also with text normalizer turned off for even more latency savings
+        /// (best latency, but can mispronounce eg numbers and dates).
+        /// </param>
+        /// <param name="saveDirectory">
+        /// Optional, The save directory to save the audio clip. Defaults to <see cref="Rest.DownloadCacheDirectory"/>.
+        /// </param>
+        /// <param name="deleteCachedFile">
+        /// Optional, deletes the cached file for this text string. Default is false.
+        /// </param>
+        /// <param name="cancellationToken">
+        /// Optional, <see cref="CancellationToken"/>.
+        /// </param>
         /// <returns>Downloaded clip path, and the loaded audio clip.</returns>
-        public async Task<Tuple<string, AudioClip>> TextToSpeechAsync(string text, Voice voice, VoiceSettings voiceSettings = null, Model model = null, string saveDirectory = null, bool deleteCachedFile = false, CancellationToken cancellationToken = default)
+        public async Task<Tuple<string, AudioClip>> TextToSpeechAsync(string text, Voice voice, VoiceSettings voiceSettings = null, Model model = null, int? optimizeStreamingLatency = null, string saveDirectory = null, bool deleteCachedFile = false, CancellationToken cancellationToken = default)
         {
             if (text.Length > 5000)
             {
@@ -81,9 +106,10 @@ namespace ElevenLabs.TextToSpeech
             if (!File.Exists(filePath))
             {
                 var defaultVoiceSettings = voiceSettings ?? voice.Settings ?? await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken);
-                var request = new TextToSpeechRequest(text, model ?? Model.MonoLingualV1, defaultVoiceSettings);
+                var request = new TextToSpeechRequest(text, model, defaultVoiceSettings);
                 var payload = JsonConvert.SerializeObject(request, client.JsonSerializationOptions);
-                var response = await Rest.PostAsync(GetUrl($"/{voice.Id}"), payload, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
+                var endpoint = GetUrl($"/{voice.Id}{(optimizeStreamingLatency.HasValue ? $"?optimize_streaming_latency={optimizeStreamingLatency.Value}" : string.Empty)}");
+                var response = await Rest.PostAsync(endpoint, payload, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
                 response.Validate();
                 var responseStream = new MemoryStream(response.Data);
 
@@ -123,15 +149,41 @@ namespace ElevenLabs.TextToSpeech
         /// <summary>
         /// Converts text into speech using a voice of your choice and returns audio as an audio stream.
         /// </summary>
-        /// <param name="text">Text input to synthesize speech for.</param>
-        /// <param name="voice"><see cref="Voice"/> to use.</param>
+        /// <param name="text">
+        /// Text input to synthesize speech for. Maximum 5000 characters.
+        /// </param>
+        /// <param name="voice">
+        /// <see cref="Voice"/> to use.
+        /// </param>
         /// <param name="resultHandler">An action to be called when a new <see cref="AudioClip"/> the clip is ready to play.</param>
-        /// <param name="voiceSettings">Optional, <see cref="VoiceSettings"/> that will override the default settings in <see cref="Voice.Settings"/>.</param>
-        /// <param name="model">Optional, <see cref="Model"/> to use. Defaults to <see cref="Model.MonoLingualV1"/>.</param>
-        /// <param name="saveDirectory">Optional, save directory to save the audio clip. Defaults to <see cref="Rest.DownloadCacheDirectory"/></param>
-        /// <param name="deleteCachedFile">Optional, deletes the cached file for this text string. Default is false.</param>
-        /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
-        public async Task<Tuple<string, AudioClip>> StreamTextToSpeechAsync(string text, Voice voice, Action<AudioClip> resultHandler, VoiceSettings voiceSettings = null, Model model = null, string saveDirectory = null, bool deleteCachedFile = false, CancellationToken cancellationToken = default)
+        /// <param name="voiceSettings">
+        /// Optional, <see cref="VoiceSettings"/> that will override the default settings in <see cref="Voice.Settings"/>.
+        /// </param>
+        /// <param name="model">
+        /// Optional, <see cref="Model"/> to use. Defaults to <see cref="Model.MonoLingualV1"/>.
+        /// </param>
+        /// <param name="optimizeStreamingLatency">
+        /// Optional, You can turn on latency optimizations at some cost of quality.
+        /// The best possible final latency varies by model.<br/>
+        /// Possible values:<br/>
+        /// 0 - default mode (no latency optimizations)<br/>
+        /// 1 - normal latency optimizations (about 50% of possible latency improvement of option 3)<br/>
+        /// 2 - strong latency optimizations (about 75% of possible latency improvement of option 3)<br/>
+        /// 3 - max latency optimizations<br/>
+        /// 4 - max latency optimizations, but also with text normalizer turned off for even more latency savings
+        /// (best latency, but can mispronounce eg numbers and dates).
+        /// </param>
+        /// <param name="saveDirectory">
+        /// Optional, The save directory to save the audio clip. Defaults to <see cref="Rest.DownloadCacheDirectory"/>.
+        /// </param>
+        /// <param name="deleteCachedFile">
+        /// Optional, deletes the cached file for this text string. Default is false.
+        /// </param>
+        /// <param name="cancellationToken">
+        /// Optional, <see cref="CancellationToken"/>.
+        /// </param>
+        /// <returns>Downloaded clip path, and the loaded audio clip.</returns>
+        public async Task<Tuple<string, AudioClip>> StreamTextToSpeechAsync(string text, Voice voice, Action<AudioClip> resultHandler, VoiceSettings voiceSettings = null, Model model = null, int? optimizeStreamingLatency = null, string saveDirectory = null, bool deleteCachedFile = false, CancellationToken cancellationToken = default)
         {
             if (text.Length > 5000)
             {
@@ -157,7 +209,7 @@ namespace ElevenLabs.TextToSpeech
             var clipGuid = $"{voice.Id}{text}".GenerateGuid().ToString();
             var fileName = $"{clipGuid}.mp3";
             var filePath = Path.Combine(downloadDirectory, fileName);
-            AudioClip audioClip = null;
+            AudioClip audioClip;
 
             if (File.Exists(filePath))
             {
@@ -179,58 +231,13 @@ namespace ElevenLabs.TextToSpeech
             if (!File.Exists(filePath))
             {
                 var defaultVoiceSettings = voiceSettings ?? voice.Settings ?? await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken);
-                var request = new TextToSpeechRequest(text, model ?? Model.MonoLingualV1, defaultVoiceSettings);
+                var request = new TextToSpeechRequest(text, model, defaultVoiceSettings);
                 var payload = JsonConvert.SerializeObject(request, client.JsonSerializationOptions);
-                var response = await Rest.PostAsync(GetUrl($"/{voice.Id}/stream"), payload, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-                response.Validate();
-
-                var responseStream = new MemoryStream(response.Data);
-
-                try
+                var endpoint = GetUrl($"/{voice.Id}/stream{(optimizeStreamingLatency.HasValue ? $"?optimize_streaming_latency={optimizeStreamingLatency.Value}" : string.Empty)}");
+                audioClip = await Rest.StreamAudioAsync(endpoint, AudioType.MPEG, resultHandler, jsonData: payload, parameters: new RestParameters(client.DefaultRequestHeaders, new Progress<Progress>(progress =>
                 {
-                    await using var fileStream = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
-
-                    int bytesRead;
-                    Task loadTask = null;
-                    var canInvoke = true;
-                    var buffer = new byte[1024];
-
-                    while ((bytesRead = await responseStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken)) > 0)
-                    {
-                        await fileStream.WriteAsync(buffer, 0, bytesRead, cancellationToken);
-
-                        const long playbackAmountThreshold = 10000;
-
-                        if (canInvoke && fileStream.Length >= playbackAmountThreshold)
-                        {
-                            canInvoke = false;
-                            loadTask = Task.Run(async () =>
-                            {
-                                audioClip = await Rest.StreamAudioAsync(
-                                    url: $"file://{filePath}",
-                                    audioType: AudioType.MPEG,
-                                    onStreamPlaybackReady: resultHandler,
-                                    playbackAmountThreshold: playbackAmountThreshold,
-                                    cancellationToken: cancellationToken);
-                            }, cancellationToken);
-                        }
-                    }
-
-                    await fileStream.FlushAsync(cancellationToken);
-
-                    if (loadTask != null)
-                    {
-                        await loadTask;
-                    }
-                }
-                catch (Exception e)
-                {
-                    Debug.LogError(e);
-                }
-                finally
-                {
-                    await responseStream.DisposeAsync();
-                }
+                    Debug.Log($"{progress.Speed} {progress.Unit} | {progress.Percentage}% | Length: {progress.Length} | Position: {progress.Position}");
+                })), cancellationToken: cancellationToken);
             }
             else
             {
