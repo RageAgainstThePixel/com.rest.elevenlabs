@@ -98,9 +98,9 @@ var api = new ElevenLabsClient(new ElevenLabsAuthentication("yourApiKey"));
 
 You can save the key directly into a scriptable object that is located in the `Assets/Resources` folder.
 
-You can create a new one by using the context menu of the project pane and creating a new `ElevenLabsConfigurationSettings` scriptable object.
+You can create a new one by using the context menu of the project pane and creating a new `ElevenLabsConfiguration` scriptable object.
 
-![Create new ElevenLabsConfigurationSettings](ElevenLabs/Packages/com.rest.elevenlabs/Documentation~/images/create-scriptable-object.png)
+![Create new ElevenLabsConfiguration](ElevenLabs/Packages/com.rest.elevenlabs/Documentation~/images/create-scriptable-object.png)
 
 #### Load key from configuration file
 
@@ -119,7 +119,7 @@ To create a configuration file, create a new text file named `.elevenlabs` and c
 You can also load the file directly with known path by calling a static method in Authentication:
 
 ```csharp
-var api = new ElevenLabsClient(ElevenLabsAuthentication.LoadFromDirectory("your/path/to/.elevenlabs"));;
+var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromDirectory("your/path/to/.elevenlabs"));;
 ```
 
 #### Use System Environment Variables
@@ -129,7 +129,7 @@ Use your system's environment variables specify an api key to use.
 - Use `ELEVEN_LABS_API_KEY` for your api key.
 
 ```csharp
-var api = new ElevenLabsClient(ElevenLabsAuthentication.LoadFromEnv());
+var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
 ```
 
 ### [API Proxy](https://github.com/RageAgainstThePixel/ElevenLabs-DotNet/main/ElevenLabs-DotNet-Proxy/README.md)
@@ -147,7 +147,7 @@ Follow these steps:
 1. Setup a new project using either the [ElevenLabs-DotNet](https://github.com/RageAgainstThePixel/ElevenLabs-DotNet) or [com.rest.elevenlabs](https://github.com/RageAgainstThePixel/com.rest.elevenlabs) packages.
 2. Authenticate users with your OAuth provider.
 3. After successful authentication, create a new `ElevenLabsAuthentication` object and pass in the custom token.
-4. Create a new `ElevenLabsClientSettings` object and specify the domain where your intermediate API is located.
+4. Create a new `ElevenLabsSettings` object and specify the domain where your intermediate API is located.
 5. Pass your new `auth` and `settings` objects to the `ElevenLabsClient` constructor when you create the client instance.
 
 Here's an example of how to set up the front end:
@@ -155,7 +155,7 @@ Here's an example of how to set up the front end:
 ```csharp
 var authToken = await LoginAsync();
 var auth = new ElevenLabsAuthentication(authToken);
-var settings = new ElevenLabsClientSettings(domain: "api.your-custom-domain.com");
+var settings = new ElevenLabsSettings(domain: "api.your-custom-domain.com");
 var api = new ElevenLabsClient(auth, settings);
 ```
 
@@ -259,7 +259,7 @@ var api = new ElevenLabsClient();
 var text = "The quick brown fox jumps over the lazy dog.";
 var voice = (await api.VoicesEndpoint.GetAllVoicesAsync()).FirstOrDefault();
 var defaultVoiceSettings = await api.VoicesEndpoint.GetDefaultVoiceSettingsAsync();
-var (clipPath, audioClip) = await api.TextToSpeechEndpoint.TextToSpeechAsync(
+var (clipPath, audioClip) = await api.TextToSpeechEndpoint.StreamTextToSpeechAsync(
     text,
     voice,
     clip =>
