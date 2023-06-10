@@ -6,17 +6,17 @@ using UnityEngine;
 
 namespace ElevenLabs
 {
+    [Obsolete("Use " + nameof(ElevenLabsSettings))]
     public sealed class ElevenLabsClientSettings
     {
-        internal const string ElevenLabsDomain = "api.elevenlabs.io";
-        internal const string DefaultApiVersion = "v1";
+        public static implicit operator ElevenLabsSettings(ElevenLabsClientSettings clientSettings) => new ElevenLabsSettings(clientSettings);
 
         /// <summary>
         /// Creates a new instance of <see cref="ElevenLabsClientSettings"/> for use with ElevenLabs API.
         /// </summary>
         public ElevenLabsClientSettings()
         {
-            Domain = ElevenLabsDomain;
+            Domain = ElevenLabsSettingsInfo.ElevenLabsDomain;
             ApiVersion = "v1";
             BaseRequest = $"/{ApiVersion}/";
             BaseRequestUrlFormat = $"https://{Domain}{BaseRequest}{{0}}";
@@ -27,22 +27,22 @@ namespace ElevenLabs
         /// </summary>
         /// <param name="domain">Base api domain.</param>
         /// <param name="apiVersion">The version of the ElevenLabs api you want to use.</param>
-        public ElevenLabsClientSettings(string domain, string apiVersion = DefaultApiVersion)
+        public ElevenLabsClientSettings(string domain, string apiVersion = ElevenLabsSettingsInfo.DefaultApiVersion)
         {
             if (string.IsNullOrWhiteSpace(domain))
             {
-                domain = ElevenLabsDomain;
+                domain = ElevenLabsSettingsInfo.ElevenLabsDomain;
             }
 
-            if (!domain.Contains(".") &&
-                !domain.Contains(":"))
+            if (!domain.Contains('.') &&
+                !domain.Contains(':'))
             {
                 throw new ArgumentException($"You're attempting to pass a \"resourceName\" parameter to \"{nameof(domain)}\". Please specify \"resourceName:\" for this parameter in constructor.");
             }
 
             if (string.IsNullOrWhiteSpace(apiVersion))
             {
-                apiVersion = DefaultApiVersion;
+                apiVersion = ElevenLabsSettingsInfo.DefaultApiVersion;
             }
 
             Domain = domain;
@@ -70,7 +70,7 @@ namespace ElevenLabs
                     return cachedDefault;
                 }
 
-                var config = Resources.LoadAll<ElevenLabsConfigurationSettings>(string.Empty).FirstOrDefault(asset => asset != null);
+                var config = Resources.LoadAll<ElevenLabsConfiguration>(string.Empty).FirstOrDefault(asset => asset != null);
 
                 if (config != null)
                 {

@@ -13,7 +13,7 @@ namespace ElevenLabs.Voice.Tests
         [Test]
         public async Task Test_01_TextToSpeech()
         {
-            var api = new ElevenLabsClient(ElevenLabsAuthentication.LoadFromEnv());
+            var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
             Assert.NotNull(api.TextToSpeechEndpoint);
             var voice = Voices.Voice.Adam;
             Assert.NotNull(voice);
@@ -26,7 +26,7 @@ namespace ElevenLabs.Voice.Tests
         [Test]
         public async Task Test_02_StreamTextToSpeech()
         {
-            var api = new ElevenLabsClient(ElevenLabsAuthentication.LoadFromEnv());
+            var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
             Assert.NotNull(api.TextToSpeechEndpoint);
             var voice = (await api.VoicesEndpoint.GetAllVoicesAsync()).FirstOrDefault();
             Assert.NotNull(voice);

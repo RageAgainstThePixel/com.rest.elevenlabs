@@ -569,10 +569,9 @@ namespace ElevenLabs.Editor
                 EditorGUILayout.LabelField("Eleven Labs Dashboard", BoldCenteredHeaderStyle);
                 EditorGUILayout.Space();
 
-                if (api == null ||
-                    string.IsNullOrWhiteSpace(api.ElevenLabsAuthentication.ApiKey))
+                if (api is not { HasValidAuthentication: true })
                 {
-                    EditorGUILayout.HelpBox($"No valid {nameof(ElevenLabsConfigurationSettings)} was found. This tool requires that you set your API key.", MessageType.Error);
+                    EditorGUILayout.HelpBox($"No valid {nameof(ElevenLabsConfiguration)} was found. This tool requires that you set your API key.", MessageType.Error);
                     return;
                 }
 
@@ -748,7 +747,7 @@ namespace ElevenLabs.Editor
 
                     if (key != null)
                     {
-                        var audioClip = await Rest.DownloadAudioClipAsync($"file://{clipPath}", AudioType.MPEG, Path.GetFileNameWithoutExtension(clipPath));
+                        var audioClip = await Rest.DownloadAudioClipAsync($"file://{clipPath}", AudioType.MPEG, Path.GetFileNameWithoutExtension(clipPath), parameters: null);
                         downloadedAudioClips.TryAdd(key.Id, audioClip);
                     }
                 }
@@ -1013,7 +1012,7 @@ namespace ElevenLabs.Editor
                     currentVoiceOption,
                     currentVoiceSettings,
                     currentModelOption,
-                    editorDownloadDirectory);
+                    saveDirectory: editorDownloadDirectory);
 
                 await Awaiters.UnityMainThread;
 
