@@ -10,7 +10,7 @@ namespace ElevenLabs.Voice.Tests
     {
         public async Task Test_01_GetModels()
         {
-            var api = new ElevenLabsClient(ElevenLabsAuthentication.LoadFromEnv());
+            var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
             Assert.NotNull(api.ModelsEndpoint);
             var models = await api.ModelsEndpoint.GetModelsAsync();
             Assert.NotNull(models);

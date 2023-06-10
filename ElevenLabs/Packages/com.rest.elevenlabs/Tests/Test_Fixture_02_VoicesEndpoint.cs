@@ -15,7 +15,7 @@ namespace ElevenLabs.Voice.Tests
         [Test]
         public async Task Test_01_GetVoices()
         {
-            var api = new ElevenLabsClient(ElevenLabsAuthentication.LoadFromEnv());
+            var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
             Assert.NotNull(api.VoicesEndpoint);
             var results = await api.VoicesEndpoint.GetAllVoicesAsync();
             Assert.NotNull(results);
@@ -30,7 +30,7 @@ namespace ElevenLabs.Voice.Tests
         [Test]
         public async Task Test_02_GetDefaultVoiceSettings()
         {
-            var api = new ElevenLabsClient(ElevenLabsAuthentication.LoadFromEnv());
+            var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
             Assert.NotNull(api.VoicesEndpoint);
             var result = await api.VoicesEndpoint.GetDefaultVoiceSettingsAsync();
             Assert.NotNull(result);
@@ -40,7 +40,7 @@ namespace ElevenLabs.Voice.Tests
         [Test]
         public async Task Test_03_GetVoice()
         {
-            var api = new ElevenLabsClient(ElevenLabsAuthentication.LoadFromEnv());
+            var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
             Assert.NotNull(api.VoicesEndpoint);
             var results = await api.VoicesEndpoint.GetAllVoicesAsync();
             Assert.NotNull(results);
@@ -54,7 +54,7 @@ namespace ElevenLabs.Voice.Tests
         [Test]
         public async Task Test_04_EditVoiceSettings()
         {
-            var api = new ElevenLabsClient(ElevenLabsAuthentication.LoadFromEnv());
+            var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
             Assert.NotNull(api.VoicesEndpoint);
             var results = await api.VoicesEndpoint.GetAllVoicesAsync();
             Assert.NotNull(results);
@@ -76,7 +76,7 @@ namespace ElevenLabs.Voice.Tests
         [Test]
         public async Task Test_05_AddVoice()
         {
-            var api = new ElevenLabsClient(ElevenLabsAuthentication.LoadFromEnv());
+            var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
             Assert.NotNull(api.VoicesEndpoint);
             var testLabels = new Dictionary<string, string>
             {
@@ -92,7 +92,7 @@ namespace ElevenLabs.Voice.Tests
         [Test]
         public async Task Test_06_EditVoice()
         {
-            var api = new ElevenLabsClient(ElevenLabsAuthentication.LoadFromEnv());
+            var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
             Assert.NotNull(api.VoicesEndpoint);
             var results = await api.VoicesEndpoint.GetAllVoicesAsync();
             Assert.NotNull(results);
@@ -113,7 +113,7 @@ namespace ElevenLabs.Voice.Tests
         [Test]
         public async Task Test_07_GetVoiceSample()
         {
-            var api = new ElevenLabsClient(ElevenLabsAuthentication.LoadFromEnv());
+            var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
             Assert.NotNull(api.VoicesEndpoint);
             var results = await api.VoicesEndpoint.GetAllVoicesAsync();
             Assert.NotNull(results);
@@ -132,7 +132,7 @@ namespace ElevenLabs.Voice.Tests
         [Test]
         public async Task Test_08_DeleteVoiceSample()
         {
-            var api = new ElevenLabsClient(ElevenLabsAuthentication.LoadFromEnv());
+            var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
             Assert.NotNull(api.VoicesEndpoint);
             var results = await api.VoicesEndpoint.GetAllVoicesAsync();
             Assert.NotNull(results);
@@ -152,7 +152,7 @@ namespace ElevenLabs.Voice.Tests
         [Test]
         public async Task Test_09_DeleteVoice()
         {
-            var api = new ElevenLabsClient(ElevenLabsAuthentication.LoadFromEnv());
+            var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
             Assert.NotNull(api.VoicesEndpoint);
             var results = await api.VoicesEndpoint.GetAllVoicesAsync();
             Assert.NotNull(results);

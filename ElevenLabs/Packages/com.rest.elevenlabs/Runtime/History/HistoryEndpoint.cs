@@ -20,7 +20,7 @@ namespace ElevenLabs.History
     /// <summary>
     /// Access to your history. Your history is a list of all your created audio including its metadata.
     /// </summary>
-    public sealed class HistoryEndpoint : BaseEndPoint
+    public sealed class HistoryEndpoint : ElevenLabsBaseEndPoint
     {
         [Preserve]
         private class HistoryInfo
@@ -37,7 +37,7 @@ namespace ElevenLabs.History
             public IReadOnlyList<HistoryItem> History { get; }
         }
 
-        public HistoryEndpoint(ElevenLabsClient api) : base(api) { }
+        public HistoryEndpoint(ElevenLabsClient client) : base(client) { }
 
         protected override string Root => "history";
 
@@ -48,9 +48,9 @@ namespace ElevenLabs.History
         /// <returns>A list of history items containing metadata about generated audio.</returns>
         public async Task<IReadOnlyList<HistoryItem>> GetHistoryAsync(CancellationToken cancellationToken = default)
         {
-            var result = await Api.Client.GetAsync(GetUrl(), cancellationToken);
-            var resultAsString = await result.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<HistoryInfo>(resultAsString, Api.JsonSerializationOptions)?.History;
+            var response = await Rest.GetAsync(GetUrl(), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
+            response.Validate();
+            return JsonConvert.DeserializeObject<HistoryInfo>(response.Body, client.JsonSerializationOptions)?.History;
         }
 
         /// <summary>
@@ -74,10 +74,10 @@ namespace ElevenLabs.History
                 File.Delete(filePath);
             }
 
-            var response = await Api.Client.GetAsync(GetUrl($"/{historyItem.Id}/audio"), cancellationToken);
-            await response.CheckResponseAsync();
+            var response = await Rest.GetAsync(GetUrl($"/{historyItem.Id}/audio"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
+            response.Validate();
 
-            var responseStream = await response.Content.ReadAsStreamAsync();
+            var responseStream = new MemoryStream(response.Data);
 
             try
             {
@@ -107,7 +107,7 @@ namespace ElevenLabs.History
                 await responseStream.DisposeAsync();
             }
 
-            var audioClip = await Rest.DownloadAudioClipAsync($"file://{filePath}", AudioType.MPEG, cancellationToken: cancellationToken);
+            var audioClip = await Rest.DownloadAudioClipAsync($"file://{filePath}", AudioType.MPEG, parameters: null, cancellationToken: cancellationToken);
             return audioClip;
         }
 
@@ -119,9 +119,9 @@ namespace ElevenLabs.History
         /// <returns>True, if history item was successfully deleted.</returns>
         public async Task<bool> DeleteHistoryItemAsync(string historyId, CancellationToken cancellationToken = default)
         {
-            var response = await Api.Client.DeleteAsync(GetUrl($"/{historyId}"), cancellationToken);
-            await response.ReadAsStringAsync();
-            return response.IsSuccessStatusCode;
+            var response = await Rest.DeleteAsync(GetUrl($"/{historyId}"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
+            response.Validate();
+            return response.Successful;
         }
 
         /// <summary>
@@ -151,11 +151,11 @@ namespace ElevenLabs.History
             }
             else
             {
-                var jsonContent = $"{{\"history_item_ids\":[\"{string.Join("\",\"", historyItemIds)}\"]}}".ToJsonStringContent();
-                var response = await Api.Client.PostAsync(GetUrl("/download"), jsonContent, cancellationToken);
-                await response.CheckResponseAsync();
+                var jsonContent = $"{{\"history_item_ids\":[\"{string.Join("\",\"", historyItemIds)}\"]}}";
+                var response = await Rest.PostAsync(GetUrl("/download"), jsonContent, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
+                response.Validate();
                 var unZipTasks = new List<Task>();
-                var responseStream = await response.Content.ReadAsStreamAsync();
+                var responseStream = new MemoryStream(response.Data);
 
                 try
                 {
@@ -228,7 +228,7 @@ namespace ElevenLabs.History
                                 await itemStream.DisposeAsync();
                             }
 
-                            var audioClip = await Rest.DownloadAudioClipAsync($"file://{filePath}", AudioType.MPEG, cancellationToken: cancellationToken);
+                            var audioClip = await Rest.DownloadAudioClipAsync($"file://{filePath}", AudioType.MPEG, parameters: null, cancellationToken: cancellationToken);
                             audioClips.Add(audioClip);
                             await Awaiters.UnityMainThread;
                             progress?.Report(filePath);

@@ -2,7 +2,6 @@
 
 using System;
 using System.IO;
-using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -20,13 +19,6 @@ namespace ElevenLabs.Extensions
             using MD5 md5 = MD5.Create();
             return new Guid(md5.ComputeHash(Encoding.Default.GetBytes(@string)));
         }
-
-        /// <summary>
-        /// Encodes the json string content.
-        /// </summary>
-        public static StringContent ToJsonStringContent(this string json)
-            => new StringContent(json, Encoding.UTF8, "application/json");
-
         /// <summary>
         /// Create a new directory based on the current string format.
         /// </summary>

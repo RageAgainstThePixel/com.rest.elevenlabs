@@ -1,6 +1,9 @@
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
+using ElevenLabs.Voices;
 using System;
 using System.Linq;
-using ElevenLabs.Voices;
+using System.Threading;
 using UnityEngine;
 
 namespace ElevenLabs.Demo
@@ -11,11 +14,14 @@ namespace ElevenLabs.Demo
         [SerializeField]
         private Voice voice;
 
+        [TextArea(3, 10)]
         [SerializeField]
         private string message;
 
         [SerializeField]
         private AudioSource audioSource;
+
+        private CancellationTokenSource lifetimeCancellationTokenSource;
 
         private void OnValidate()
         {
@@ -28,6 +34,7 @@ namespace ElevenLabs.Demo
         private async void Start()
         {
             OnValidate();
+            lifetimeCancellationTokenSource = new CancellationTokenSource();
 
             try
             {
@@ -35,17 +42,49 @@ namespace ElevenLabs.Demo
 
                 if (voice == null)
                 {
-                    voice = (await api.VoicesEndpoint.GetAllVoicesAsync()).FirstOrDefault();
+                    voice = (await api.VoicesEndpoint.GetAllVoicesAsync(lifetimeCancellationTokenSource.Token)).FirstOrDefault();
                 }
 
-                var (_, clip) = await api.TextToSpeechEndpoint.TextToSpeechAsync(message, voice, deleteCachedFile: true);
-                audioSource.PlayOneShot(clip);
+                var clipOffset = 0;
+                var streamCallbackSuccessful = false;
 
+                var (_, clip) = await api.TextToSpeechEndpoint.StreamTextToSpeechAsync(message, voice, audioClip =>
+                {
+                    clipOffset = audioClip.samples;
+
+                    if (clipOffset > 0)
+                    {
+                        Debug.Log($"Stream Playback {clipOffset}");
+                        streamCallbackSuccessful = true;
+                        audioSource.PlayOneShot(audioClip);
+                    }
+                }, deleteCachedFile: true, cancellationToken: lifetimeCancellationTokenSource.Token);
+
+                audioSource.clip = clip;
+
+                if (streamCallbackSuccessful)
+                {
+                    Debug.Log($"Stream complete {clip.samples}");
+
+                    if (clipOffset != clip.samples)
+                    {
+                        Debug.LogWarning($"offset by {clip.samples - clipOffset}");
+                    }
+                }
+                else
+                {
+                    audioSource.PlayOneShot(clip);
+                }
             }
             catch (Exception e)
             {
                 Debug.LogError(e);
             }
+        }
+
+        private void OnDestroy()
+        {
+            lifetimeCancellationTokenSource?.Cancel();
         }
     }
 }
