@@ -15,6 +15,7 @@ using UnityEditor;
 using UnityEngine;
 using Utilities.Async;
 using Utilities.Audio.Editor;
+using Utilities.Extensions.Editor;
 using Utilities.WebRequestRest;
 
 namespace ElevenLabs.Editor
@@ -1117,7 +1118,7 @@ namespace ElevenLabs.Editor
                 const string cloned = "cloned";
 
                 if (voice.Category.Contains(premade)) { continue; }
-                Divider();
+                EditorGUILayoutExtensions.Divider();
 
                 var isCloned = voice.Category.Contains(cloned);
 
@@ -1814,14 +1815,6 @@ namespace ElevenLabs.Editor
             {
                 EditorGUI.indentLevel--;
             }
-        }
-
-        private static void Divider(int height = 1, Color? color = null)
-        {
-            Rect rect = EditorGUILayout.GetControlRect(false, height);
-            rect.height = height;
-            color ??= EditorGUIUtility.isProSkin ? new Color(0.1f, 0.1f, 0.1f) : new Color(0.5f, 0.5f, 0.5f, 1);
-            EditorGUI.DrawRect(rect, color.Value);
         }
 
         #endregion GUI Utilities
