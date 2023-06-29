@@ -1,5 +1,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using ElevenLabs.Voices;
 using UnityEngine;
 using Utilities.WebRequestRest.Interfaces;
 
@@ -29,5 +30,10 @@ namespace ElevenLabs
         private string apiVersion = ElevenLabsSettingsInfo.DefaultApiVersion;
 
         public string ApiVersion => apiVersion;
+
+        [SerializeField]
+        private Voice globalVoice;
+
+        public Voice GlobalVoice => globalVoice;
     }
 }
