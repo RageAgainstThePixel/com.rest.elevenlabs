@@ -13,13 +13,19 @@ namespace ElevenLabs.Editor
     [CustomPropertyDrawer(typeof(Voice))]
     public class VoicePropertyDrawer : PropertyDrawer
     {
-        private static readonly GUIContent voiceContent = new GUIContent("Voice");
+        private static ElevenLabsClient elevenLabsClient;
+
+        private static ElevenLabsClient ElevenLabsClient => elevenLabsClient ??= new ElevenLabsClient();
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             try
             {
-                elevenLabsClient ??= new ElevenLabsClient();
+                if (!ElevenLabsClient.HasValidAuthentication)
+                {
+                    EditorGUI.LabelField(position, "Cannot fetch voices");
+                    return;
+                }
             }
             catch (AuthenticationException)
             {
@@ -34,20 +40,20 @@ namespace ElevenLabs.Editor
                 return;
             }
 
-            var voiceName = property.FindPropertyRelative("name");
             var id = property.FindPropertyRelative("id");
+            var voiceName = property.FindPropertyRelative("name");
 
             if (voiceOptions.Length < 1)
             {
                 FetchVoices();
 
-                if (string.IsNullOrWhiteSpace(voiceName.stringValue))
+                if (string.IsNullOrWhiteSpace(id.stringValue))
                 {
                     EditorGUI.HelpBox(position, "Fetching voices...", MessageType.Info);
                     return;
                 }
 
-                EditorGUI.LabelField(position, voiceContent, new GUIContent(voiceName.stringValue, id.stringValue));
+                EditorGUI.LabelField(position, label, new GUIContent(voiceName.stringValue, id.stringValue));
                 return;
             }
 
@@ -64,7 +70,7 @@ namespace ElevenLabs.Editor
             {
                 for (var i = 0; i < voiceOptions.Length; i++)
                 {
-                    if (voiceOptions[i].text.Contains(currentVoiceOption.Name))
+                    if (voiceOptions[i].tooltip.Contains(currentVoiceOption.Id))
                     {
                         voiceIndex = i;
                         break;
@@ -73,7 +79,7 @@ namespace ElevenLabs.Editor
             }
 
             EditorGUI.BeginChangeCheck();
-            voiceIndex = EditorGUI.Popup(position, voiceContent, voiceIndex, voiceOptions);
+            voiceIndex = EditorGUI.Popup(position, label, voiceIndex, voiceOptions);
 
             if (EditorGUI.EndChangeCheck())
             {
@@ -83,23 +89,27 @@ namespace ElevenLabs.Editor
             }
         }
 
-        private static ElevenLabsClient elevenLabsClient;
-
         private static bool isFetchingVoices;
+
+        public static bool IsFetchingVoices => isFetchingVoices;
 
         private static IReadOnlyList<Voice> voices = new List<Voice>();
 
+        public static IReadOnlyList<Voice> Voices => voices;
+
         private static GUIContent[] voiceOptions = Array.Empty<GUIContent>();
 
-        private static async void FetchVoices()
+        public static IReadOnlyList<GUIContent> VoiceOptions => voiceOptions;
+
+        public static async void FetchVoices()
         {
             if (isFetchingVoices) { return; }
             isFetchingVoices = true;
 
             try
             {
-                voices = await elevenLabsClient.VoicesEndpoint.GetAllVoicesAsync();
-                voiceOptions = voices.OrderBy(voice => voice.Name).Select(voice => new GUIContent($"{voice.Category}/{voice.Name}")).ToArray();
+                voices = await ElevenLabsClient.VoicesEndpoint.GetAllVoicesAsync();
+                voiceOptions = voices.Select(voice => new GUIContent($"{voice.Category}/{voice.Name}", voice.Id)).ToArray();
             }
             catch (Exception e)
             {
