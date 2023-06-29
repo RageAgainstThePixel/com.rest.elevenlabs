@@ -12,6 +12,10 @@ I am not affiliated with ElevenLabs and an account with api access is required.
 
 ## Installing
 
+Requires Unity 2021.3 LTS or higher.
+
+The recommended installation method is though the unity package manager and [OpenUPM](https://openupm.com/packages/com.rest.elevenlabs).
+
 ### Via Unity Package Manager and OpenUPM
 
 - Open your Unity project settings
@@ -33,6 +37,7 @@ I am not affiliated with ElevenLabs and an account with api access is required.
 - Add package from git url: `https://github.com/RageAgainstThePixel/com.rest.elevenlabs.git#upm`
   > Note: this repo has dependencies on other repositories! You are responsible for adding these on your own.
   - [com.utilities.async](https://github.com/RageAgainstThePixel/com.utilities.async)
+  - [com.utilities.extensions](https://github.com/RageAgainstThePixel/com.utilities.extensions)
   - [com.utilities.audio](https://github.com/RageAgainstThePixel/com.utilities.audio)
   - [com.utilities.rest](https://github.com/RageAgainstThePixel/com.utilities.rest)
 
