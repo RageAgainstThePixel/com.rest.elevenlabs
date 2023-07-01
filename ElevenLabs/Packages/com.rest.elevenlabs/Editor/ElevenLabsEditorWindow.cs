@@ -1049,8 +1049,10 @@ namespace ElevenLabs.Editor
 
             try
             {
+                var defaultVoiceSettings = await api.VoicesEndpoint.GetDefaultVoiceSettingsAsync();
+                await api.VoicesEndpoint.EditVoiceSettingsAsync(voice, defaultVoiceSettings);
                 currentVoiceSettings = await api.VoicesEndpoint.GetVoiceSettingsAsync(voice);
-                voiceSettingsSliderValues = new Vector2(currentVoiceSettings.Stability, currentVoiceSettings.SimilarityBoost);
+                voiceSettingsSliderValues = new Vector2(defaultVoiceSettings.Stability, defaultVoiceSettings.SimilarityBoost);
             }
             catch (Exception e)
             {
