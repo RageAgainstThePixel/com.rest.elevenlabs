@@ -15,10 +15,14 @@ namespace ElevenLabs.Voices
         [JsonConstructor]
         public VoiceSettings(
             [JsonProperty("stability")] float stability,
-            [JsonProperty("similarity_boost")] float similarityBoost)
+            [JsonProperty("similarity_boost")] float similarityBoost,
+            [JsonProperty("speaker_boost")] bool speakerBoost = true,
+            [JsonProperty("style")] float style = 0.45f)
         {
             Stability = stability;
             SimilarityBoost = similarityBoost;
+            SpeakerBoost = speakerBoost;
+            Style = style;
         }
 
         [Range(0f, 1f)]
@@ -43,6 +47,29 @@ namespace ElevenLabs.Voices
         {
             get => similarityBoost;
             private set => similarityBoost = value;
+        }
+
+        [Range(0f, 1f)]
+        [SerializeField]
+        private float style = 0.45f;
+
+        [Preserve]
+        [JsonProperty("style")]
+        public float Style
+        {
+            get => style;
+            set => style = value;
+        }
+
+        [SerializeField]
+        private bool speakerBoost = true;
+
+        [Preserve]
+        [JsonProperty("use_speaker_boost")]
+        public bool SpeakerBoost
+        {
+            get => speakerBoost;
+            set => speakerBoost = value;
         }
     }
 }
