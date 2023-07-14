@@ -497,7 +497,10 @@ namespace ElevenLabs.Editor
         private string currentModelId;
 
         [SerializeField]
-        private Vector2 voiceSettingsSliderValues = Vector2.zero;
+        private Vector3 voiceSettingsSliderValues = Vector3.zero;
+
+        [SerializeField]
+        private bool useSpeakerBoost = true;
 
         [SerializeField]
         private List<AudioClip> newSampleClips;
@@ -823,7 +826,7 @@ namespace ElevenLabs.Editor
                         }
 
                         if (currentVoiceSettings == null ||
-                            voiceSettingsSliderValues == Vector2.zero)
+                            voiceSettingsSliderValues == Vector3.zero)
                         {
                             GetDefaultVoiceSettings(currentVoiceOption);
                         }
@@ -871,6 +874,21 @@ namespace ElevenLabs.Editor
                         EndIndent(InnerLabelIndentLevel);
                     }
                     EditorGUILayout.EndHorizontal();
+                    EditorGUILayout.Space(EndWidth);
+                    voiceSettingsSliderValues.z = EditorGUILayout.Slider("Style", voiceSettingsSliderValues.z, 0f, 1f);
+                    EditorGUILayout.BeginHorizontal();
+                    {
+                        StartIndent(InnerLabelIndentLevel);
+                        EditorGUIUtility.labelWidth = WideColumnWidth * InnerLabelWidth;
+                        EditorGUILayout.LabelField("Low", expandWidthOption);
+                        GUILayout.FlexibleSpace();
+                        EditorGUILayout.LabelField("High", RightMiddleAlignedLabel, expandWidthOption);
+                        EditorGUIUtility.labelWidth = WideColumnWidth * SettingsLabelWidth;
+                        EndIndent(InnerLabelIndentLevel);
+                    }
+                    EditorGUILayout.EndHorizontal();
+                    EditorGUILayout.Space(EndWidth);
+                    useSpeakerBoost = EditorGUILayout.Toggle("Speaker Boost", useSpeakerBoost);
                     EditorGUILayout.Space();
                 }
 
@@ -921,7 +939,7 @@ namespace ElevenLabs.Editor
 
                 if (EditorGUI.EndChangeCheck())
                 {
-                    currentVoiceSettings = new VoiceSettings(voiceSettingsSliderValues.x, voiceSettingsSliderValues.y);
+                    currentVoiceSettings = new VoiceSettings(voiceSettingsSliderValues.x, voiceSettingsSliderValues.y, useSpeakerBoost, voiceSettingsSliderValues.z);
                 }
 
                 EditorGUILayout.EndHorizontal();
@@ -1052,7 +1070,8 @@ namespace ElevenLabs.Editor
                 var defaultVoiceSettings = await api.VoicesEndpoint.GetDefaultVoiceSettingsAsync();
                 await api.VoicesEndpoint.EditVoiceSettingsAsync(voice, defaultVoiceSettings);
                 currentVoiceSettings = await api.VoicesEndpoint.GetVoiceSettingsAsync(voice);
-                voiceSettingsSliderValues = new Vector2(defaultVoiceSettings.Stability, defaultVoiceSettings.SimilarityBoost);
+                voiceSettingsSliderValues = new Vector3(defaultVoiceSettings.Stability, defaultVoiceSettings.SimilarityBoost, 0.45f);
+                useSpeakerBoost = true;
             }
             catch (Exception e)
             {
