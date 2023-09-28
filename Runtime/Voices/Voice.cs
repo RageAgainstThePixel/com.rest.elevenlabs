@@ -28,6 +28,7 @@ namespace ElevenLabs.Voices
             [JsonProperty("labels")] Dictionary<string, string> labels,
             [JsonProperty("preview_url")] string previewUrl,
             [JsonProperty("available_for_tiers")] List<string> availableForTiers,
+            [JsonProperty("high_quality_base_model_ids")] List<string> highQualityBaseModelIds,
             [JsonProperty("settings")] VoiceSettings settings)
         {
             Id = id;
@@ -37,6 +38,7 @@ namespace ElevenLabs.Voices
             Labels = labels;
             PreviewUrl = previewUrl;
             AvailableForTiers = availableForTiers;
+            HighQualityBaseModelIds = highQualityBaseModelIds;
             Settings = settings;
         }
 
@@ -81,6 +83,10 @@ namespace ElevenLabs.Voices
         [Preserve]
         [JsonProperty("available_for_tiers")]
         public IReadOnlyList<string> AvailableForTiers { get; }
+
+        [Preserve]
+        [JsonProperty("high_quality_base_model_ids")]
+        public IReadOnlyList<string> HighQualityBaseModelIds { get; }
 
         [Preserve]
         [JsonProperty("settings")]
@@ -157,6 +163,7 @@ namespace ElevenLabs.Voices
                    Equals(Labels, other.Labels) &&
                    PreviewUrl == other.PreviewUrl &&
                    Equals(AvailableForTiers, other.AvailableForTiers) &&
+                   Equals(HighQualityBaseModelIds, other.HighQualityBaseModelIds) &&
                    Equals(Settings, other.Settings);
         }
 
