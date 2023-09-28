@@ -32,7 +32,7 @@ namespace ElevenLabs.Voice.Tests
             var (generatedVoiceId, audioClip) = await api.VoiceGenerationEndpoint.GenerateVoiceAsync(generateRequest);
             Debug.Log(generatedVoiceId);
             Assert.NotNull(audioClip);
-            var createVoiceRequest = new CreateVoiceRequest("Test Voice Lab Create Voice", generatedVoiceId);
+            var createVoiceRequest = new CreateVoiceRequest("Test Voice Lab Create Voice", "This is a test voice", generatedVoiceId);
             Assert.NotNull(createVoiceRequest);
             var result = await api.VoiceGenerationEndpoint.CreateVoiceAsync(createVoiceRequest);
             Assert.NotNull(result);
