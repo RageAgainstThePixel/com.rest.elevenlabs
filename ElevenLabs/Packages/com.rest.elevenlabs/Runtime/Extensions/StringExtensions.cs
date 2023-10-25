@@ -19,6 +19,7 @@ namespace ElevenLabs.Extensions
             using MD5 md5 = MD5.Create();
             return new Guid(md5.ComputeHash(Encoding.Default.GetBytes(@string)));
         }
+
         /// <summary>
         /// Create a new directory based on the current string format.
         /// </summary>

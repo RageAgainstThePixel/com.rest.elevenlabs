@@ -1,15 +1,24 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using ElevenLabs.Extensions;
+using ElevenLabs.History;
 using ElevenLabs.Models;
 using ElevenLabs.Voices;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Net;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Networking;
+using Utilities.Async;
+using Utilities.Audio;
+using Utilities.Encoding.OggVorbis;
 using Utilities.WebRequestRest;
+using Debug = UnityEngine.Debug;
 
 namespace ElevenLabs.TextToSpeech
 {
@@ -18,6 +27,11 @@ namespace ElevenLabs.TextToSpeech
     /// </summary>
     public sealed class TextToSpeechEndpoint : ElevenLabsBaseEndPoint
     {
+        private const string PCMFormat = "pcm_44100";
+        private const string OutputFormat = "output_format";
+        private const string StreamingLatency = "optimize_streaming_latency";
+        private const string HistoryItemId = "history-item-id";
+
         public TextToSpeechEndpoint(ElevenLabsClient client) : base(client) { }
 
         protected override string Root => "text-to-speech";
@@ -48,17 +62,11 @@ namespace ElevenLabs.TextToSpeech
         /// 4 - max latency optimizations, but also with text normalizer turned off for even more latency savings
         /// (best latency, but can mispronounce eg numbers and dates).
         /// </param>
-        /// <param name="saveDirectory">
-        /// Optional, The save directory to save the audio clip. Defaults to <see cref="Rest.DownloadCacheDirectory"/>.
-        /// </param>
-        /// <param name="deleteCachedFile">
-        /// Optional, deletes the cached file for this text string. Default is false.
-        /// </param>
         /// <param name="cancellationToken">
         /// Optional, <see cref="CancellationToken"/>.
         /// </param>
         /// <returns>Downloaded clip path, and the loaded audio clip.</returns>
-        public async Task<Tuple<string, AudioClip>> TextToSpeechAsync(string text, Voice voice, VoiceSettings voiceSettings = null, Model model = null, int? optimizeStreamingLatency = null, string saveDirectory = null, bool deleteCachedFile = false, CancellationToken cancellationToken = default)
+        public async Task<DownloadItem> TextToSpeechAsync(string text, Voice voice, VoiceSettings voiceSettings = null, Model model = null, int? optimizeStreamingLatency = null, CancellationToken cancellationToken = default)
         {
             if (text.Length > 5000)
             {
@@ -79,71 +87,55 @@ namespace ElevenLabs.TextToSpeech
 
             await Rest.ValidateCacheDirectoryAsync();
 
-            var rootDirectory = (saveDirectory ?? Rest.DownloadCacheDirectory).CreateNewDirectory(nameof(ElevenLabs));
+            var rootDirectory = Rest.DownloadCacheDirectory.CreateNewDirectory(nameof(ElevenLabs));
             var speechToTextDirectory = rootDirectory.CreateNewDirectory(nameof(TextToSpeech));
-            var downloadDirectory = speechToTextDirectory.CreateNewDirectory(voice.Name);
-            var clipGuid = $"{voice.Id}{text}".GenerateGuid().ToString();
-            var fileName = $"{clipGuid}.mp3";
-            var filePath = Path.Combine(downloadDirectory, fileName);
+            var downloadDirectory = speechToTextDirectory.CreateNewDirectory(voice.Id);
+            var defaultVoiceSettings = voiceSettings ?? voice.Settings ?? await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken);
+            var request = new TextToSpeechRequest(text, model, defaultVoiceSettings);
+            var payload = JsonConvert.SerializeObject(request, ElevenLabsClient.JsonSerializationOptions);
+            var parameters = new Dictionary<string, string>();
 
-            if (File.Exists(filePath))
+            if (optimizeStreamingLatency.HasValue)
             {
-#if UNITY_EDITOR
-                if (!deleteCachedFile && !UnityEditor.EditorApplication.isPlaying)
-                {
-                    deleteCachedFile = UnityEditor.EditorUtility.DisplayDialog(
-                        "Attention!",
-                        "You've already previously generated an audio clip with this same voice and text string.\n" +
-                        "Do you want to create a new unique clip?\n\nThis will delete your old clip.", "Delete", "Cancel");
-                }
-#endif
-                if (deleteCachedFile)
-                {
-                    File.Delete(filePath);
-                }
+                parameters.Add(StreamingLatency, optimizeStreamingLatency.Value.ToString());
             }
 
-            if (!File.Exists(filePath))
+            var endpoint = GetUrl($"/{voice.Id}", parameters);
+            var response = await Rest.PostAsync(endpoint, payload, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
+
+            response.Validate(EnableDebug);
+
+            var responseStream = new MemoryStream(response.Data);
+
+            if (!response.Headers.TryGetValue(HistoryItemId, out var clipId))
             {
-                var defaultVoiceSettings = voiceSettings ?? voice.Settings ?? await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken);
-                var request = new TextToSpeechRequest(text, model, defaultVoiceSettings);
-                var payload = JsonConvert.SerializeObject(request, client.JsonSerializationOptions);
-                var endpoint = GetUrl($"/{voice.Id}{(optimizeStreamingLatency.HasValue ? $"?optimize_streaming_latency={optimizeStreamingLatency.Value}" : string.Empty)}");
-                var response = await Rest.PostAsync(endpoint, payload, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-                response.Validate();
-                var responseStream = new MemoryStream(response.Data);
+                throw new ArgumentException("Failed to find history item id!");
+            }
+
+            var cachedPath = $"{downloadDirectory}/{clipId}.mp3";
+
+            try
+            {
+                var fileStream = new FileStream(cachedPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
 
                 try
                 {
-                    var fileStream = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
-
-                    try
-                    {
-                        await responseStream.CopyToAsync(fileStream, cancellationToken);
-                        await fileStream.FlushAsync(cancellationToken);
-                    }
-                    catch (Exception e)
-                    {
-                        Debug.LogError(e);
-                    }
-                    finally
-                    {
-                        fileStream.Close();
-                        await fileStream.DisposeAsync();
-                    }
-                }
-                catch (Exception e)
-                {
-                    Debug.LogError(e);
+                    await responseStream.CopyToAsync(fileStream, cancellationToken);
+                    await fileStream.FlushAsync(cancellationToken);
                 }
                 finally
                 {
-                    await responseStream.DisposeAsync();
+                    fileStream.Close();
+                    await fileStream.DisposeAsync();
                 }
             }
+            finally
+            {
+                await responseStream.DisposeAsync();
+            }
 
-            var audioClip = await Rest.DownloadAudioClipAsync($"file://{filePath}", AudioType.MPEG, parameters: null, cancellationToken: cancellationToken);
-            return new Tuple<string, AudioClip>(filePath, audioClip);
+            var audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", AudioType.MPEG, cancellationToken: cancellationToken);
+            return new DownloadItem(clipId, text, voice, audioClip, cachedPath);
         }
 
         /// <summary>
@@ -155,7 +147,9 @@ namespace ElevenLabs.TextToSpeech
         /// <param name="voice">
         /// <see cref="Voice"/> to use.
         /// </param>
-        /// <param name="resultHandler">An action to be called when a new <see cref="AudioClip"/> the clip is ready to play.</param>
+        /// <param name="partialClipCallback">
+        /// An callback that contains a partial response with an <see cref="AudioClip"/> that is ready to play.
+        /// </param>
         /// <param name="voiceSettings">
         /// Optional, <see cref="VoiceSettings"/> that will override the default settings in <see cref="Voice.Settings"/>.
         /// </param>
@@ -173,78 +167,95 @@ namespace ElevenLabs.TextToSpeech
         /// 4 - max latency optimizations, but also with text normalizer turned off for even more latency savings
         /// (best latency, but can mispronounce eg numbers and dates).
         /// </param>
-        /// <param name="saveDirectory">
-        /// Optional, The save directory to save the audio clip. Defaults to <see cref="Rest.DownloadCacheDirectory"/>.
-        /// </param>
-        /// <param name="deleteCachedFile">
-        /// Optional, deletes the cached file for this text string. Default is false.
-        /// </param>
         /// <param name="cancellationToken">
         /// Optional, <see cref="CancellationToken"/>.
         /// </param>
         /// <returns>Downloaded clip path, and the loaded audio clip.</returns>
-        public async Task<Tuple<string, AudioClip>> StreamTextToSpeechAsync(string text, Voice voice, Action<AudioClip> resultHandler, VoiceSettings voiceSettings = null, Model model = null, int? optimizeStreamingLatency = null, string saveDirectory = null, bool deleteCachedFile = false, CancellationToken cancellationToken = default)
+        public async Task<DownloadItem> StreamTextToSpeechAsync(string text, Voice voice, Action<AudioClip> partialClipCallback, VoiceSettings voiceSettings = null, Model model = null, int? optimizeStreamingLatency = null, CancellationToken cancellationToken = default)
         {
             if (text.Length > 5000)
             {
                 throw new ArgumentOutOfRangeException(nameof(text), $"{nameof(text)} cannot exceed 5000 characters");
             }
 
-            if (voice == null)
+            if (voice == null ||
+                string.IsNullOrWhiteSpace(voice.Id))
             {
                 throw new ArgumentNullException(nameof(voice));
             }
 
-            if (string.IsNullOrWhiteSpace(voice.Name))
+            var defaultVoiceSettings = voiceSettings ?? voice.Settings ?? await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken);
+            var request = new TextToSpeechRequest(text, model, defaultVoiceSettings);
+            var payload = JsonConvert.SerializeObject(request, ElevenLabsClient.JsonSerializationOptions);
+            var parameters = new Dictionary<string, string>
             {
-                Debug.LogWarning("Voice details not found! To speed up this call, cache the voice details before making this request.");
-                voice = await client.VoicesEndpoint.GetVoiceAsync(voice, cancellationToken: cancellationToken);
+                { OutputFormat, PCMFormat }
+            };
+
+            if (optimizeStreamingLatency.HasValue)
+            {
+                parameters.Add(StreamingLatency, optimizeStreamingLatency.Value.ToString());
             }
 
             await Rest.ValidateCacheDirectoryAsync();
+            var downloadDirectory = Rest.DownloadCacheDirectory
+                .CreateNewDirectory(nameof(ElevenLabs))
+                .CreateNewDirectory(nameof(TextToSpeech))
+                .CreateNewDirectory(voice.Id);
+            var responseStream = new MemoryStream();
+            var part = 0;
+            string clipId;
 
-            var rootDirectory = (saveDirectory ?? Rest.DownloadCacheDirectory).CreateNewDirectory(nameof(ElevenLabs));
-            var speechToTextDirectory = rootDirectory.CreateNewDirectory(nameof(TextToSpeech));
-            var downloadDirectory = speechToTextDirectory.CreateNewDirectory(voice.Name);
-            var clipGuid = $"{voice.Id}{text}".GenerateGuid().ToString();
-            var fileName = $"{clipGuid}.mp3";
-            var filePath = Path.Combine(downloadDirectory, fileName);
-            AudioClip audioClip;
-
-            if (File.Exists(filePath))
+            try
             {
-#if UNITY_EDITOR
-                if (!deleteCachedFile && !UnityEditor.EditorApplication.isPlaying)
+                var response = await Rest.PostAsync(GetUrl($"/{voice.Id}/stream", parameters), payload, StreamCallback, eventChunkSize: 512, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
+                response.Validate(EnableDebug);
+
+                if (!response.Headers.TryGetValue(HistoryItemId, out clipId))
                 {
-                    deleteCachedFile = UnityEditor.EditorUtility.DisplayDialog(
-                        "Attention!",
-                        "You've already previously generated an audio clip with this same voice and text string.\n" +
-                        "Do you want to create a new unique clip?\n\nThis will delete your old clip.", "Delete", "Cancel");
+                    throw new ArgumentException("Failed to find history item id!");
                 }
-#endif
-                if (deleteCachedFile)
+
+                var pcmData = PCMEncoder.Decode(responseStream.ToArray(), PCMFormatSize.SixteenBit);
+                var fullClip = AudioClip.Create(clipId, pcmData.Length, 1, 44100, false);
+
+                if (!fullClip.SetData(pcmData, 0))
                 {
-                    File.Delete(filePath);
+                    throw new Exception("Failed to set pcm data!");
                 }
+
+                var oggBytes = await OggEncoder.ConvertToBytesAsync(pcmData, 44100, 1, cancellationToken: cancellationToken).ConfigureAwait(false);
+                var cachedPath = $"{downloadDirectory}/{clipId}.ogg";
+                await File.WriteAllBytesAsync(cachedPath, oggBytes, cancellationToken: cancellationToken).ConfigureAwait(false);
+                await Awaiters.UnityMainThread;
+                return new DownloadItem(clipId, text, voice, fullClip, cachedPath);
+            }
+            finally
+            {
+                await responseStream.DisposeAsync().ConfigureAwait(true);
             }
 
-            if (!File.Exists(filePath))
+            async void StreamCallback(UnityWebRequest webRequest, byte[] bytes)
             {
-                var defaultVoiceSettings = voiceSettings ?? voice.Settings ?? await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken);
-                var request = new TextToSpeechRequest(text, model, defaultVoiceSettings);
-                var payload = JsonConvert.SerializeObject(request, client.JsonSerializationOptions);
-                var endpoint = GetUrl($"/{voice.Id}/stream{(optimizeStreamingLatency.HasValue ? $"?optimize_streaming_latency={optimizeStreamingLatency.Value}" : string.Empty)}");
-                audioClip = await Rest.StreamAudioAsync(endpoint, AudioType.MPEG, resultHandler, jsonData: payload, parameters: new RestParameters(client.DefaultRequestHeaders, new Progress<Progress>(progress =>
+                await Awaiters.UnityMainThread;
+
+                if (!webRequest.GetResponseHeaders().TryGetValue(HistoryItemId, out clipId))
                 {
-                    Debug.Log($"{progress.Speed} {progress.Unit} | {progress.Percentage}% | Length: {progress.Length} | Position: {progress.Position}");
-                })), cancellationToken: cancellationToken);
-            }
-            else
-            {
-                audioClip = await Rest.StreamAudioAsync($"file://{filePath}", AudioType.MPEG, resultHandler, cancellationToken: cancellationToken);
-            }
+                    throw new ArgumentException("Failed to find history item id!");
+                }
 
-            return new Tuple<string, AudioClip>(filePath, audioClip);
+                var pcmData = PCMEncoder.Decode(bytes, PCMFormatSize.SixteenBit);
+                var audioClip = AudioClip.Create($"{clipId}_{++part}", pcmData.Length, 1, 44100, false);
+
+                if (!audioClip.SetData(pcmData, 0))
+                {
+                    Debug.LogError("Failed to set pcm data to partial clip.");
+                    return;
+                }
+
+                await responseStream.WriteAsync(bytes, cancellationToken).ConfigureAwait(true);
+                partialClipCallback.Invoke(audioClip);
+            }
         }
     }
 }

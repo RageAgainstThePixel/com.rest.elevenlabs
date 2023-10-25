@@ -1,5 +1,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using ElevenLabs.Extensions;
 using ElevenLabs.History;
 using ElevenLabs.Models;
 using ElevenLabs.User;
@@ -11,12 +12,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
+using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
 using Utilities.Async;
 using Utilities.Audio.Editor;
 using Utilities.Extensions.Editor;
-using Utilities.WebRequestRest;
 
 namespace ElevenLabs.Editor
 {
@@ -46,8 +49,8 @@ namespace ElevenLabs.Editor
 
                 public readonly Dictionary<string, string> labels = new Dictionary<string, string>();
 
-                public GeneratedVoiceRequest CreateRequest()
-                    => new GeneratedVoiceRequest(
+                public GeneratedVoicePreviewRequest CreateRequest()
+                    => new GeneratedVoicePreviewRequest(
                         speechSynthesisTextInput,
                         generatedVoiceOptions.Genders[genderSelection],
                         generatedVoiceOptions.Accents[accentSelection],
@@ -176,7 +179,7 @@ namespace ElevenLabs.Editor
                               !string.IsNullOrWhiteSpace(generatedVoiceId) &&
                               generatedVoiceClip != null;
 
-                if (GUILayout.Button("Use Voice", expandWidthOption))
+                if (GUILayout.Button("Create Voice", expandWidthOption))
                 {
                     EditorApplication.delayCall += CreateGeneratedVoice;
                 }
@@ -214,16 +217,22 @@ namespace ElevenLabs.Editor
 
             private static bool isGeneratingVoiceSample;
 
-            private async void GenerateVoiceSample(GeneratedVoiceRequest request)
+            private async void GenerateVoiceSample(GeneratedVoicePreviewRequest previewRequest)
             {
                 if (isGeneratingVoiceSample) { return; }
                 isGeneratingVoiceSample = true;
 
                 try
                 {
-                    var (voiceId, audioClip) = await api.VoiceGenerationEndpoint.GenerateVoiceAsync(request, editorDownloadDirectory);
+                    var (voiceId, audioClip) = await api.VoiceGenerationEndpoint.GenerateVoicePreviewAsync(previewRequest);
                     generatedVoiceId = voiceId;
                     generatedVoiceClip = audioClip;
+
+                    if (AudioEditorUtilities.IsPlayingPreviewClip)
+                    {
+                        AudioEditorUtilities.StopAllClipPreviews();
+                    }
+
                     AudioEditorUtilities.PlayClipPreview(audioClip);
                 }
                 catch (Exception e)
@@ -332,7 +341,7 @@ namespace ElevenLabs.Editor
 
         private static readonly GUIContent saveDirectoryContent = new GUIContent("Save Directory");
 
-        private static readonly GUIContent guiTitleContent = new GUIContent("Eleven Labs Dashboard");
+        private static readonly GUIContent guiTitleContent = new GUIContent($"{nameof(ElevenLabs)} Dashboard");
 
         private static readonly GUIContent voiceContent = new GUIContent("Voice");
 
@@ -358,7 +367,7 @@ namespace ElevenLabs.Editor
 
         private static readonly GUIContent refreshContent = new GUIContent("Refresh");
 
-        private static readonly GUIContent downloadAllHistoryContent = new GUIContent("Download All History");
+        private static readonly GUIContent downloadAllHistoryContent = new GUIContent("Download all History for page");
 
         private static readonly GUIContent downloadingContent = new GUIContent("Download in progress...");
 
@@ -367,6 +376,8 @@ namespace ElevenLabs.Editor
         private static readonly GUIContent valueContent = new GUIContent("Value");
 
         private static readonly string[] tabTitles = { "Speech Synthesis", "Voice Lab", "History" };
+
+        private static readonly ConcurrentQueue<AudioClip> queuedClips = new ConcurrentQueue<AudioClip>();
 
         private static GUIStyle boldCenteredHeaderStyle;
 
@@ -400,9 +411,9 @@ namespace ElevenLabs.Editor
             alignment = TextAnchor.MiddleRight,
         };
 
-        private static string DefaultSaveDirectoryKey => $"{Application.productName}_ElevenLabs_EditorDownloadDirectory";
+        private static string DefaultSaveDirectoryKey => $"{Application.productName}_{nameof(ElevenLabs)}_EditorDownloadDirectory";
 
-        private static string DefaultSaveDirectory => Application.dataPath;
+        private static string DefaultSaveDirectory => $"{Application.dataPath}/{nameof(ElevenLabs)}";
 
         private static readonly GUILayoutOption[] defaultColumnWidthOption =
         {
@@ -474,6 +485,8 @@ namespace ElevenLabs.Editor
 
         private static GUIContent audioPlayButtonContent;
 
+        private static GUIContent audioStopButtonContent;
+
         private static Rect createVoiceButtonRect;
 
         private static string lastTextControl;
@@ -509,7 +522,7 @@ namespace ElevenLabs.Editor
 
         private string speechSynthesisTextInput = string.Empty;
 
-        [MenuItem("ElevenLabs/Dashboard")]
+        [MenuItem("Window/Dashboards/ElevenLabs")]
         private static void OpenWindow()
         {
             // Dock it next to the Scene View.
@@ -528,6 +541,7 @@ namespace ElevenLabs.Editor
         private void OnFocus()
         {
             audioPlayButtonContent ??= EditorGUIUtility.IconContent("d_PlayButton");
+            audioStopButtonContent ??= EditorGUIUtility.IconContent("d_PauseButton");
 
             api ??= new ElevenLabsClient();
 
@@ -570,7 +584,7 @@ namespace ElevenLabs.Editor
             EditorGUILayout.BeginVertical();
             { // Begin Header
                 EditorGUILayout.Space();
-                EditorGUILayout.LabelField("Eleven Labs Dashboard", BoldCenteredHeaderStyle);
+                EditorGUILayout.LabelField($"{nameof(ElevenLabs)} Dashboard", BoldCenteredHeaderStyle);
                 EditorGUILayout.Space();
 
                 if (api is not { HasValidAuthentication: true })
@@ -646,6 +660,12 @@ namespace ElevenLabs.Editor
             EditorGUI.indentLevel--;
             EditorGUILayout.EndScrollView();
             EditorGUILayout.EndVertical();
+
+            if (!AudioEditorUtilities.IsPlayingPreviewClip &&
+                queuedClips.TryDequeue(out var clip))
+            {
+                AudioEditorUtilities.PlayClipPreview(clip);
+            }
         }
 
         private static async void FetchUserInfo()
@@ -677,7 +697,7 @@ namespace ElevenLabs.Editor
             try
             {
                 voices = await api.VoicesEndpoint.GetAllVoicesAsync();
-                voiceOptions = voices.OrderBy(voice => voice.Name).Select(voice => new GUIContent($"{voice.Category}/{voice.Name}")).ToArray();
+                voiceOptions = voices.Select(voice => new GUIContent($"{voice.Category}/{voice.Name}")).ToArray();
                 generatedVoiceOptions = await api.VoiceGenerationEndpoint.GetVoiceGenerationOptionsAsync();
             }
             catch (Exception e)
@@ -694,7 +714,7 @@ namespace ElevenLabs.Editor
 
         private static bool isFetchingModels;
 
-        private async void FetchModels()
+        private static async void FetchModels()
         {
             if (isFetchingModels) { return; }
             isFetchingModels = true;
@@ -714,7 +734,7 @@ namespace ElevenLabs.Editor
             }
         }
 
-        private static async void FetchHistory()
+        private static async void FetchHistory(string historyId = null)
         {
             if (isFetchingHistory) { return; }
             isFetchingHistory = true;
@@ -735,34 +755,17 @@ namespace ElevenLabs.Editor
             }
         }
 
-        private static async void CheckHistory()
+        private static void CheckHistory()
         {
             if (history == null) { return; }
             var assets = AssetDatabase.FindAssets($"t:{nameof(AudioClip)}");
             downloadedAudioClips.Clear();
 
-            if (Directory.Exists(Application.streamingAssetsPath))
-            {
-                var clipPaths = Directory.GetFiles(Application.streamingAssetsPath, "*.mp3", SearchOption.AllDirectories);
-
-                foreach (var clipPath in clipPaths)
-                {
-                    var key = history.FirstOrDefault(item => clipPath.Contains(item.Id) || clipPath.Contains(item.TextHash));
-
-                    if (key != null)
-                    {
-                        var audioClip = await Rest.DownloadAudioClipAsync($"file://{clipPath}", AudioType.MPEG, Path.GetFileNameWithoutExtension(clipPath), parameters: null);
-                        downloadedAudioClips.TryAdd(key.Id, audioClip);
-                    }
-                }
-            }
-
             foreach (var guid in assets)
             {
                 var assetPath = AssetDatabase.GUIDToAssetPath(guid);
                 var assetName = Path.GetFileNameWithoutExtension(assetPath);
-
-                var key = history.FirstOrDefault(item => assetName.Equals(item.Id) || assetName.Equals(item.TextHash));
+                var key = history.FirstOrDefault(item => assetName.Equals(item.Id) || assetName.Equals(item.TextHash) || guid.Equals(item.TextHash));
 
                 if (key != null)
                 {
@@ -1026,27 +1029,21 @@ namespace ElevenLabs.Editor
                     throw new ArgumentNullException(nameof(currentModelOption));
                 }
 
-                var (clipPath, audioClip) = await api.TextToSpeechEndpoint.TextToSpeechAsync(
-                    speechSynthesisTextInput,
-                    currentVoiceOption,
-                    currentVoiceSettings,
-                    currentModelOption,
-                    saveDirectory: editorDownloadDirectory);
+                var downloadDir = Path.Combine(editorDownloadDirectory, currentVoiceOption.Name);
 
-                await Awaiters.UnityMainThread;
-
-                if (clipPath.Contains(Application.dataPath))
+                if (!Directory.Exists(downloadDir))
                 {
-                    var importPath = clipPath.Replace(Application.dataPath, "Assets").Replace("\\", "/");
-                    AssetDatabase.ImportAsset(importPath);
-                    AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
-                    EditorGUIUtility.PingObject(audioClip);
-                    Selection.activeObject = audioClip;
+                    Directory.CreateDirectory(downloadDir);
                 }
 
-                AudioEditorUtilities.PlayClipPreview(audioClip);
+                void PartialClipCallback(AudioClip clip)
+                {
+                    Debug.Log(clip);
+                    queuedClips.Enqueue(clip);
+                }
 
-                FetchUserInfo();
+                var downloadItem = await api.TextToSpeechEndpoint.StreamTextToSpeechAsync(speechSynthesisTextInput, currentVoiceOption, PartialClipCallback, currentVoiceSettings, currentModelOption);
+                CopyIntoProject(editorDownloadDirectory, downloadItem);
             }
             catch (Exception e)
             {
@@ -1055,6 +1052,8 @@ namespace ElevenLabs.Editor
             finally
             {
                 isSynthesisRunning = false;
+                FetchUserInfo();
+                FetchHistory();
             }
         }
 
@@ -1103,7 +1102,7 @@ namespace ElevenLabs.Editor
 
             EditorGUILayout.BeginHorizontal();
             { // Header
-                EditorGUILayout.LabelField($"Voices {voiceCount}", EditorStyles.boldLabel, defaultColumnWidthOption);
+                EditorGUILayout.LabelField($"Voices {voiceCount}", EditorStyles.boldLabel, wideColumnWidthOption);
 
                 GUI.enabled = !isFetchingVoices;
 
@@ -1142,11 +1141,12 @@ namespace ElevenLabs.Editor
                 EditorGUILayoutExtensions.Divider();
 
                 var isCloned = voice.Category.Contains(cloned);
+                var voiceOption = voiceOptions.FirstOrDefault(content => content.text.Contains(voice.Name));
 
                 EditorGUILayout.BeginVertical();
                 EditorGUILayout.BeginHorizontal();
                 {
-                    EditorGUILayout.LabelField($"{voice.Category}/{voice.Name} | {voice.Id}", EditorStyles.boldLabel, GUILayout.MinWidth(WideColumnWidth * 3), GUILayout.ExpandWidth(true));
+                    EditorGUILayout.LabelField(voiceOption, GUILayout.Width(EditorGUIUtility.currentViewWidth - WideColumnWidth - EndWidth));
                     GUILayout.FlexibleSpace();
 
                     GUI.enabled = !isFetchingVoices;
@@ -1161,6 +1161,7 @@ namespace ElevenLabs.Editor
                 EditorGUILayout.Space(EndWidth);
                 EditorGUILayout.EndHorizontal();
                 EditorGUI.indentLevel++;
+                EditorGUILayout.LabelField(voice.Id, EditorStyles.boldLabel);
 
                 if (!voiceLabels.TryGetValue(voice.Id, out var cachedLabels))
                 {
@@ -1342,9 +1343,19 @@ namespace ElevenLabs.Editor
                                 var clip = samples[0];
                                 GUI.enabled = true;
 
-                                if (GUILayout.Button(audioPlayButtonContent, squareWidthOption))
+                                if (AudioEditorUtilities.IsPlayingPreviewClip)
                                 {
-                                    AudioEditorUtilities.PlayClipPreview(clip);
+                                    if (GUILayout.Button(audioStopButtonContent, squareWidthOption))
+                                    {
+                                        AudioEditorUtilities.StopAllClipPreviews();
+                                    }
+                                }
+                                else
+                                {
+                                    if (GUILayout.Button(audioPlayButtonContent, squareWidthOption))
+                                    {
+                                        AudioEditorUtilities.PlayClipPreview(clip);
+                                    }
                                 }
 
                                 var @object = EditorGUILayout.ObjectField(GUIContent.none, clip, typeof(AudioClip), false, expandWidthOption);
@@ -1500,7 +1511,7 @@ namespace ElevenLabs.Editor
 
                 if (!result)
                 {
-                    Debug.LogError($"Failed to delete voice: {voice.Name}!");
+                    Debug.LogError($"Failed to delete voice: {voice.Id} \"{voice.Name}\"!");
                 }
             }
             catch (Exception e)
@@ -1594,11 +1605,12 @@ namespace ElevenLabs.Editor
             }
         }
 
-        private static async void DownloadVoiceSample(Voice sample, Sample voiceSample)
+        private static async void DownloadVoiceSample(Voice voice, Sample sample)
         {
             try
             {
-                await api.VoicesEndpoint.GetVoiceSampleAsync(sample, voiceSample, editorDownloadDirectory);
+                var downloadItem = await api.VoicesEndpoint.DownloadVoiceSampleAsync(voice, sample);
+                CopyIntoProject(editorDownloadDirectory, downloadItem);
             }
             catch (Exception e)
             {
@@ -1629,7 +1641,7 @@ namespace ElevenLabs.Editor
 
                 if (GUILayout.Button(refreshContent, defaultColumnWidthOption))
                 {
-                    EditorApplication.delayCall += FetchHistory;
+                    EditorApplication.delayCall += () => FetchHistory();
                 }
 
                 GUI.enabled = true;
@@ -1653,9 +1665,8 @@ namespace ElevenLabs.Editor
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.Space();
 
-            for (var i = 0; i < history.Count; i++)
+            foreach (var historyItem in history)
             {
-                var historyItem = history[i];
                 EditorGUI.indentLevel++;
 
                 EditorGUILayout.BeginHorizontal();
@@ -1672,7 +1683,8 @@ namespace ElevenLabs.Editor
                 if (!isDownloaded &&
                     GUILayout.Button(downloadContent, defaultColumnWidthOption))
                 {
-                    EditorApplication.delayCall += () => DownloadHistoryAudio(new[] { historyItem });
+                    var item = historyItem;
+                    EditorApplication.delayCall += () => DownloadHistoryAudio(new[] { item });
                 }
 
                 if (GUILayout.Button(deleteContent, defaultColumnWidthOption))
@@ -1692,9 +1704,20 @@ namespace ElevenLabs.Editor
                     GUILayout.Space(TabWidth * EditorGUI.indentLevel);
 
                     GUI.enabled = true;
-                    if (GUILayout.Button(audioPlayButtonContent, squareWidthOption))
+
+                    if (AudioEditorUtilities.IsPlayingPreviewClip)
                     {
-                        AudioEditorUtilities.PlayClipPreview(audioClip);
+                        if (GUILayout.Button(audioStopButtonContent, squareWidthOption))
+                        {
+                            AudioEditorUtilities.StopAllClipPreviews();
+                        }
+                    }
+                    else
+                    {
+                        if (GUILayout.Button(audioPlayButtonContent, squareWidthOption))
+                        {
+                            AudioEditorUtilities.PlayClipPreview(audioClip);
+                        }
                     }
 
                     GUI.enabled = false;
@@ -1742,10 +1765,12 @@ namespace ElevenLabs.Editor
                 });
 
                 EditorApplication.LockReloadAssemblies();
+                AssetDatabase.DisallowAutoRefresh();
 
                 try
                 {
-                    await api.HistoryEndpoint.DownloadHistoryItemsAsync(historyItemsToDownload, editorDownloadDirectory, progressReport);
+                    var downloadItems = await api.HistoryEndpoint.DownloadHistoryItemsAsync(historyItemsToDownload, progressReport);
+                    CopyIntoProject(editorDownloadDirectory, downloadItems.ToArray());
                 }
                 catch (Exception e)
                 {
@@ -1754,15 +1779,59 @@ namespace ElevenLabs.Editor
                 finally
                 {
                     await Awaiters.UnityMainThread;
+                    AssetDatabase.AllowAutoRefresh();
                     EditorApplication.UnlockReloadAssemblies();
                     EditorUtility.ClearProgressBar();
                     FetchHistory();
-                    AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
+                    AssetDatabase.Refresh();
                 }
             }
 
             isDownloadingHistoryItem = false;
             EditorUtility.ClearProgressBar();
+        }
+
+        private static void CopyIntoProject(string directory, params DownloadItem[] downloadItems)
+        {
+            if (string.IsNullOrWhiteSpace(directory))
+            {
+                Debug.LogError($"Directory not found! \"{directory}\"");
+                return;
+            }
+
+            if (downloadItems is not { Length: not 0 })
+            {
+                Debug.LogError("No Download items to copy!");
+                return;
+            }
+
+            AssetDatabase.DisallowAutoRefresh();
+
+            foreach (var downloadItem in downloadItems)
+            {
+                try
+                {
+                    var cachedPath = downloadItem.CachedPath;
+                    // TODO replace or strip voice name in case it is too long or has invalid characters
+                    var targetDirectory = directory.CreateNewDirectory(downloadItem.Voice.Name);
+
+                    if (string.IsNullOrWhiteSpace(downloadItem.Text))
+                    {
+                        targetDirectory = targetDirectory.CreateNewDirectory("Samples");
+                    }
+
+                    var ext = Path.GetExtension(cachedPath);
+                    File.Copy(cachedPath, Path.Combine(targetDirectory, $"{downloadItem.Id}{ext}"));
+                    // TODO rewrite guid for file to match downloadItem.TextHash
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError(e);
+                }
+            }
+
+            AssetDatabase.AllowAutoRefresh();
+            AssetDatabase.Refresh();
         }
 
         private static async void DeleteHistoryItem(HistoryItem item)
@@ -1802,7 +1871,7 @@ namespace ElevenLabs.Editor
                 return label;
             }
 
-            label = new GUIContent($"{item.Date} | {item.VoiceName}");
+            label = new GUIContent($"{item.Date} | {item.VoiceName} | {item.ContentType}");
             historyItemLabelCache.TryAdd(id, label);
 
             return label;

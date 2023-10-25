@@ -1,7 +1,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System.Collections.Generic;
 using NUnit.Framework;
-using System;
 using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -18,9 +18,9 @@ namespace ElevenLabs.Voice.Tests
             var voice = Voices.Voice.Adam;
             Assert.NotNull(voice);
             var defaultVoiceSettings = await api.VoicesEndpoint.GetDefaultVoiceSettingsAsync();
-            var (clipPath, audioClip) = await api.TextToSpeechEndpoint.TextToSpeechAsync("The quick brown fox jumps over the lazy dog.", voice, defaultVoiceSettings, deleteCachedFile: true);
-            Assert.NotNull(audioClip);
-            Debug.Log(clipPath);
+            var downloadItem = await api.TextToSpeechEndpoint.TextToSpeechAsync("The quick brown fox jumps over the lazy dog.", voice, defaultVoiceSettings);
+            Assert.NotNull(downloadItem.AudioClip);
+            Debug.Log(downloadItem.CachedPath);
         }
 
         [Test]
@@ -31,20 +31,16 @@ namespace ElevenLabs.Voice.Tests
             var voice = (await api.VoicesEndpoint.GetAllVoicesAsync()).FirstOrDefault();
             Assert.NotNull(voice);
             var defaultVoiceSettings = await api.VoicesEndpoint.GetDefaultVoiceSettingsAsync();
-            var tcs = new TaskCompletionSource<AudioClip>();
-            var (clipPath, audioClip) = await api.TextToSpeechEndpoint.StreamTextToSpeechAsync(
-                "The quick brown fox jumps over the lazy dog.",
-                voice,
-                clip =>
-                {
-                    tcs.TrySetResult(clip);
-                },
-                defaultVoiceSettings,
-                deleteCachedFile: true);
-            Assert.NotNull(audioClip);
-            Debug.Log(clipPath);
-            var raisedAudioClip = await tcs.Task;
-            Assert.NotNull(raisedAudioClip);
+            var partialClips = new Queue<AudioClip>();
+            var downloadItem = await api.TextToSpeechEndpoint.StreamTextToSpeechAsync(
+                 "The quick brown fox jumps over the lazy dog.",
+                 voice,
+                 clip => partialClips.Enqueue(clip),
+                 defaultVoiceSettings);
+            Assert.NotNull(partialClips);
+            Assert.IsNotEmpty(partialClips);
+            Assert.NotNull(downloadItem);
+            Assert.IsNotNull(downloadItem.AudioClip);
         }
     }
 }

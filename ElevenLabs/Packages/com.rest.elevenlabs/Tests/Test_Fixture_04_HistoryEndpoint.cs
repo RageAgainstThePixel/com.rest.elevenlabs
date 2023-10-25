@@ -36,7 +36,7 @@ namespace ElevenLabs.Voice.Tests
             var downloadItem = historyItems.OrderByDescending(item => item.Date).FirstOrDefault();
             Assert.NotNull(downloadItem);
             Debug.Log($"Downloading {downloadItem.Id}...");
-            var result = await api.HistoryEndpoint.GetHistoryAudioAsync(downloadItem);
+            var result = await api.HistoryEndpoint.DownloadHistoryAudioAsync(downloadItem);
             Assert.NotNull(result);
         }
 
@@ -73,7 +73,7 @@ namespace ElevenLabs.Voice.Tests
             foreach (var historyItem in itemsToDelete)
             {
                 Debug.Log($"Deleting {historyItem.Id}...");
-                var result = await api.HistoryEndpoint.DeleteHistoryItemAsync(historyItem);
+                var result = await api.HistoryEndpoint.DeleteHistoryItemAsync(historyItem.Id);
                 Assert.NotNull(result);
                 Assert.IsTrue(result);
             }

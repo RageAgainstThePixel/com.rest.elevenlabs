@@ -26,40 +26,39 @@ namespace ElevenLabs.VoiceGeneration
         public async Task<GeneratedVoiceOptions> GetVoiceGenerationOptionsAsync(CancellationToken cancellationToken = default)
         {
             var response = await Rest.GetAsync(GetUrl("/generate-voice/parameters"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.Validate();
-            return JsonConvert.DeserializeObject<GeneratedVoiceOptions>(response.Body, client.JsonSerializationOptions);
+            response.Validate(EnableDebug);
+            return JsonConvert.DeserializeObject<GeneratedVoiceOptions>(response.Body, ElevenLabsClient.JsonSerializationOptions);
         }
 
         /// <summary>
         /// Generate a <see cref="Voice"/>.
         /// </summary>
-        /// <param name="generatedVoiceRequest"><see cref="GeneratedVoiceRequest"/></param>
-        /// <param name="saveDirectory">The save directory for downloaded audio file.</param>
+        /// <param name="generatedVoicePreviewRequest"><see cref="GeneratedVoicePreviewRequest"/></param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
-        /// <returns><see cref="Tuple{VoiceId,AudioClip}"/>.</returns>
-        public async Task<Tuple<string, AudioClip>> GenerateVoiceAsync(GeneratedVoiceRequest generatedVoiceRequest, string saveDirectory = null, CancellationToken cancellationToken = default)
+        /// <returns>A voice id, and preview clip. <see cref="Tuple{VoiceId,AudioClip}"/>.</returns>
+        public async Task<Tuple<string, AudioClip>> GenerateVoicePreviewAsync(GeneratedVoicePreviewRequest generatedVoicePreviewRequest, CancellationToken cancellationToken = default)
         {
-            var payload = JsonConvert.SerializeObject(generatedVoiceRequest, client.JsonSerializationOptions);
+            var payload = JsonConvert.SerializeObject(generatedVoicePreviewRequest, ElevenLabsClient.JsonSerializationOptions);
             var response = await Rest.PostAsync(GetUrl("/generate-voice"), payload, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.Validate();
-            var generatedVoiceId = response.Headers["generated_voice_id"];
+            response.Validate(EnableDebug);
 
             await Rest.ValidateCacheDirectoryAsync();
+            var generatedVoiceId = response.Headers["generated_voice_id"];
+            var cacheDirectory = Rest.DownloadCacheDirectory
+                .CreateNewDirectory(nameof(ElevenLabs))
+                .CreateNewDirectory(nameof(VoiceGeneration));
+            var cachedPath = Path.Combine(cacheDirectory, $"{generatedVoiceId}.mp3");
 
-            var rootDirectory = (saveDirectory ?? Rest.DownloadCacheDirectory).CreateNewDirectory(nameof(ElevenLabs));
-            var downloadDirectory = rootDirectory.CreateNewDirectory(nameof(VoiceGeneration));
-            var filePath = Path.Combine(downloadDirectory, $"{generatedVoiceId}.mp3");
-
-            if (File.Exists(filePath))
+            if (File.Exists(cachedPath))
             {
-                File.Delete(filePath);
+                File.Delete(cachedPath);
             }
 
             var responseStream = new MemoryStream(response.Data);
 
             try
             {
-                var fileStream = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+                var fileStream = new FileStream(cachedPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
 
                 try
                 {
@@ -85,7 +84,7 @@ namespace ElevenLabs.VoiceGeneration
                 await responseStream.DisposeAsync();
             }
 
-            var audioClip = await Rest.DownloadAudioClipAsync($"file://{filePath}", AudioType.MPEG, parameters: null, cancellationToken: cancellationToken);
+            var audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", AudioType.MPEG, cancellationToken: cancellationToken);
             return new Tuple<string, AudioClip>(generatedVoiceId, audioClip);
         }
 
@@ -97,10 +96,10 @@ namespace ElevenLabs.VoiceGeneration
         /// <returns><see cref="Voice"/>.</returns>
         public async Task<Voice> CreateVoiceAsync(CreateVoiceRequest createVoiceRequest, CancellationToken cancellationToken = default)
         {
-            var payload = JsonConvert.SerializeObject(createVoiceRequest, client.JsonSerializationOptions);
+            var payload = JsonConvert.SerializeObject(createVoiceRequest, ElevenLabsClient.JsonSerializationOptions);
             var response = await Rest.PostAsync(GetUrl("/create-voice"), payload, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.Validate();
-            return JsonConvert.DeserializeObject<Voice>(response.Body, client.JsonSerializationOptions);
+            response.Validate(EnableDebug);
+            return JsonConvert.DeserializeObject<Voice>(response.Body, ElevenLabsClient.JsonSerializationOptions);
         }
     }
 }

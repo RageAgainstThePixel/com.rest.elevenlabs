@@ -2,6 +2,7 @@
 
 using ElevenLabs.Voices;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using UnityEngine;
@@ -20,6 +21,8 @@ namespace ElevenLabs.Demo
 
         [SerializeField]
         private AudioSource audioSource;
+
+        private readonly Queue<AudioClip> streamClipQueue = new Queue<AudioClip>();
 
         private CancellationTokenSource lifetimeCancellationTokenSource;
 
@@ -45,40 +48,27 @@ namespace ElevenLabs.Demo
                     voice = (await api.VoicesEndpoint.GetAllVoicesAsync(lifetimeCancellationTokenSource.Token)).FirstOrDefault();
                 }
 
-                var clipOffset = 0;
-                var streamCallbackSuccessful = false;
-
-                var (_, clip) = await api.TextToSpeechEndpoint.StreamTextToSpeechAsync(message, voice, audioClip =>
+                streamClipQueue.Clear();
+                var downloadItem = await api.TextToSpeechEndpoint.StreamTextToSpeechAsync(message, voice, partialClip =>
                 {
-                    clipOffset = audioClip.samples;
+                    streamClipQueue.Enqueue(partialClip);
+                }, cancellationToken: lifetimeCancellationTokenSource.Token);
 
-                    if (clipOffset > 0)
-                    {
-                        Debug.Log($"Stream Playback {clipOffset}");
-                        streamCallbackSuccessful = true;
-                        audioSource.PlayOneShot(audioClip);
-                    }
-                }, deleteCachedFile: true, cancellationToken: lifetimeCancellationTokenSource.Token);
-
-                audioSource.clip = clip;
-
-                if (streamCallbackSuccessful)
-                {
-                    Debug.Log($"Stream complete {clip.samples}");
-
-                    if (clipOffset != clip.samples)
-                    {
-                        Debug.LogWarning($"offset by {clip.samples - clipOffset}");
-                    }
-                }
-                else
-                {
-                    audioSource.PlayOneShot(clip);
-                }
+                audioSource.clip = downloadItem.AudioClip;
             }
             catch (Exception e)
             {
                 Debug.LogError(e);
+            }
+        }
+
+        private void Update()
+        {
+            if (!audioSource.isPlaying &&
+                streamClipQueue.TryDequeue(out var clip))
+            {
+                Debug.Log($"Playing {clip.name}");
+                audioSource.PlayOneShot(clip);
             }
         }
 

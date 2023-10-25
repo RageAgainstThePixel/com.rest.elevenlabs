@@ -7,7 +7,7 @@ using UnityEngine.Scripting;
 namespace ElevenLabs.VoiceGeneration
 {
     [Preserve]
-    public sealed class GeneratedVoiceRequest
+    public sealed class GeneratedVoicePreviewRequest
     {
         /// <summary>
         /// Voice Generation Request.
@@ -20,7 +20,7 @@ namespace ElevenLabs.VoiceGeneration
         /// <param name="accentStrength">Optional, accept strength, between 0.3 - 2.</param>
         [Preserve]
         [JsonConstructor]
-        public GeneratedVoiceRequest(
+        public GeneratedVoicePreviewRequest(
             [JsonProperty("text")] string text,
             [JsonProperty("gender")] Gender gender,
             [JsonProperty("accent")] Accent accent,
