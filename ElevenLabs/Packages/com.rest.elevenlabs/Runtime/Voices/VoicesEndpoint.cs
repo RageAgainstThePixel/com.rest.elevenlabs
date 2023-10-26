@@ -8,7 +8,6 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using UnityEditor.PackageManager.UI;
 using UnityEngine;
 using UnityEngine.Scripting;
 using Utilities.WebRequestRest;
@@ -273,20 +272,6 @@ namespace ElevenLabs.Voices
         }
 
         #region Samples
-
-        /// <summary>
-        /// Gets the <see cref="Sample"/> associated to a <see cref="Voice"/> by its Id.
-        /// </summary>
-        /// <param name="voiceId">The <see cref="Voice.Id"/> this <see cref="Sample"/> belongs to.</param>
-        /// <param name="sampleId"></param>
-        /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
-        /// <returns><see cref="Sample"/></returns>
-        public async Task<Sample> GetVoiceSampleAsync(string voiceId, string sampleId, CancellationToken cancellationToken = default)
-        {
-            var response = await Rest.GetAsync(GetUrl($"/{voiceId}/samples/{sampleId}"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.Validate(EnableDebug);
-            return JsonConvert.DeserializeObject<Sample>(response.Body, ElevenLabsClient.JsonSerializationOptions);
-        }
 
         /// <summary>
         /// Download the audio corresponding to a <see cref="Sample"/> attached to a <see cref="Voice"/>.

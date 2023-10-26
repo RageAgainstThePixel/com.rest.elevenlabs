@@ -232,7 +232,7 @@ namespace ElevenLabs.TextToSpeech
             }
 
             var part = 0;
-            var response = await Rest.PostAsync(GetUrl($"/{voice.Id}/stream", parameters), payload, StreamCallback, eventChunkSize: 512, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
+            var response = await Rest.PostAsync(GetUrl($"/{voice.Id}/stream", parameters), payload, StreamCallback, eventChunkSize: 8192, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
             response.Validate(EnableDebug);
 
             if (!response.Headers.TryGetValue(HistoryItemId, out var clipId))
