@@ -15,7 +15,6 @@ using Utilities.Async;
 using Utilities.Audio;
 using Utilities.Encoding.OggVorbis;
 using Utilities.WebRequestRest;
-using Debug = UnityEngine.Debug;
 
 namespace ElevenLabs.TextToSpeech
 {
@@ -66,7 +65,7 @@ namespace ElevenLabs.TextToSpeech
         /// Optional, <see cref="CancellationToken"/>.
         /// </param>
         /// <returns>Downloaded clip path, and the loaded audio clip.</returns>
-        public async Task<VoiceClip> TextToSpeechAsync(string text, Voice voice, VoiceSettings voiceSettings = null, Model model = null, OutputFormat outputFormat = ElevenLabs.OutputFormat.MP3_44100_128, int? optimizeStreamingLatency = null, CancellationToken cancellationToken = default)
+        public async Task<VoiceClip> TextToSpeechAsync(string text, Voice voice, VoiceSettings voiceSettings = null, Model model = null, OutputFormat outputFormat = OutputFormat.MP3_44100_128, int? optimizeStreamingLatency = null, CancellationToken cancellationToken = default)
         {
             if (text.Length > 5000)
             {
@@ -241,37 +240,29 @@ namespace ElevenLabs.TextToSpeech
                 parameters.Add(OptimizeStreamingLatencyParameter, optimizeStreamingLatency.Value.ToString());
             }
 
-            var responseStream = new MemoryStream();
             var part = 0;
 
-            try
+            var response = await Rest.PostAsync(GetUrl($"/{voice.Id}/stream", parameters), payload, StreamCallback, eventChunkSize: 512, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
+            response.Validate(EnableDebug);
+
+            if (!response.Headers.TryGetValue(HistoryItemId, out var clipId))
             {
-                var response = await Rest.PostAsync(GetUrl($"/{voice.Id}/stream", parameters), payload, StreamCallback, eventChunkSize: 512, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-                response.Validate(EnableDebug);
-
-                if (!response.Headers.TryGetValue(HistoryItemId, out var clipId))
-                {
-                    throw new ArgumentException("Failed to parse clip id!");
-                }
-
-                var pcmData = PCMEncoder.Decode(responseStream.ToArray(), PCMFormatSize.SixteenBit);
-                var fullClip = AudioClip.Create(clipId, pcmData.Length, 1, 44100, false);
-
-                if (!fullClip.SetData(pcmData, 0))
-                {
-                    throw new Exception("Failed to set pcm data!");
-                }
-
-                var cachedPath = $"{downloadDirectory}/{clipId}.ogg";
-                var oggBytes = await OggEncoder.ConvertToBytesAsync(pcmData, 44100, 1, cancellationToken: cancellationToken).ConfigureAwait(false);
-                await File.WriteAllBytesAsync(cachedPath, oggBytes, cancellationToken: cancellationToken).ConfigureAwait(false);
-                await Awaiters.UnityMainThread;
-                return new VoiceClip(clipId, text, voice, fullClip, cachedPath);
+                throw new ArgumentException("Failed to parse clip id!");
             }
-            finally
+
+            var pcmData = PCMEncoder.Decode(response.Data, PCMFormatSize.SixteenBit);
+            var fullClip = AudioClip.Create(clipId, pcmData.Length, 1, 44100, false);
+
+            if (!fullClip.SetData(pcmData, 0))
             {
-                await responseStream.DisposeAsync().ConfigureAwait(true);
+                throw new Exception("Failed to set pcm data!");
             }
+
+            var cachedPath = $"{downloadDirectory}/{clipId}.ogg";
+            var oggBytes = await OggEncoder.ConvertToBytesAsync(pcmData, 44100, 1, cancellationToken: cancellationToken).ConfigureAwait(false);
+            await File.WriteAllBytesAsync(cachedPath, oggBytes, cancellationToken: cancellationToken).ConfigureAwait(false);
+            await Awaiters.UnityMainThread;
+            return new VoiceClip(clipId, text, voice, fullClip, cachedPath);
 
             async void StreamCallback(UnityWebRequest webRequest, byte[] bytes)
             {
