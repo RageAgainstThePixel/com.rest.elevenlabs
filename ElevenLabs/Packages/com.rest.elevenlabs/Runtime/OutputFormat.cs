@@ -15,6 +15,9 @@ namespace ElevenLabs
         /// <summary>
         /// mp3 with 44.1kHz sample rate at 128kbps.
         /// </summary>
+        /// <remarks>
+        /// Default output format.
+        /// </remarks>
         MP3_44100_128,
         /// <summary>
         /// mp3 with 44.1kHz sample rate at 192kbps.<br/>

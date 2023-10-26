@@ -97,7 +97,7 @@ namespace ElevenLabs.History
         /// </summary>
         /// <param name="historyItem"><see cref="HistoryItem"/></param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
-        /// <returns><see cref="AudioClip"/>.</returns>
+        /// <returns><see cref="VoiceClip"/>.</returns>
         public async Task<VoiceClip> DownloadHistoryAudioAsync(HistoryItem historyItem, CancellationToken cancellationToken = default)
         {
             await Rest.ValidateCacheDirectoryAsync();
@@ -119,19 +119,21 @@ namespace ElevenLabs.History
 
                 try
                 {
-                    await responseStream.CopyToAsync(fileStream, cancellationToken);
-                    await fileStream.FlushAsync(cancellationToken);
+                    await responseStream.CopyToAsync(fileStream, cancellationToken).ConfigureAwait(false);
+                    await fileStream.FlushAsync(cancellationToken).ConfigureAwait(false);
                 }
                 finally
                 {
                     fileStream.Close();
-                    await fileStream.DisposeAsync();
-                    await responseStream.DisposeAsync();
+                    await fileStream.DisposeAsync().ConfigureAwait(false);
+                    await responseStream.DisposeAsync().ConfigureAwait(false);
                 }
             }
 
-            var voice = await client.VoicesEndpoint.GetVoiceAsync(historyItem.VoiceId, true, cancellationToken);
+            await Awaiters.UnityMainThread;
             var audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", AudioType.MPEG, cancellationToken: cancellationToken);
+
+            var voice = await client.VoicesEndpoint.GetVoiceAsync(historyItem.VoiceId, cancellationToken: cancellationToken);
             return new VoiceClip(historyItem.Id, historyItem.Text, voice, audioClip, cachedPath);
         }
 

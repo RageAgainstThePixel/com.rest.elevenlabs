@@ -1738,20 +1738,22 @@ namespace ElevenLabs.Editor
 
         private static bool isDownloadingHistoryItem;
 
-        private static async void DownloadHistoryAudio(IEnumerable<HistoryItem> items)
+        private static async void DownloadHistoryAudio(IEnumerable<HistoryItem> historyItems)
         {
             if (isDownloadingHistoryItem) { return; }
             isDownloadingHistoryItem = true;
 
-            var historyItemsToDownload = items.Select(item => item.Id).ToList();
+            var historyItemsToDownload = historyItems.Select(item => item.Id).ToList();
 
-            foreach (var (key, clipPath) in downloadedAudioClips)
+            foreach (var (id, audioClip) in downloadedAudioClips)
             {
-                var clipName = Path.GetFileNameWithoutExtension(AssetDatabase.GetAssetPath(clipPath));
+                var clipPath = AssetDatabase.GetAssetPath(audioClip);
 
-                if (historyItemsToDownload.Contains(clipName))
+                if (!string.IsNullOrWhiteSpace(clipPath) &&
+                    File.Exists(clipPath) &&
+                    historyItemsToDownload.Contains(id))
                 {
-                    historyItemsToDownload.Remove(clipName);
+                    historyItemsToDownload.Remove(id);
                 }
             }
 
@@ -1791,7 +1793,7 @@ namespace ElevenLabs.Editor
             EditorUtility.ClearProgressBar();
         }
 
-        private static void CopyIntoProject(string directory, params VoiceClip[] downloadItems)
+        private static void CopyIntoProject(string directory, params VoiceClip[] voiceClips)
         {
             if (string.IsNullOrWhiteSpace(directory))
             {
@@ -1799,7 +1801,7 @@ namespace ElevenLabs.Editor
                 return;
             }
 
-            if (downloadItems is not { Length: not 0 })
+            if (voiceClips is not { Length: not 0 })
             {
                 Debug.LogError("No Download items to copy!");
                 return;
@@ -1807,21 +1809,21 @@ namespace ElevenLabs.Editor
 
             AssetDatabase.DisallowAutoRefresh();
 
-            foreach (var downloadItem in downloadItems)
+            foreach (var voiceClip in voiceClips)
             {
                 try
                 {
-                    var cachedPath = downloadItem.CachedPath;
+                    var cachedPath = voiceClip.CachedPath;
                     // TODO replace or strip voice name in case it is too long or has invalid characters
-                    var targetDirectory = directory.CreateNewDirectory(downloadItem.Voice.Name);
+                    var targetDirectory = directory.CreateNewDirectory(voiceClip.Voice.Name);
 
-                    if (string.IsNullOrWhiteSpace(downloadItem.Text))
+                    if (string.IsNullOrWhiteSpace(voiceClip.Text))
                     {
                         targetDirectory = targetDirectory.CreateNewDirectory("Samples");
                     }
 
                     var ext = Path.GetExtension(cachedPath);
-                    File.Copy(cachedPath, Path.Combine(targetDirectory, $"{downloadItem.Id}{ext}"));
+                    File.Copy(cachedPath, Path.Combine(targetDirectory, $"{voiceClip.Id}{ext}"));
                     // TODO rewrite guid for file to match downloadItem.TextHash
                 }
                 catch (Exception e)

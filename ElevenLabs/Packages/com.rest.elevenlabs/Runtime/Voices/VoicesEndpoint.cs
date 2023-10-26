@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using UnityEditor.PackageManager.UI;
 using UnityEngine;
 using UnityEngine.Scripting;
 using Utilities.WebRequestRest;
@@ -116,7 +117,7 @@ namespace ElevenLabs.Voices
         /// <param name="withSettings">Should the response include the <see cref="VoiceSettings"/>?</param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         /// <returns><see cref="Voice"/>.</returns>
-        public async Task<Voice> GetVoiceAsync(string voiceId, bool withSettings = true, CancellationToken cancellationToken = default)
+        public async Task<Voice> GetVoiceAsync(string voiceId, bool withSettings = false, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(voiceId))
             {
@@ -274,13 +275,27 @@ namespace ElevenLabs.Voices
         #region Samples
 
         /// <summary>
+        /// Gets the <see cref="Sample"/> associated to a <see cref="Voice"/> by its Id.
+        /// </summary>
+        /// <param name="voiceId">The <see cref="Voice.Id"/> this <see cref="Sample"/> belongs to.</param>
+        /// <param name="sampleId"></param>
+        /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
+        /// <returns><see cref="Sample"/></returns>
+        public async Task<Sample> GetVoiceSampleAsync(string voiceId, string sampleId, CancellationToken cancellationToken = default)
+        {
+            var response = await Rest.GetAsync(GetUrl($"/{voiceId}/samples/{sampleId}"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
+            response.Validate(EnableDebug);
+            return JsonConvert.DeserializeObject<Sample>(response.Body, ElevenLabsClient.JsonSerializationOptions);
+        }
+
+        /// <summary>
         /// Download the audio corresponding to a sample attached to a voice.
         /// </summary>
         /// <param name="voice">The <see cref="Voice"/> this <see cref="Sample"/> belongs to.</param>
-        /// <param name="sampleId">The <see cref="Sample"/> id to download.</param>
+        /// <param name="sample">The <see cref="Sample"/> id to download.</param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         /// <returns><see cref="AudioClip"/>.</returns>
-        public async Task<VoiceClip> DownloadVoiceSampleAsync(Voice voice, string sampleId, CancellationToken cancellationToken = default)
+        public async Task<VoiceClip> DownloadVoiceSampleAsync(Voice voice, Sample sample, CancellationToken cancellationToken = default)
         {
             if (voice == null ||
                 string.IsNullOrWhiteSpace(voice.Id))
@@ -288,24 +303,27 @@ namespace ElevenLabs.Voices
                 throw new ArgumentNullException(nameof(voice));
             }
 
-            if (string.IsNullOrWhiteSpace(sampleId))
+            if (sample == null ||
+                string.IsNullOrWhiteSpace(sample.Id))
             {
-                throw new ArgumentNullException(nameof(sampleId));
+                throw new ArgumentNullException(nameof(sample));
             }
 
-            var response = await Rest.GetAsync(GetUrl($"/{voice.Id}/samples/{sampleId}/audio"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
+            var response = await Rest.GetAsync(GetUrl($"/{voice.Id}/samples/{sample.Id}/audio"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
             response.Validate(EnableDebug);
             await Rest.ValidateCacheDirectoryAsync();
             var downloadDirectory = Rest.DownloadCacheDirectory
                 .CreateNewDirectory(nameof(ElevenLabs))
                 .CreateNewDirectory(voice.Id)
                 .CreateNewDirectory("Samples");
-            var cachedPath = Path.Combine(downloadDirectory, $"{sampleId}.mp3");
+            // TODO Get sample.MimeType and set extension based on it
+            var cachedPath = Path.Combine(downloadDirectory, $"{sample.Id}.mp3");
 
             if (!File.Exists(cachedPath))
             {
                 var responseStream = new MemoryStream(response.Data);
 
+                // TODO Download sample audio clip based on MimeType
                 try
                 {
                     var fileStream = new FileStream(cachedPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
@@ -336,7 +354,7 @@ namespace ElevenLabs.Voices
             }
 
             var audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", AudioType.MPEG, cancellationToken: cancellationToken);
-            return new VoiceClip(sampleId, string.Empty, voice, audioClip, cachedPath);
+            return new VoiceClip(sample.Id, string.Empty, voice, audioClip, cachedPath);
         }
 
         /// <summary>
