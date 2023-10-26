@@ -163,7 +163,7 @@ namespace ElevenLabs.History
         public async Task<IReadOnlyList<VoiceClip>> DownloadHistoryItemsAsync(List<string> historyItemIds = null, IProgress<string> progress = null, CancellationToken cancellationToken = default)
         {
             historyItemIds ??= (await GetHistoryAsync(cancellationToken: cancellationToken)).Select(item => item.Id).ToList();
-            var historyItems = new ConcurrentBag<VoiceClip>();
+            var voiceClips = new ConcurrentBag<VoiceClip>();
 
             async Task DownloadItem(string historyItemId)
             {
@@ -171,7 +171,8 @@ namespace ElevenLabs.History
                 {
                     await Awaiters.UnityMainThread;
                     var historyItem = await GetHistoryItemAsync(historyItemId, cancellationToken);
-                    historyItems.Add(await DownloadHistoryAudioAsync(historyItem, cancellationToken));
+                    var voiceClip = await DownloadHistoryAudioAsync(historyItem, cancellationToken);
+                    voiceClips.Add(voiceClip);
                     progress?.Report(historyItem.Id);
                 }
                 catch (Exception e)
@@ -181,7 +182,7 @@ namespace ElevenLabs.History
             }
 
             await Task.WhenAll(historyItemIds.Select(DownloadItem)).ConfigureAwait(true);
-            return historyItems.ToList();
+            return voiceClips.ToList();
         }
     }
 }
