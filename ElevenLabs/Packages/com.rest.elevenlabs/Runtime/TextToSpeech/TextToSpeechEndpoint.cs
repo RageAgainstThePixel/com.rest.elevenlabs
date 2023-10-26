@@ -1,15 +1,12 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using ElevenLabs.Extensions;
-using ElevenLabs.History;
 using ElevenLabs.Models;
 using ElevenLabs.Voices;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Net;
-using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
