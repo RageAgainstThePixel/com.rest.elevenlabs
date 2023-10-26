@@ -74,8 +74,7 @@ namespace ElevenLabs.History
                 parameters.Add("start_after_history_item_id", startAfterId);
             }
 
-            var endpoint = GetUrl(queryParameters: parameters);
-            var response = await Rest.GetAsync(endpoint, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
+            var response = await Rest.GetAsync(GetUrl(queryParameters: parameters), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
             response.Validate(EnableDebug);
             return JsonConvert.DeserializeObject<HistoryInfo>(response.Body, ElevenLabsClient.JsonSerializationOptions)?.History;
         }
@@ -106,12 +105,15 @@ namespace ElevenLabs.History
                 .CreateNewDirectory(nameof(ElevenLabs))
                 .CreateNewDirectory(nameof(History))
                 .CreateNewDirectory(historyItem.VoiceId);
+
+            // TODO set file extension based on historyItem.MimeType
             var cachedPath = Path.Combine(voiceDirectory, $"{historyItem.Id}.mp3");
 
             if (!File.Exists(cachedPath))
             {
                 var response = await Rest.GetAsync(GetUrl($"/{historyItem.Id}/audio"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
                 response.Validate(EnableDebug);
+                // TODO write file based on historyItem.MimeType
                 var responseStream = new MemoryStream(response.Data);
                 var fileStream = new FileStream(cachedPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
 
