@@ -108,45 +108,27 @@ namespace ElevenLabs.TextToSpeech
                 _ => throw new ArgumentOutOfRangeException($"Unsupported {nameof(AudioType)}: {audioType}")
             };
 
-            AudioClip audioClip;
             var cachedPath = $"{downloadDirectory}/{clipId}.{extension}";
 
-            switch (audioType)
+            if (!File.Exists(cachedPath))
             {
-                case AudioType.MPEG:
-                    var fileStream = new FileStream(cachedPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
-
-                    try
-                    {
-                        await fileStream.WriteAsync(response.Data, cancellationToken).ConfigureAwait(false);
-                    }
-                    finally
-                    {
-                        fileStream.Close();
-                        await fileStream.DisposeAsync().ConfigureAwait(false);
-                    }
-
-                    await Awaiters.UnityMainThread;
-                    audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", audioType, cancellationToken: cancellationToken);
-                    break;
-                case AudioType.OGGVORBIS:
-                    var pcmData = PCMEncoder.Decode(response.Data, PCMFormatSize.SixteenBit);
-                    audioClip = AudioClip.Create(clipId, pcmData.Length, 1, 44100, false);
-
-                    if (!audioClip.SetData(pcmData, 0))
-                    {
-                        throw new Exception("Failed to set pcm data!");
-                    }
-
-                    var oggBytes = await OggEncoder.ConvertToBytesAsync(pcmData, 44100, 1, cancellationToken: cancellationToken).ConfigureAwait(false);
-                    await File.WriteAllBytesAsync(cachedPath, oggBytes, cancellationToken: cancellationToken).ConfigureAwait(false);
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException($"Unsupported {nameof(AudioType)}: {audioType}");
+                switch (audioType)
+                {
+                    case AudioType.MPEG:
+                        await File.WriteAllBytesAsync(cachedPath, response.Data, cancellationToken).ConfigureAwait(false);
+                        break;
+                    case AudioType.OGGVORBIS:
+                        var pcmData = PCMEncoder.Decode(response.Data, PCMFormatSize.SixteenBit);
+                        var oggBytes = await OggEncoder.ConvertToBytesAsync(pcmData, 44100, 1, cancellationToken: cancellationToken).ConfigureAwait(false);
+                        await File.WriteAllBytesAsync(cachedPath, oggBytes, cancellationToken: cancellationToken).ConfigureAwait(false);
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException($"Unsupported {nameof(AudioType)}: {audioType}");
+                }
             }
 
-            // make sure to return on main thread
             await Awaiters.UnityMainThread;
+            var audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", audioType, cancellationToken: cancellationToken);
             return new VoiceClip(clipId, text, voice, audioClip, cachedPath);
         }
 

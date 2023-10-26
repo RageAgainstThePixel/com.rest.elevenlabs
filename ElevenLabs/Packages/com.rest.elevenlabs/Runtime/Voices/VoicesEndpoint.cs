@@ -10,6 +10,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Scripting;
+using Utilities.Audio;
+using Utilities.Encoding.OggVorbis;
 using Utilities.WebRequestRest;
 
 namespace ElevenLabs.Voices
@@ -294,51 +296,42 @@ namespace ElevenLabs.Voices
                 throw new ArgumentNullException(nameof(sample));
             }
 
-            var response = await Rest.GetAsync(GetUrl($"/{voice.Id}/samples/{sample.Id}/audio"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.Validate(EnableDebug);
             await Rest.ValidateCacheDirectoryAsync();
             var downloadDirectory = Rest.DownloadCacheDirectory
                 .CreateNewDirectory(nameof(ElevenLabs))
                 .CreateNewDirectory(voice.Id)
                 .CreateNewDirectory("Samples");
-            // TODO Get sample.MimeType and set extension based on it
-            var cachedPath = Path.Combine(downloadDirectory, $"{sample.Id}.mp3");
+            // TODO possibly handle other types?
+            var audioType = sample.MimeType.Contains("mpeg") ? AudioType.MPEG : AudioType.OGGVORBIS;
+            var extension = audioType switch
+            {
+                AudioType.MPEG => "mp3",
+                AudioType.OGGVORBIS => "ogg",
+                _ => throw new ArgumentOutOfRangeException($"Unsupported {nameof(AudioType)}: {audioType}")
+            };
+            var cachedPath = Path.Combine(downloadDirectory, $"{sample.Id}.{extension}");
 
             if (!File.Exists(cachedPath))
             {
-                var responseStream = new MemoryStream(response.Data);
+                var response = await Rest.GetAsync(GetUrl($"/{voice.Id}/samples/{sample.Id}/audio"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
+                response.Validate(EnableDebug);
 
-                // TODO Download sample audio clip based on MimeType
-                try
+                switch (audioType)
                 {
-                    var fileStream = new FileStream(cachedPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
-
-                    try
-                    {
-                        await responseStream.CopyToAsync(fileStream, cancellationToken);
-                        await fileStream.FlushAsync(cancellationToken);
-                    }
-                    catch (Exception e)
-                    {
-                        Debug.LogError(e);
-                    }
-                    finally
-                    {
-                        fileStream.Close();
-                        await fileStream.DisposeAsync();
-                    }
-                }
-                catch (Exception e)
-                {
-                    Debug.LogError(e);
-                }
-                finally
-                {
-                    await responseStream.DisposeAsync();
+                    case AudioType.MPEG:
+                        await File.WriteAllBytesAsync(cachedPath, response.Data, cancellationToken).ConfigureAwait(false);
+                        break;
+                    case AudioType.OGGVORBIS:
+                        var pcmData = PCMEncoder.Decode(response.Data, PCMFormatSize.SixteenBit);
+                        var oggBytes = await OggEncoder.ConvertToBytesAsync(pcmData, 44100, 1, cancellationToken: cancellationToken).ConfigureAwait(false);
+                        await File.WriteAllBytesAsync(cachedPath, oggBytes, cancellationToken: cancellationToken).ConfigureAwait(false);
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException($"Unsupported {nameof(AudioType)}: {audioType}");
                 }
             }
 
-            var audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", AudioType.MPEG, cancellationToken: cancellationToken);
+            var audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", audioType, cancellationToken: cancellationToken);
             return new VoiceClip(sample.Id, string.Empty, voice, audioClip, cachedPath);
         }
 

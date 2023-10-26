@@ -12,6 +12,8 @@ using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Scripting;
 using Utilities.Async;
+using Utilities.Audio;
+using Utilities.Encoding.OggVorbis;
 using Utilities.WebRequestRest;
 
 namespace ElevenLabs.History
@@ -105,35 +107,38 @@ namespace ElevenLabs.History
                 .CreateNewDirectory(nameof(ElevenLabs))
                 .CreateNewDirectory(nameof(History))
                 .CreateNewDirectory(historyItem.VoiceId);
-
-            // TODO set file extension based on historyItem.MimeType
-            var cachedPath = Path.Combine(voiceDirectory, $"{historyItem.Id}.mp3");
+            var voice = await client.VoicesEndpoint.GetVoiceAsync(historyItem.VoiceId, cancellationToken: cancellationToken);
+            var audioType = historyItem.ContentType.Contains("mpeg") ? AudioType.MPEG : AudioType.OGGVORBIS;
+            var extension = audioType switch
+            {
+                AudioType.MPEG => "mp3",
+                AudioType.OGGVORBIS => "ogg",
+                _ => throw new ArgumentOutOfRangeException($"Unsupported {nameof(AudioType)}: {audioType}")
+            };
+            var cachedPath = Path.Combine(voiceDirectory, $"{historyItem.Id}.{extension}");
 
             if (!File.Exists(cachedPath))
             {
                 var response = await Rest.GetAsync(GetUrl($"/{historyItem.Id}/audio"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
                 response.Validate(EnableDebug);
-                // TODO write file based on historyItem.MimeType
-                var responseStream = new MemoryStream(response.Data);
-                var fileStream = new FileStream(cachedPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
 
-                try
+                switch (audioType)
                 {
-                    await responseStream.CopyToAsync(fileStream, cancellationToken).ConfigureAwait(false);
-                    await fileStream.FlushAsync(cancellationToken).ConfigureAwait(false);
-                }
-                finally
-                {
-                    fileStream.Close();
-                    await fileStream.DisposeAsync().ConfigureAwait(false);
-                    await responseStream.DisposeAsync().ConfigureAwait(false);
+                    case AudioType.MPEG:
+                        await File.WriteAllBytesAsync(cachedPath, response.Data, cancellationToken).ConfigureAwait(false);
+                        break;
+                    case AudioType.OGGVORBIS:
+                        var pcmData = PCMEncoder.Decode(response.Data, PCMFormatSize.SixteenBit);
+                        var oggBytes = await OggEncoder.ConvertToBytesAsync(pcmData, 44100, 1, cancellationToken: cancellationToken).ConfigureAwait(false);
+                        await File.WriteAllBytesAsync(cachedPath, oggBytes, cancellationToken: cancellationToken).ConfigureAwait(false);
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException($"Unsupported {nameof(AudioType)}: {audioType}");
                 }
             }
 
             await Awaiters.UnityMainThread;
             var audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", AudioType.MPEG, cancellationToken: cancellationToken);
-
-            var voice = await client.VoicesEndpoint.GetVoiceAsync(historyItem.VoiceId, cancellationToken: cancellationToken);
             return new VoiceClip(historyItem.Id, historyItem.Text, voice, audioClip, cachedPath);
         }
 
