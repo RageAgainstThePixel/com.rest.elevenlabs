@@ -79,17 +79,7 @@ namespace ElevenLabs.TextToSpeech
                 throw new ArgumentNullException(nameof(voice));
             }
 
-            if (string.IsNullOrWhiteSpace(voice.Name))
-            {
-                Debug.LogWarning("Voice details not found! To speed up this call, cache the voice details before making this request.");
-                voice = await client.VoicesEndpoint.GetVoiceAsync(voice, cancellationToken: cancellationToken);
-            }
-
-            await Rest.ValidateCacheDirectoryAsync();
-
-            var rootDirectory = Rest.DownloadCacheDirectory.CreateNewDirectory(nameof(ElevenLabs));
-            var speechToTextDirectory = rootDirectory.CreateNewDirectory(nameof(TextToSpeech));
-            var downloadDirectory = speechToTextDirectory.CreateNewDirectory(voice.Id);
+            var downloadDirectory = await GetCacheDirectoryAsync(voice);
             var defaultVoiceSettings = voiceSettings ?? voice.Settings ?? await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken);
             var request = new TextToSpeechRequest(text, model, defaultVoiceSettings);
             var payload = JsonConvert.SerializeObject(request, ElevenLabsClient.JsonSerializationOptions);
@@ -100,37 +90,27 @@ namespace ElevenLabs.TextToSpeech
                 parameters.Add(StreamingLatency, optimizeStreamingLatency.Value.ToString());
             }
 
-            var endpoint = GetUrl($"/{voice.Id}", parameters);
-            var response = await Rest.PostAsync(endpoint, payload, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-
+            var response = await Rest.PostAsync(GetUrl($"/{voice.Id}", parameters), payload, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
             response.Validate(EnableDebug);
-
-            var responseStream = new MemoryStream(response.Data);
 
             if (!response.Headers.TryGetValue(HistoryItemId, out var clipId))
             {
                 throw new ArgumentException("Failed to find history item id!");
             }
 
+            var responseStream = new MemoryStream(response.Data);
             var cachedPath = $"{downloadDirectory}/{clipId}.mp3";
+            var fileStream = new FileStream(cachedPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
 
             try
             {
-                var fileStream = new FileStream(cachedPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
-
-                try
-                {
-                    await responseStream.CopyToAsync(fileStream, cancellationToken);
-                    await fileStream.FlushAsync(cancellationToken);
-                }
-                finally
-                {
-                    fileStream.Close();
-                    await fileStream.DisposeAsync();
-                }
+                await responseStream.CopyToAsync(fileStream, cancellationToken);
+                await fileStream.FlushAsync(cancellationToken);
             }
             finally
             {
+                fileStream.Close();
+                await fileStream.DisposeAsync();
                 await responseStream.DisposeAsync();
             }
 
@@ -184,6 +164,7 @@ namespace ElevenLabs.TextToSpeech
                 throw new ArgumentNullException(nameof(voice));
             }
 
+            var downloadDirectory = await GetCacheDirectoryAsync(voice);
             var defaultVoiceSettings = voiceSettings ?? voice.Settings ?? await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken);
             var request = new TextToSpeechRequest(text, model, defaultVoiceSettings);
             var payload = JsonConvert.SerializeObject(request, ElevenLabsClient.JsonSerializationOptions);
@@ -197,21 +178,15 @@ namespace ElevenLabs.TextToSpeech
                 parameters.Add(StreamingLatency, optimizeStreamingLatency.Value.ToString());
             }
 
-            await Rest.ValidateCacheDirectoryAsync();
-            var downloadDirectory = Rest.DownloadCacheDirectory
-                .CreateNewDirectory(nameof(ElevenLabs))
-                .CreateNewDirectory(nameof(TextToSpeech))
-                .CreateNewDirectory(voice.Id);
             var responseStream = new MemoryStream();
             var part = 0;
-            string clipId;
 
             try
             {
                 var response = await Rest.PostAsync(GetUrl($"/{voice.Id}/stream", parameters), payload, StreamCallback, eventChunkSize: 512, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
                 response.Validate(EnableDebug);
 
-                if (!response.Headers.TryGetValue(HistoryItemId, out clipId))
+                if (!response.Headers.TryGetValue(HistoryItemId, out var clipId))
                 {
                     throw new ArgumentException("Failed to find history item id!");
                 }
@@ -239,7 +214,7 @@ namespace ElevenLabs.TextToSpeech
             {
                 await Awaiters.UnityMainThread;
 
-                if (!webRequest.GetResponseHeaders().TryGetValue(HistoryItemId, out clipId))
+                if (!webRequest.GetResponseHeaders().TryGetValue(HistoryItemId, out var clipId))
                 {
                     throw new ArgumentException("Failed to find history item id!");
                 }
@@ -256,6 +231,15 @@ namespace ElevenLabs.TextToSpeech
                 await responseStream.WriteAsync(bytes, cancellationToken).ConfigureAwait(true);
                 partialClipCallback.Invoke(audioClip);
             }
+        }
+
+        private static async Task<string> GetCacheDirectoryAsync(Voice voice)
+        {
+            await Rest.ValidateCacheDirectoryAsync();
+            return Rest.DownloadCacheDirectory
+                .CreateNewDirectory(nameof(ElevenLabs))
+                .CreateNewDirectory(nameof(TextToSpeech))
+                .CreateNewDirectory(voice.Id);
         }
     }
 }

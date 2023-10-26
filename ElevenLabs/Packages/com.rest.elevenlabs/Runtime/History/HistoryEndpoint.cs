@@ -113,28 +113,17 @@ namespace ElevenLabs.History
                 var response = await Rest.GetAsync(GetUrl($"/{historyItem.Id}/audio"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
                 response.Validate(EnableDebug);
                 var responseStream = new MemoryStream(response.Data);
+                var fileStream = new FileStream(cachedPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
 
                 try
                 {
-                    var fileStream = new FileStream(cachedPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
-
-                    try
-                    {
-                        await responseStream.CopyToAsync(fileStream, cancellationToken);
-                        await fileStream.FlushAsync(cancellationToken);
-                    }
-                    catch (Exception e)
-                    {
-                        Debug.LogError(e);
-                    }
-                    finally
-                    {
-                        fileStream.Close();
-                        await fileStream.DisposeAsync();
-                    }
+                    await responseStream.CopyToAsync(fileStream, cancellationToken);
+                    await fileStream.FlushAsync(cancellationToken);
                 }
                 finally
                 {
+                    fileStream.Close();
+                    await fileStream.DisposeAsync();
                     await responseStream.DisposeAsync();
                 }
             }
