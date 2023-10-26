@@ -54,21 +54,7 @@ namespace ElevenLabs.VoiceGeneration
                 File.Delete(cachedPath);
             }
 
-            var responseStream = new MemoryStream(response.Data);
-            var fileStream = new FileStream(cachedPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
-
-            try
-            {
-                await responseStream.CopyToAsync(fileStream, cancellationToken);
-                await fileStream.FlushAsync(cancellationToken);
-            }
-            finally
-            {
-                fileStream.Close();
-                await fileStream.DisposeAsync();
-                await responseStream.DisposeAsync();
-            }
-
+            await File.WriteAllBytesAsync(cachedPath, response.Data, cancellationToken).ConfigureAwait(true);
             var audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", AudioType.MPEG, cancellationToken: cancellationToken);
             return new Tuple<string, AudioClip>(generatedVoiceId, audioClip);
         }
