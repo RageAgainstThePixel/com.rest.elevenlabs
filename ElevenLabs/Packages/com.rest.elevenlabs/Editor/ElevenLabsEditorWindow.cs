@@ -1791,7 +1791,7 @@ namespace ElevenLabs.Editor
             EditorUtility.ClearProgressBar();
         }
 
-        private static void CopyIntoProject(string directory, params DownloadItem[] downloadItems)
+        private static void CopyIntoProject(string directory, params VoiceClip[] downloadItems)
         {
             if (string.IsNullOrWhiteSpace(directory))
             {

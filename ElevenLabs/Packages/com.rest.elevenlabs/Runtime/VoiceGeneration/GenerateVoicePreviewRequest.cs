@@ -10,7 +10,7 @@ namespace ElevenLabs.VoiceGeneration
     public sealed class GeneratedVoicePreviewRequest
     {
         /// <summary>
-        /// Voice Generation Request.
+        /// Voice Generation Preview Request.
         /// Use <see cref="VoiceGenerationEndpoint.GetVoiceGenerationOptionsAsync"/> to get a full list of options.
         /// </summary>
         /// <param name="text">Sample text to return for voice generation. Must be between 100 and 1000 characters.</param>

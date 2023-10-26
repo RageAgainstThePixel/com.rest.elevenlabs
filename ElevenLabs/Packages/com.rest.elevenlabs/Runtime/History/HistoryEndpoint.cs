@@ -82,7 +82,7 @@ namespace ElevenLabs.History
         /// <summary>
         /// Gets a history item by id.
         /// </summary>
-        /// <param name="id"><see cref="HistoryItem.Id"/> or <see cref="DownloadItem.Id"/></param>
+        /// <param name="id"><see cref="HistoryItem.Id"/> or <see cref="VoiceClip.Id"/></param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         /// <returns><see cref="HistoryItem"/></returns>
         public async Task<HistoryItem> GetHistoryItemAsync(string id, CancellationToken cancellationToken = default)
@@ -98,7 +98,7 @@ namespace ElevenLabs.History
         /// <param name="historyItem"><see cref="HistoryItem"/></param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         /// <returns><see cref="AudioClip"/>.</returns>
-        public async Task<DownloadItem> DownloadHistoryAudioAsync(HistoryItem historyItem, CancellationToken cancellationToken = default)
+        public async Task<VoiceClip> DownloadHistoryAudioAsync(HistoryItem historyItem, CancellationToken cancellationToken = default)
         {
             await Rest.ValidateCacheDirectoryAsync();
             var voiceDirectory = Rest.DownloadCacheDirectory
@@ -132,13 +132,13 @@ namespace ElevenLabs.History
 
             var voice = await client.VoicesEndpoint.GetVoiceAsync(historyItem.VoiceId, true, cancellationToken);
             var audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", AudioType.MPEG, cancellationToken: cancellationToken);
-            return new DownloadItem(historyItem.Id, historyItem.Text, voice, audioClip, cachedPath);
+            return new VoiceClip(historyItem.Id, historyItem.Text, voice, audioClip, cachedPath);
         }
 
         /// <summary>
         /// Delete a history item by its id.
         /// </summary>
-        /// <param name="id"><see cref="HistoryItem.Id"/> or <see cref="DownloadItem.Id"/></param>
+        /// <param name="id"><see cref="HistoryItem.Id"/> or <see cref="VoiceClip.Id"/></param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         /// <returns>True, if history item was successfully deleted.</returns>
         public async Task<bool> DeleteHistoryItemAsync(string id, CancellationToken cancellationToken = default)
@@ -158,10 +158,10 @@ namespace ElevenLabs.History
         /// <param name="progress">Optional, <see cref="IProgress{T}"/>.</param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         /// <returns>A list of Audio Clips downloaded by the request.</returns>
-        public async Task<IReadOnlyList<DownloadItem>> DownloadHistoryItemsAsync(List<string> historyItemIds = null, IProgress<string> progress = null, CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<VoiceClip>> DownloadHistoryItemsAsync(List<string> historyItemIds = null, IProgress<string> progress = null, CancellationToken cancellationToken = default)
         {
             historyItemIds ??= (await GetHistoryAsync(cancellationToken: cancellationToken)).Select(item => item.Id).ToList();
-            var historyItems = new ConcurrentBag<DownloadItem>();
+            var historyItems = new ConcurrentBag<VoiceClip>();
 
             async Task DownloadItem(string historyItemId)
             {

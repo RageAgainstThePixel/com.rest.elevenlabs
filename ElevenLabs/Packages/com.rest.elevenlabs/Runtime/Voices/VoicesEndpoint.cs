@@ -280,7 +280,7 @@ namespace ElevenLabs.Voices
         /// <param name="sampleId">The <see cref="Sample"/> id to download.</param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         /// <returns><see cref="AudioClip"/>.</returns>
-        public async Task<DownloadItem> DownloadVoiceSampleAsync(Voice voice, string sampleId, CancellationToken cancellationToken = default)
+        public async Task<VoiceClip> DownloadVoiceSampleAsync(Voice voice, string sampleId, CancellationToken cancellationToken = default)
         {
             if (voice == null ||
                 string.IsNullOrWhiteSpace(voice.Id))
@@ -336,7 +336,7 @@ namespace ElevenLabs.Voices
             }
 
             var audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", AudioType.MPEG, cancellationToken: cancellationToken);
-            return new DownloadItem(sampleId, string.Empty, voice, audioClip, cachedPath);
+            return new VoiceClip(sampleId, string.Empty, voice, audioClip, cachedPath);
         }
 
         /// <summary>

@@ -7,10 +7,11 @@ using UnityEngine.Scripting;
 
 namespace ElevenLabs
 {
-    public sealed class DownloadItem
+    [Preserve]
+    public sealed class VoiceClip
     {
         [Preserve]
-        internal DownloadItem(string id, string text, Voice voice, AudioClip audioClip, string cachedPath)
+        internal VoiceClip(string id, string text, Voice voice, AudioClip audioClip, string cachedPath)
         {
             Id = id;
             Text = text;
@@ -20,16 +21,22 @@ namespace ElevenLabs
             CachedPath = cachedPath;
         }
 
+        [Preserve]
         public string Id { get; }
 
+        [Preserve]
         public string Text { get; }
 
+        [Preserve]
         public Voice Voice { get; }
 
+        [Preserve]
         public string TextHash { get; }
 
+        [Preserve]
         public AudioClip AudioClip { get; }
 
+        [Preserve]
         public string CachedPath { get; }
     }
 }

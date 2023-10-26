@@ -63,7 +63,7 @@ namespace ElevenLabs.TextToSpeech
         /// Optional, <see cref="CancellationToken"/>.
         /// </param>
         /// <returns>Downloaded clip path, and the loaded audio clip.</returns>
-        public async Task<DownloadItem> TextToSpeechAsync(string text, Voice voice, VoiceSettings voiceSettings = null, Model model = null, int? optimizeStreamingLatency = null, CancellationToken cancellationToken = default)
+        public async Task<VoiceClip> TextToSpeechAsync(string text, Voice voice, VoiceSettings voiceSettings = null, Model model = null, int? optimizeStreamingLatency = null, CancellationToken cancellationToken = default)
         {
             if (text.Length > 5000)
             {
@@ -112,7 +112,7 @@ namespace ElevenLabs.TextToSpeech
             }
 
             var audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", AudioType.MPEG, cancellationToken: cancellationToken);
-            return new DownloadItem(clipId, text, voice, audioClip, cachedPath);
+            return new VoiceClip(clipId, text, voice, audioClip, cachedPath);
         }
 
         /// <summary>
@@ -148,7 +148,7 @@ namespace ElevenLabs.TextToSpeech
         /// Optional, <see cref="CancellationToken"/>.
         /// </param>
         /// <returns>Downloaded clip path, and the loaded audio clip.</returns>
-        public async Task<DownloadItem> StreamTextToSpeechAsync(string text, Voice voice, Action<AudioClip> partialClipCallback, VoiceSettings voiceSettings = null, Model model = null, int? optimizeStreamingLatency = null, CancellationToken cancellationToken = default)
+        public async Task<VoiceClip> StreamTextToSpeechAsync(string text, Voice voice, Action<AudioClip> partialClipCallback, VoiceSettings voiceSettings = null, Model model = null, int? optimizeStreamingLatency = null, CancellationToken cancellationToken = default)
         {
             if (text.Length > 5000)
             {
@@ -200,7 +200,7 @@ namespace ElevenLabs.TextToSpeech
                 var cachedPath = $"{downloadDirectory}/{clipId}.ogg";
                 await File.WriteAllBytesAsync(cachedPath, oggBytes, cancellationToken: cancellationToken).ConfigureAwait(false);
                 await Awaiters.UnityMainThread;
-                return new DownloadItem(clipId, text, voice, fullClip, cachedPath);
+                return new VoiceClip(clipId, text, voice, fullClip, cachedPath);
             }
             finally
             {
