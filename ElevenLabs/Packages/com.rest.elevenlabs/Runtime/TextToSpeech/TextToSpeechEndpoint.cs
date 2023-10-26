@@ -110,48 +110,39 @@ namespace ElevenLabs.TextToSpeech
 
             AudioClip audioClip;
             var cachedPath = $"{downloadDirectory}/{clipId}.{extension}";
-            var responseStream = new MemoryStream(response.Data);
 
-            try
+            switch (audioType)
             {
-                switch (audioType)
-                {
-                    case AudioType.MPEG:
-                        var fileStream = new FileStream(cachedPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
+                case AudioType.MPEG:
+                    var fileStream = new FileStream(cachedPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
 
-                        try
-                        {
-                            await responseStream.CopyToAsync(fileStream, cancellationToken).ConfigureAwait(false);
-                            await fileStream.FlushAsync(cancellationToken).ConfigureAwait(false);
-                        }
-                        finally
-                        {
-                            fileStream.Close();
-                            await fileStream.DisposeAsync().ConfigureAwait(false);
-                        }
+                    try
+                    {
+                        await fileStream.WriteAsync(response.Data, cancellationToken).ConfigureAwait(false);
+                    }
+                    finally
+                    {
+                        fileStream.Close();
+                        await fileStream.DisposeAsync().ConfigureAwait(false);
+                    }
 
-                        await Awaiters.UnityMainThread;
-                        audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", audioType, cancellationToken: cancellationToken);
-                        break;
-                    case AudioType.OGGVORBIS:
-                        var pcmData = PCMEncoder.Decode(responseStream.ToArray(), PCMFormatSize.SixteenBit);
-                        audioClip = AudioClip.Create(clipId, pcmData.Length, 1, 44100, false);
+                    await Awaiters.UnityMainThread;
+                    audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", audioType, cancellationToken: cancellationToken);
+                    break;
+                case AudioType.OGGVORBIS:
+                    var pcmData = PCMEncoder.Decode(response.Data, PCMFormatSize.SixteenBit);
+                    audioClip = AudioClip.Create(clipId, pcmData.Length, 1, 44100, false);
 
-                        if (!audioClip.SetData(pcmData, 0))
-                        {
-                            throw new Exception("Failed to set pcm data!");
-                        }
+                    if (!audioClip.SetData(pcmData, 0))
+                    {
+                        throw new Exception("Failed to set pcm data!");
+                    }
 
-                        var oggBytes = await OggEncoder.ConvertToBytesAsync(pcmData, 44100, 1, cancellationToken: cancellationToken).ConfigureAwait(false);
-                        await File.WriteAllBytesAsync(cachedPath, oggBytes, cancellationToken: cancellationToken).ConfigureAwait(false);
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException($"Unsupported {nameof(AudioType)}: {audioType}");
-                }
-            }
-            finally
-            {
-                await responseStream.DisposeAsync().ConfigureAwait(false);
+                    var oggBytes = await OggEncoder.ConvertToBytesAsync(pcmData, 44100, 1, cancellationToken: cancellationToken).ConfigureAwait(false);
+                    await File.WriteAllBytesAsync(cachedPath, oggBytes, cancellationToken: cancellationToken).ConfigureAwait(false);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException($"Unsupported {nameof(AudioType)}: {audioType}");
             }
 
             // make sure to return on main thread
@@ -241,7 +232,6 @@ namespace ElevenLabs.TextToSpeech
             }
 
             var part = 0;
-
             var response = await Rest.PostAsync(GetUrl($"/{voice.Id}/stream", parameters), payload, StreamCallback, eventChunkSize: 512, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
             response.Validate(EnableDebug);
 
@@ -268,21 +258,20 @@ namespace ElevenLabs.TextToSpeech
             {
                 await Awaiters.UnityMainThread;
 
-                if (!webRequest.GetResponseHeaders().TryGetValue(HistoryItemId, out var clipId))
+                if (!webRequest.GetResponseHeaders().TryGetValue(HistoryItemId, out clipId))
                 {
                     throw new ArgumentException("Failed to parse clip id!");
                 }
 
-                var pcmData = PCMEncoder.Decode(bytes, PCMFormatSize.SixteenBit);
-                var audioClip = AudioClip.Create($"{clipId}_{++part}", pcmData.Length, 1, 44100, false);
+                var chunk = PCMEncoder.Decode(bytes, PCMFormatSize.SixteenBit);
+                var audioClip = AudioClip.Create($"{clipId}_{++part}", chunk.Length, 1, 44100, false);
 
-                if (!audioClip.SetData(pcmData, 0))
+                if (!audioClip.SetData(chunk, 0))
                 {
                     Debug.LogError("Failed to set pcm data to partial clip.");
                     return;
                 }
 
-                await responseStream.WriteAsync(bytes, cancellationToken).ConfigureAwait(true);
                 partialClipCallback.Invoke(audioClip);
             }
         }
