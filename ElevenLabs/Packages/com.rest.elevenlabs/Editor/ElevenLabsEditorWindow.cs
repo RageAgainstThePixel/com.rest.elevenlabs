@@ -1609,7 +1609,7 @@ namespace ElevenLabs.Editor
         {
             try
             {
-                var downloadItem = await api.VoicesEndpoint.DownloadVoiceSampleAsync(voice, sample);
+                var downloadItem = await api.VoicesEndpoint.DownloadVoiceSampleAudioAsync(voice, sample);
                 CopyIntoProject(editorDownloadDirectory, downloadItem);
             }
             catch (Exception e)
