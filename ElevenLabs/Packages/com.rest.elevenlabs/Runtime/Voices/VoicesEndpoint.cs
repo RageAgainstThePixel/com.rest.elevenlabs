@@ -289,13 +289,13 @@ namespace ElevenLabs.Voices
         }
 
         /// <summary>
-        /// Download the audio corresponding to a sample attached to a voice.
+        /// Download the audio corresponding to a <see cref="Sample"/> attached to a <see cref="Voice"/>.
         /// </summary>
         /// <param name="voice">The <see cref="Voice"/> this <see cref="Sample"/> belongs to.</param>
         /// <param name="sample">The <see cref="Sample"/> id to download.</param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         /// <returns><see cref="AudioClip"/>.</returns>
-        public async Task<VoiceClip> DownloadVoiceSampleAsync(Voice voice, Sample sample, CancellationToken cancellationToken = default)
+        public async Task<VoiceClip> DownloadVoiceSampleAudioAsync(Voice voice, Sample sample, CancellationToken cancellationToken = default)
         {
             if (voice == null ||
                 string.IsNullOrWhiteSpace(voice.Id))
