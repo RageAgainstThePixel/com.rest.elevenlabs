@@ -10,7 +10,6 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.Networking;
 using Utilities.Async;
 using Utilities.Audio;
 using Utilities.Encoding.OggVorbis;
@@ -67,16 +66,7 @@ namespace ElevenLabs.TextToSpeech
         /// <returns>Downloaded clip path, and the loaded audio clip.</returns>
         public async Task<VoiceClip> TextToSpeechAsync(string text, Voice voice, VoiceSettings voiceSettings = null, Model model = null, OutputFormat outputFormat = OutputFormat.MP3_44100_128, int? optimizeStreamingLatency = null, CancellationToken cancellationToken = default)
         {
-            if (text.Length > 5000)
-            {
-                throw new ArgumentOutOfRangeException(nameof(text), $"{nameof(text)} cannot exceed 5000 characters");
-            }
-
-            if (voice == null ||
-                string.IsNullOrWhiteSpace(voice.Id))
-            {
-                throw new ArgumentNullException(nameof(voice));
-            }
+            ValidateInputs(text, voice);
 
             var downloadDirectory = await GetCacheDirectoryAsync(voice);
             var defaultVoiceSettings = voiceSettings ?? voice.Settings ?? await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken);
@@ -107,7 +97,6 @@ namespace ElevenLabs.TextToSpeech
                 AudioType.OGGVORBIS => "ogg",
                 _ => throw new ArgumentOutOfRangeException($"Unsupported {nameof(AudioType)}: {audioType}")
             };
-
             var cachedPath = $"{downloadDirectory}/{clipId}.{extension}";
 
             if (!File.Exists(cachedPath))
@@ -119,7 +108,15 @@ namespace ElevenLabs.TextToSpeech
                         break;
                     case AudioType.OGGVORBIS:
                         var pcmData = PCMEncoder.Decode(response.Data, PCMFormatSize.SixteenBit);
-                        var oggBytes = await OggEncoder.ConvertToBytesAsync(pcmData, 44100, 1, cancellationToken: cancellationToken).ConfigureAwait(false);
+                        var frequency = outputFormat switch
+                        {
+                            OutputFormat.PCM_16000 => 16000,
+                            OutputFormat.PCM_22050 => 22050,
+                            OutputFormat.PCM_24000 => 24000,
+                            OutputFormat.PCM_44100 => 44100,
+                            _ => throw new ArgumentOutOfRangeException(nameof(outputFormat), outputFormat, null)
+                        };
+                        var oggBytes = await OggEncoder.ConvertToBytesAsync(pcmData, frequency, 1, cancellationToken: cancellationToken).ConfigureAwait(false);
                         await File.WriteAllBytesAsync(cachedPath, oggBytes, cancellationToken: cancellationToken).ConfigureAwait(false);
                         break;
                     default:
@@ -172,16 +169,7 @@ namespace ElevenLabs.TextToSpeech
         /// <returns>Downloaded clip path, and the loaded audio clip.</returns>
         public async Task<VoiceClip> StreamTextToSpeechAsync(string text, Voice voice, Action<AudioClip> partialClipCallback, VoiceSettings voiceSettings = null, Model model = null, OutputFormat outputFormat = OutputFormat.PCM_24000, int? optimizeStreamingLatency = null, CancellationToken cancellationToken = default)
         {
-            if (text.Length > 5000)
-            {
-                throw new ArgumentOutOfRangeException(nameof(text), $"{nameof(text)} cannot exceed 5000 characters");
-            }
-
-            if (voice == null ||
-                string.IsNullOrWhiteSpace(voice.Id))
-            {
-                throw new ArgumentNullException(nameof(voice));
-            }
+            ValidateInputs(text, voice);
 
             var frequency = outputFormat switch
             {
@@ -252,6 +240,25 @@ namespace ElevenLabs.TextToSpeech
                 {
                     Debug.LogError(e);
                 }
+            }
+        }
+
+        private static void ValidateInputs(string text, Voice voice)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                throw new ArgumentNullException(nameof(text));
+            }
+
+            if (text.Length > 5000)
+            {
+                throw new ArgumentOutOfRangeException(nameof(text), $"{nameof(text)} cannot exceed 5000 characters");
+            }
+
+            if (voice == null ||
+                string.IsNullOrWhiteSpace(voice.Id))
+            {
+                throw new ArgumentNullException(nameof(voice));
             }
         }
 
