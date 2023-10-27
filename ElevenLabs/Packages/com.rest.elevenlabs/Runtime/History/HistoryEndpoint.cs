@@ -145,7 +145,7 @@ namespace ElevenLabs.History
         /// <summary>
         /// Delete a history item by its id.
         /// </summary>
-        /// <param name="id"><see cref="HistoryItem.Id"/> or <see cref="VoiceClip.Id"/></param>
+        /// <param name="id"><see cref="HistoryItem.Id"/> or <see cref="VoiceClip.Id"/>.</param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         /// <returns>True, if history item was successfully deleted.</returns>
         public async Task<bool> DeleteHistoryItemAsync(string id, CancellationToken cancellationToken = default)
@@ -164,7 +164,7 @@ namespace ElevenLabs.History
         /// <param name="historyItemIds">Optional, One or more history item ids queued for download.</param>
         /// <param name="progress">Optional, <see cref="IProgress{T}"/>.</param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
-        /// <returns>A list of Audio Clips downloaded by the request.</returns>
+        /// <returns>A list of voice clips downloaded by the request.</returns>
         public async Task<IReadOnlyList<VoiceClip>> DownloadHistoryItemsAsync(List<string> historyItemIds = null, IProgress<string> progress = null, CancellationToken cancellationToken = default)
         {
             historyItemIds ??= (await GetHistoryAsync(cancellationToken: cancellationToken)).Select(item => item.Id).ToList();
