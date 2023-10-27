@@ -170,23 +170,27 @@ namespace ElevenLabs.Voices
 
             if (samplePaths != null)
             {
-                var paths = samplePaths.ToList();
+                var paths = samplePaths.Where(path => !string.IsNullOrWhiteSpace(path)).ToList();
 
                 if (paths.Any())
                 {
                     foreach (var sample in paths)
                     {
-                        if (string.IsNullOrWhiteSpace(sample))
+                        if (!File.Exists(sample))
                         {
+                            Debug.LogError($"No sample clip found at {sample}!");
                             continue;
                         }
 
-                        var fileStream = File.OpenRead(sample);
-                        var stream = new MemoryStream();
-                        await fileStream.CopyToAsync(stream, cancellationToken);
-                        form.AddBinaryData("files", stream.ToArray(), Path.GetFileName(sample));
-                        await fileStream.DisposeAsync();
-                        await stream.DisposeAsync();
+                        try
+                        {
+                            var fileBytes = await File.ReadAllBytesAsync(sample, cancellationToken);
+                            form.AddBinaryData("files", fileBytes, Path.GetFileName(sample));
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.LogError(e);
+                        }
                     }
                 }
             }
@@ -224,23 +228,27 @@ namespace ElevenLabs.Voices
 
             if (samplePaths != null)
             {
-                var paths = samplePaths.ToList();
+                var paths = samplePaths.Where(path => !string.IsNullOrWhiteSpace(path)).ToList();
 
                 if (paths.Any())
                 {
                     foreach (var sample in paths)
                     {
-                        if (string.IsNullOrWhiteSpace(sample))
+                        if (!File.Exists(sample))
                         {
+                            Debug.LogError($"No sample clip found at {sample}!");
                             continue;
                         }
 
-                        var fileStream = File.OpenRead(sample);
-                        var stream = new MemoryStream();
-                        await fileStream.CopyToAsync(stream, cancellationToken);
-                        form.AddBinaryData("files", stream.ToArray(), Path.GetFileName(sample));
-                        await fileStream.DisposeAsync();
-                        await stream.DisposeAsync();
+                        try
+                        {
+                            var fileBytes = await File.ReadAllBytesAsync(sample, cancellationToken);
+                            form.AddBinaryData("files", fileBytes, Path.GetFileName(sample));
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.LogError(e);
+                        }
                     }
                 }
             }
