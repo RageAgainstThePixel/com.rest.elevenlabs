@@ -95,7 +95,7 @@ namespace ElevenLabs.History
         }
 
         /// <summary>
-        /// Get audio of a history item.
+        /// Download audio of a history item.
         /// </summary>
         /// <param name="historyItem"><see cref="HistoryItem"/></param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>

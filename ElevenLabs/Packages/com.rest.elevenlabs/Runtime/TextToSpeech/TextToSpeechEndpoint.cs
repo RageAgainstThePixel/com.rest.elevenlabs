@@ -60,10 +60,8 @@ namespace ElevenLabs.TextToSpeech
         /// 4 - max latency optimizations, but also with text normalizer turned off for even more latency savings
         /// (best latency, but can mispronounce eg numbers and dates).
         /// </param>
-        /// <param name="cancellationToken">
-        /// Optional, <see cref="CancellationToken"/>.
-        /// </param>
-        /// <returns>Downloaded clip path, and the loaded audio clip.</returns>
+        /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
+        /// <returns><see cref="VoiceClip"/>.</returns>
         public async Task<VoiceClip> TextToSpeechAsync(string text, Voice voice, VoiceSettings voiceSettings = null, Model model = null, OutputFormat outputFormat = OutputFormat.MP3_44100_128, int? optimizeStreamingLatency = null, CancellationToken cancellationToken = default)
         {
             ValidateInputs(text, voice);
@@ -139,7 +137,8 @@ namespace ElevenLabs.TextToSpeech
         /// <see cref="Voice"/> to use.
         /// </param>
         /// <param name="partialClipCallback">
-        /// An callback that contains a partial response with an <see cref="AudioClip"/> that is ready to play.
+        /// Optional, Callback to enable streaming audio as it comes in.<br/>
+        /// Returns partial <see cref="VoiceClip"/>.
         /// </param>
         /// <param name="voiceSettings">
         /// Optional, <see cref="VoiceSettings"/> that will override the default settings in <see cref="Voice.Settings"/>.

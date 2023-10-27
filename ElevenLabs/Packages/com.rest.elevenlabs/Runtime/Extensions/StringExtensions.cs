@@ -16,7 +16,7 @@ namespace ElevenLabs.Extensions
         /// <returns>A new <see cref="Guid"/> that represents the string.</returns>
         public static Guid GenerateGuid(this string @string)
         {
-            using MD5 md5 = MD5.Create();
+            using var md5 = MD5.Create();
             return new Guid(md5.ComputeHash(Encoding.Default.GetBytes(@string)));
         }
 

@@ -203,8 +203,7 @@ namespace ElevenLabs.Voices
             var response = await Rest.PostAsync(GetUrl("/add"), form, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
             response.Validate(EnableDebug);
             var voiceResponse = JsonConvert.DeserializeObject<VoiceResponse>(response.Body, ElevenLabsClient.JsonSerializationOptions);
-            var voice = await GetVoiceAsync(voiceResponse.VoiceId, cancellationToken: cancellationToken);
-            return voice;
+            return await GetVoiceAsync(voiceResponse.VoiceId, cancellationToken: cancellationToken);
         }
 
         /// <summary>
@@ -289,7 +288,7 @@ namespace ElevenLabs.Voices
         /// <param name="voice">The <see cref="Voice"/> this <see cref="Sample"/> belongs to.</param>
         /// <param name="sample">The <see cref="Sample"/> id to download.</param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
-        /// <returns><see cref="AudioClip"/>.</returns>
+        /// <returns><see cref="VoiceClip"/>.</returns>
         public async Task<VoiceClip> DownloadVoiceSampleAudioAsync(Voice voice, Sample sample, CancellationToken cancellationToken = default)
         {
             if (voice == null ||

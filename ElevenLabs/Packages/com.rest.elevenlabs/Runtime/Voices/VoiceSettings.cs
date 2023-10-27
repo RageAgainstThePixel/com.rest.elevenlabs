@@ -21,8 +21,8 @@ namespace ElevenLabs.Voices
         {
             Stability = stability;
             SimilarityBoost = similarityBoost;
-            SpeakerBoost = speakerBoost;
             Style = style;
+            SpeakerBoost = speakerBoost;
         }
 
         [Range(0f, 1f)]
