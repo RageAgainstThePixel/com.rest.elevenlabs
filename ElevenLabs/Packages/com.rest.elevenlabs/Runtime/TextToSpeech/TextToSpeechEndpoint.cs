@@ -183,22 +183,18 @@ namespace ElevenLabs.TextToSpeech
                 throw new ArgumentNullException(nameof(voice));
             }
 
-            switch (outputFormat)
+            var frequency = outputFormat switch
             {
-                case OutputFormat.MP3_44100_64:
-                case OutputFormat.MP3_44100_96:
-                case OutputFormat.MP3_44100_128:
-                case OutputFormat.MP3_44100_192:
-                    throw new InvalidOperationException($"{nameof(outputFormat)} must be a PCM format for streaming!");
-                case OutputFormat.PCM_16000:
-                case OutputFormat.PCM_22050:
-                case OutputFormat.PCM_24000:
-                case OutputFormat.PCM_44100:
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(outputFormat), outputFormat, null);
-            }
-
+                OutputFormat.MP3_44100_64 => throw new InvalidOperationException($"{nameof(outputFormat)} must be a PCM format for streaming!"),
+                OutputFormat.MP3_44100_96 => throw new InvalidOperationException($"{nameof(outputFormat)} must be a PCM format for streaming!"),
+                OutputFormat.MP3_44100_128 => throw new InvalidOperationException($"{nameof(outputFormat)} must be a PCM format for streaming!"),
+                OutputFormat.MP3_44100_192 => throw new InvalidOperationException($"{nameof(outputFormat)} must be a PCM format for streaming!"),
+                OutputFormat.PCM_16000 => 16000,
+                OutputFormat.PCM_22050 => 22050,
+                OutputFormat.PCM_24000 => 24000,
+                OutputFormat.PCM_44100 => 44100,
+                _ => throw new ArgumentOutOfRangeException(nameof(outputFormat), outputFormat, null)
+            };
             var downloadDirectory = await GetCacheDirectoryAsync(voice);
             var defaultVoiceSettings = voiceSettings ?? voice.Settings ?? await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken);
             var request = new TextToSpeechRequest(text, model, defaultVoiceSettings);
@@ -214,7 +210,7 @@ namespace ElevenLabs.TextToSpeech
             }
 
             var part = 0;
-            var response = await Rest.PostAsync(GetUrl($"/{voice.Id}/stream", parameters), payload, StreamCallback, eventChunkSize: 8192, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
+            var response = await Rest.PostAsync(GetUrl($"/{voice.Id}/stream", parameters), payload, StreamCallback, eventChunkSize: 8192, new RestParameters(client.DefaultRequestHeaders), cancellationToken).ConfigureAwait(true);
             response.Validate(EnableDebug);
 
             if (!response.Headers.TryGetValue(HistoryItemId, out var clipId))
@@ -223,38 +219,39 @@ namespace ElevenLabs.TextToSpeech
             }
 
             var pcmData = PCMEncoder.Decode(response.Data, PCMFormatSize.SixteenBit);
-            var fullClip = AudioClip.Create(clipId, pcmData.Length, 1, 44100, false);
-
-            if (!fullClip.SetData(pcmData, 0))
-            {
-                throw new Exception("Failed to set pcm data!");
-            }
-
+            var fullClip = AudioClip.Create(clipId, pcmData.Length, 1, frequency, false);
+            var oggBytes = await OggEncoder.ConvertToBytesAsync(pcmData, frequency, 1, cancellationToken: cancellationToken).ConfigureAwait(false);
             var cachedPath = $"{downloadDirectory}/{clipId}.ogg";
-            var oggBytes = await OggEncoder.ConvertToBytesAsync(pcmData, 44100, 1, cancellationToken: cancellationToken).ConfigureAwait(false);
             await File.WriteAllBytesAsync(cachedPath, oggBytes, cancellationToken: cancellationToken).ConfigureAwait(false);
             await Awaiters.UnityMainThread;
+            await Rest.DownloadAudioClipAsync($"file://{cachedPath}", AudioType.OGGVORBIS, cancellationToken: cancellationToken);
             return new VoiceClip(clipId, text, voice, fullClip, cachedPath);
 
-            async void StreamCallback(UnityWebRequest webRequest, byte[] bytes)
+            void StreamCallback(Response partialResponse)
             {
-                await Awaiters.UnityMainThread;
-
-                if (!webRequest.GetResponseHeaders().TryGetValue(HistoryItemId, out clipId))
+                try
                 {
-                    throw new ArgumentException("Failed to parse clip id!");
+                    if (!partialResponse.Headers.TryGetValue(HistoryItemId, out clipId))
+                    {
+                        throw new ArgumentException("Failed to parse clip id!");
+                    }
+
+                    var chunk = PCMEncoder.Decode(partialResponse.Data, PCMFormatSize.SixteenBit);
+                    var audioClip = AudioClip.Create($"{clipId}_{++part}", chunk.Length, 1, 44100, false);
+
+                    if (!audioClip.SetData(chunk, 0))
+                    {
+                        Debug.LogError("Failed to set pcm data to partial clip.");
+
+                        return;
+                    }
+
+                    partialClipCallback.Invoke(audioClip);
                 }
-
-                var chunk = PCMEncoder.Decode(bytes, PCMFormatSize.SixteenBit);
-                var audioClip = AudioClip.Create($"{clipId}_{++part}", chunk.Length, 1, 44100, false);
-
-                if (!audioClip.SetData(chunk, 0))
+                catch (Exception e)
                 {
-                    Debug.LogError("Failed to set pcm data to partial clip.");
-                    return;
+                    Debug.LogError(e);
                 }
-
-                partialClipCallback.Invoke(audioClip);
             }
         }
 
