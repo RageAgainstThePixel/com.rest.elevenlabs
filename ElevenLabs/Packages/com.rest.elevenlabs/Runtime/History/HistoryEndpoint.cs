@@ -10,7 +10,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.Scripting;
 using Utilities.Async;
 using Utilities.Audio;
 using Utilities.Encoding.OggVorbis;
@@ -23,34 +22,6 @@ namespace ElevenLabs.History
     /// </summary>
     public sealed class HistoryEndpoint : ElevenLabsBaseEndPoint
     {
-        [Preserve]
-        private class HistoryInfo
-        {
-            [Preserve]
-            [JsonConstructor]
-            public HistoryInfo(
-                [JsonProperty("history")] List<HistoryItem> history,
-                [JsonProperty("last_history_item_id")] string lastHistoryItemId,
-                [JsonProperty("has_more")] bool hasMore)
-            {
-                History = history;
-                LastHistoryItemId = lastHistoryItemId;
-                HasMore = hasMore;
-            }
-
-            [Preserve]
-            [JsonProperty("history")]
-            public IReadOnlyList<HistoryItem> History { get; }
-
-            [Preserve]
-            [JsonProperty("last_history_item_id")]
-            public string LastHistoryItemId { get; }
-
-            [Preserve]
-            [JsonProperty("has_more")]
-            public bool HasMore { get; }
-        }
-
         public HistoryEndpoint(ElevenLabsClient client) : base(client) { }
 
         protected override string Root => "history";
@@ -61,8 +32,8 @@ namespace ElevenLabs.History
         /// <param name="pageSize">Optional, number of items to return. Cannot exceed 1000.</param>
         /// <param name="startAfterId">Optional, the id of the item to start after.</param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
-        /// <returns>A list of history items containing metadata about generated audio.</returns>
-        public async Task<IReadOnlyList<HistoryItem>> GetHistoryAsync(int? pageSize = null, string startAfterId = null, CancellationToken cancellationToken = default)
+        /// <returns><see cref="HistoryInfo"/>.</returns>
+        public async Task<HistoryInfo> GetHistoryAsync(int? pageSize = null, string startAfterId = null, CancellationToken cancellationToken = default)
         {
             var parameters = new Dictionary<string, string>();
 
@@ -78,7 +49,7 @@ namespace ElevenLabs.History
 
             var response = await Rest.GetAsync(GetUrl(queryParameters: parameters), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
             response.Validate(EnableDebug);
-            return JsonConvert.DeserializeObject<HistoryInfo>(response.Body, ElevenLabsClient.JsonSerializationOptions)?.History;
+            return JsonConvert.DeserializeObject<HistoryInfo>(response.Body, ElevenLabsClient.JsonSerializationOptions);
         }
 
         /// <summary>
@@ -129,6 +100,7 @@ namespace ElevenLabs.History
                         break;
                     case AudioType.OGGVORBIS:
                         var pcmData = PCMEncoder.Decode(response.Data, PCMFormatSize.SixteenBit);
+                        // TODO unknown frequency. Need to get it out from metadata.
                         var oggBytes = await OggEncoder.ConvertToBytesAsync(pcmData, 44100, 1, cancellationToken: cancellationToken).ConfigureAwait(false);
                         await File.WriteAllBytesAsync(cachedPath, oggBytes, cancellationToken: cancellationToken).ConfigureAwait(false);
                         break;
@@ -138,7 +110,7 @@ namespace ElevenLabs.History
             }
 
             await Awaiters.UnityMainThread;
-            var audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", AudioType.MPEG, cancellationToken: cancellationToken);
+            var audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", AudioType.UNKNOWN, cancellationToken: cancellationToken);
             return new VoiceClip(historyItem.Id, historyItem.Text, voice, audioClip, cachedPath);
         }
 
@@ -167,7 +139,7 @@ namespace ElevenLabs.History
         /// <returns>A list of voice clips downloaded by the request.</returns>
         public async Task<IReadOnlyList<VoiceClip>> DownloadHistoryItemsAsync(List<string> historyItemIds = null, IProgress<string> progress = null, CancellationToken cancellationToken = default)
         {
-            historyItemIds ??= (await GetHistoryAsync(cancellationToken: cancellationToken)).Select(item => item.Id).ToList();
+            historyItemIds ??= (await GetHistoryAsync(cancellationToken: cancellationToken)).HistoryItems.Select(item => item.Id).ToList();
             var voiceClips = new ConcurrentBag<VoiceClip>();
 
             async Task DownloadItem(string historyItemId)

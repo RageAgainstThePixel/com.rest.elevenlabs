@@ -39,6 +39,7 @@ The recommended installation method is though the unity package manager and [Ope
   - [com.utilities.async](https://github.com/RageAgainstThePixel/com.utilities.async)
   - [com.utilities.extensions](https://github.com/RageAgainstThePixel/com.utilities.extensions)
   - [com.utilities.audio](https://github.com/RageAgainstThePixel/com.utilities.audio)
+  - [com.utilities.encoder.ogg](https://github.com/RageAgainstThePixel/com.utilities.encoder.ogg)
   - [com.utilities.rest](https://github.com/RageAgainstThePixel/com.utilities.rest)
 
 ---
@@ -48,7 +49,7 @@ The recommended installation method is though the unity package manager and [Ope
 ### Table of Contents
 
 - [Authentication](#authentication)
-- [API Proxy](#api-proxy) :new:
+- [API Proxy](#api-proxy)
 - [Editor Dashboard](#editor-dashboard)
   - [Speech Synthesis](#speech-synthesis)
   - [Voice Lab](#voice-lab)
@@ -56,7 +57,7 @@ The recommended installation method is though the unity package manager and [Ope
     - [Voice Cloning](#voice-cloning)
   - [History](#history)
 - [Text to Speech](#text-to-speech)
-  - [Stream Text to Speech](#stream-text-to-speech)
+  - [Stream Text to Speech](#stream-text-to-speech) :new:
 - [Voices](#voices)
   - [Get All Voices](#get-all-voices)
   - [Get Default Voice Settings](#get-default-voice-settings)
@@ -256,8 +257,6 @@ Debug.Log(clipPath);
 
 ### Stream Text to Speech
 
-:warning: WARNING :bangbang: This feature is experimental, and may not work as expected! Unity doesn't seem to respect streaming when setting [`DownloadHandlerAudioClip.streamAudio`](https://docs.unity3d.com/ScriptReference/Networking.DownloadHandlerAudioClip-streamAudio.html) to true.
-
 ```csharp
 var api = new ElevenLabsClient();
 var text = "The quick brown fox jumps over the lazy dog.";
@@ -268,8 +267,7 @@ var (clipPath, audioClip) = await api.TextToSpeechEndpoint.StreamTextToSpeechAsy
     voice,
     clip =>
     {
-        // Event raised as soon as the clip has loaded enough data to play.
-        // May not provide or play full clip until Unity bug is addressed.
+        // Note: Best to queue them and play them in update loop!
         audioSource.PlayOneShot(clip);
     },
     defaultVoiceSettings);

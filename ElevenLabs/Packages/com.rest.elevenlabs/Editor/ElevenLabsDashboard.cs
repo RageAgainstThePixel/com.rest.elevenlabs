@@ -20,7 +20,7 @@ using Utilities.Extensions.Editor;
 
 namespace ElevenLabs.Editor
 {
-    public sealed class ElevenLabsEditorWindow : EditorWindow
+    public sealed class ElevenLabsDashboard : EditorWindow
     {
         [Serializable]
         private class CreateVoicePopupContent : PopupWindowContent
@@ -364,8 +364,6 @@ namespace ElevenLabs.Editor
 
         private static readonly GUIContent refreshContent = new GUIContent("Refresh");
 
-        private static readonly GUIContent downloadAllHistoryContent = new GUIContent("Download all History for page");
-
         private static readonly GUIContent downloadingContent = new GUIContent("Download in progress...");
 
         private static readonly GUIContent keyContent = new GUIContent("Key");
@@ -373,8 +371,6 @@ namespace ElevenLabs.Editor
         private static readonly GUIContent valueContent = new GUIContent("Value");
 
         private static readonly string[] tabTitles = { "Speech Synthesis", "Voice Lab", "History" };
-
-        private static readonly ConcurrentQueue<AudioClip> queuedClips = new ConcurrentQueue<AudioClip>();
 
         private static GUIStyle boldCenteredHeaderStyle;
 
@@ -474,7 +470,13 @@ namespace ElevenLabs.Editor
 
         private static bool isFetchingHistory;
 
-        private static IReadOnlyList<HistoryItem> history = new List<HistoryItem>();
+        private static int historyItems = 100;
+
+        private static HistoryInfo historyInfo;
+
+        private static bool[] historySelections;
+
+        private static readonly Stack<string> pageHistoryIds = new Stack<string>();
 
         private static readonly ConcurrentDictionary<string, GUIContent> historyItemLabelCache = new ConcurrentDictionary<string, GUIContent>();
 
@@ -519,11 +521,11 @@ namespace ElevenLabs.Editor
 
         private string speechSynthesisTextInput = string.Empty;
 
-        [MenuItem("Window/Dashboards/ElevenLabs")]
+        [MenuItem("Window/Dashboards/ElevenLabs", false, 999)]
         private static void OpenWindow()
         {
             // Dock it next to the Scene View.
-            var instance = GetWindow<ElevenLabsEditorWindow>(typeof(SceneView));
+            var instance = GetWindow<ElevenLabsDashboard>(typeof(SceneView));
             instance.Show();
             instance.titleContent = guiTitleContent;
         }
@@ -657,12 +659,6 @@ namespace ElevenLabs.Editor
             EditorGUI.indentLevel--;
             EditorGUILayout.EndScrollView();
             EditorGUILayout.EndVertical();
-
-            if (!AudioEditorUtilities.IsPlayingPreviewClip &&
-                queuedClips.TryDequeue(out var clip))
-            {
-                AudioEditorUtilities.PlayClipPreview(clip);
-            }
         }
 
         private static async void FetchUserInfo()
@@ -738,7 +734,31 @@ namespace ElevenLabs.Editor
 
             try
             {
-                history = await api.HistoryEndpoint.GetHistoryAsync().ConfigureAwait(true);
+                if (string.IsNullOrWhiteSpace(historyId) &&
+                    pageHistoryIds.Count > 0 &&
+                    pageHistoryIds.TryPeek(out var prevPageId))
+                {
+                    historyId = prevPageId;
+                }
+                else
+                {
+                    if (pageHistoryIds.TryPeek(out prevPageId) && prevPageId == historyId)
+                    {
+                        pageHistoryIds.Pop();
+                        historyId = pageHistoryIds.Count > 0 && pageHistoryIds.TryPeek(out prevPageId) ? prevPageId : null;
+                    }
+                    else
+                    {
+                        if (!string.IsNullOrWhiteSpace(historyId))
+                        {
+                            pageHistoryIds.Push(historyId);
+                        }
+                    }
+                }
+
+                var result = await api.HistoryEndpoint.GetHistoryAsync(pageSize: historyItems, startAfterId: historyId);
+                historySelections = new bool[result.HistoryItems.Count];
+                historyInfo = result;
             }
             catch (Exception e)
             {
@@ -754,7 +774,7 @@ namespace ElevenLabs.Editor
 
         private static void CheckHistory()
         {
-            if (history == null) { return; }
+            if (historyInfo == null) { return; }
             var assets = AssetDatabase.FindAssets($"t:{nameof(AudioClip)}");
             downloadedAudioClips.Clear();
 
@@ -762,7 +782,7 @@ namespace ElevenLabs.Editor
             {
                 var assetPath = AssetDatabase.GUIDToAssetPath(guid);
                 var assetName = Path.GetFileNameWithoutExtension(assetPath);
-                var key = history.FirstOrDefault(item => assetName.Equals(item.Id) || assetName.Equals(item.TextHash) || guid.Equals(item.TextHash));
+                var key = historyInfo.HistoryItems.FirstOrDefault(item => assetName.Equals(item.Id) || assetName.Equals(item.TextHash) || guid.Equals(item.TextHash));
 
                 if (key != null)
                 {
@@ -980,7 +1000,7 @@ namespace ElevenLabs.Editor
 
                 EditorGUILayout.BeginHorizontal();
                 {
-                    GUI.enabled = !isSynthesisRunning && speechSynthesisTextInput.Length is > 0 and < MaxCharacterLength;
+                    GUI.enabled = currentModelOption != null && !isSynthesisRunning && speechSynthesisTextInput.Length is > 0 and < MaxCharacterLength;
                     GUILayout.Space(TabWidth);
 
                     if (GUILayout.Button("Generate", expandWidthOption))
@@ -1003,6 +1023,7 @@ namespace ElevenLabs.Editor
         {
             if (isSynthesisRunning) { return; }
             isSynthesisRunning = true;
+            VoiceClip voiceClip = null;
 
             try
             {
@@ -1033,14 +1054,8 @@ namespace ElevenLabs.Editor
                     Directory.CreateDirectory(downloadDir);
                 }
 
-                void PartialClipCallback(AudioClip clip)
-                {
-                    Debug.Log(clip);
-                    queuedClips.Enqueue(clip);
-                }
-
-                var downloadItem = await api.TextToSpeechEndpoint.StreamTextToSpeechAsync(speechSynthesisTextInput, currentVoiceOption, PartialClipCallback, currentVoiceSettings, currentModelOption);
-                CopyIntoProject(editorDownloadDirectory, downloadItem);
+                voiceClip = await api.TextToSpeechEndpoint.TextToSpeechAsync(speechSynthesisTextInput, currentVoiceOption, currentVoiceSettings, currentModelOption);
+                CopyIntoProject(editorDownloadDirectory, voiceClip);
             }
             catch (Exception e)
             {
@@ -1050,7 +1065,7 @@ namespace ElevenLabs.Editor
             {
                 isSynthesisRunning = false;
                 FetchUserInfo();
-                FetchHistory();
+                FetchHistory(voiceClip?.Id);
             }
         }
 
@@ -1484,7 +1499,7 @@ namespace ElevenLabs.Editor
                 GUI.enabled = true;
             }
 
-            if (editorWindow is ElevenLabsEditorWindow)
+            if (editorWindow is ElevenLabsDashboard)
             {
                 GUILayout.Space(EndWidth);
             }
@@ -1631,10 +1646,42 @@ namespace ElevenLabs.Editor
 
             EditorGUILayout.BeginHorizontal();
             { //Header
-                EditorGUILayout.LabelField("History", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField("History", EditorStyles.boldLabel, wideColumnWidthOption);
+
+                EditorGUI.BeginChangeCheck();
+                historyItems = EditorGUILayout.IntField("page items", historyItems);
+
+                if (EditorGUI.EndChangeCheck())
+                {
+                    if (historyItems > 1000)
+                    {
+                        historyItems = 1000;
+                    }
+
+                    if (historyItems < 1)
+                    {
+                        historyItems = 1;
+                    }
+                }
+
                 GUILayout.FlexibleSpace();
 
-                GUI.enabled = !isFetchingVoices || !isFetchingUserInfo;
+                GUI.enabled = !isFetchingHistory;
+                if (historyInfo is not null && pageHistoryIds.Count > 0 && GUILayout.Button("Prev Page"))
+                {
+                    EditorApplication.delayCall += () =>
+                    {
+                        if (pageHistoryIds.TryPeek(out var prevPageId))
+                        {
+                            FetchHistory(prevPageId);
+                        }
+                    };
+                }
+
+                if (historyInfo is { HasMore: true } && GUILayout.Button("Next Page"))
+                {
+                    EditorApplication.delayCall += () => FetchHistory(historyInfo.LastHistoryItemId);
+                }
 
                 if (GUILayout.Button(refreshContent, defaultColumnWidthOption))
                 {
@@ -1649,24 +1696,25 @@ namespace ElevenLabs.Editor
             EditorGUILayout.BeginHorizontal();
             {
                 GUILayout.Space(TabWidth);
+                GUI.enabled = !isFetchingHistory && !isDownloadingHistoryItem && historyInfo != null;
 
-                GUI.enabled = !isFetchingHistory && history.Count != downloadedAudioClips.Count && !isDownloadingHistoryItem;
-
-                if (GUILayout.Button(isDownloadingHistoryItem ? downloadingContent : downloadAllHistoryContent, expandWidthOption))
+                if (GUILayout.Button(isDownloadingHistoryItem ? downloadingContent : new GUIContent("Download Selected History for page"), expandWidthOption))
                 {
-                    EditorApplication.delayCall += () => DownloadHistoryAudio(history);
+                    EditorApplication.delayCall += () => DownloadHistoryAudio(historyInfo.HistoryItems);
                 }
 
                 GUI.enabled = true;
             }
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.Space();
+            var historyItemCount = historyInfo?.HistoryItems?.Count;
 
-            foreach (var historyItem in history)
+            for (var i = 0; i < historyItemCount; i++)
             {
-                EditorGUI.indentLevel++;
+                var historyItem = historyInfo.HistoryItems[i];
 
                 EditorGUILayout.BeginHorizontal();
+                historySelections[i] = EditorGUILayout.ToggleLeft(GUIContent.none, historySelections[i], GUILayout.Width(24));
                 EditorGUILayout.LabelField(GetHistoryItemLabel(historyItem));
 
                 if (!downloadedAudioClips.TryGetValue(historyItem.Id, out var audioClip))
@@ -1690,9 +1738,9 @@ namespace ElevenLabs.Editor
                 }
 
                 GUI.enabled = true;
-
                 EditorGUILayout.EndHorizontal();
 
+                EditorGUI.indentLevel++;
                 GUI.enabled = false;
 
                 if (isDownloaded)
@@ -1724,8 +1772,8 @@ namespace ElevenLabs.Editor
 
                 EditorGUILayout.TextArea(historyItem.Text);
                 GUI.enabled = true;
-                EditorGUI.indentLevel--;
                 EditorGUILayout.Space();
+                EditorGUI.indentLevel--;
             }
 
             EditorGUILayout.EndVertical();
@@ -1735,12 +1783,12 @@ namespace ElevenLabs.Editor
 
         private static bool isDownloadingHistoryItem;
 
-        private static async void DownloadHistoryAudio(IEnumerable<HistoryItem> historyItems)
+        private static async void DownloadHistoryAudio(IEnumerable<HistoryItem> itemsToDownload)
         {
             if (isDownloadingHistoryItem) { return; }
             isDownloadingHistoryItem = true;
 
-            var historyItemsToDownload = historyItems.Select(item => item.Id).ToList();
+            var historyItemsToDownload = itemsToDownload.Select(item => item.Id).ToList();
 
             foreach (var (id, audioClip) in downloadedAudioClips)
             {
@@ -1756,11 +1804,11 @@ namespace ElevenLabs.Editor
 
             if (historyItemsToDownload.Count > 0)
             {
-                EditorUtility.DisplayProgressBar("Downloading history...", $"Downloading {historyItemsToDownload.Count} items...", -1);
                 var count = 0;
+                var progressId = Progress.Start("Downloading history...", $"Downloading {historyItemsToDownload.Count} items...");
                 var progressReport = new Progress<string>(message =>
                 {
-                    EditorUtility.DisplayProgressBar("Downloading history...", message, ++count / (float)historyItemsToDownload.Count);
+                    Progress.Report(progressId, ++count, historyItemsToDownload.Count, message);
                 });
 
                 EditorApplication.LockReloadAssemblies();
@@ -1777,12 +1825,12 @@ namespace ElevenLabs.Editor
                 }
                 finally
                 {
-                    await Awaiters.UnityMainThread;
                     AssetDatabase.AllowAutoRefresh();
                     EditorApplication.UnlockReloadAssemblies();
                     EditorUtility.ClearProgressBar();
                     FetchHistory();
                     AssetDatabase.Refresh();
+                    Progress.Finish(progressId);
                 }
             }
 
@@ -1798,11 +1846,7 @@ namespace ElevenLabs.Editor
                 return;
             }
 
-            if (voiceClips is not { Length: not 0 })
-            {
-                Debug.LogError("No Download items to copy!");
-                return;
-            }
+            if (voiceClips is not { Length: not 0 }) { return; }
 
             AssetDatabase.DisallowAutoRefresh();
 
