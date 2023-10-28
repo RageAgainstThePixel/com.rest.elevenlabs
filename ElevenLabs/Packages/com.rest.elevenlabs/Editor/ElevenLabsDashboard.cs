@@ -1646,10 +1646,10 @@ namespace ElevenLabs.Editor
 
             EditorGUILayout.BeginHorizontal();
             { //Header
-                EditorGUILayout.LabelField("History", EditorStyles.boldLabel, wideColumnWidthOption);
+                EditorGUILayout.LabelField("History", EditorStyles.boldLabel, defaultColumnWidthOption);
 
                 EditorGUI.BeginChangeCheck();
-                historyItems = EditorGUILayout.IntField("page items", historyItems);
+                historyItems = EditorGUILayout.IntField("Page Items", historyItems);
 
                 if (EditorGUI.EndChangeCheck())
                 {
@@ -1667,7 +1667,7 @@ namespace ElevenLabs.Editor
                 GUILayout.FlexibleSpace();
 
                 GUI.enabled = !isFetchingHistory;
-                if (historyInfo is not null && pageHistoryIds.Count > 0 && GUILayout.Button("Prev Page"))
+                if (historyInfo is not null && pageHistoryIds.Count > 0 && GUILayout.Button("Prev Page", defaultColumnWidthOption))
                 {
                     EditorApplication.delayCall += () =>
                     {
@@ -1678,7 +1678,7 @@ namespace ElevenLabs.Editor
                     };
                 }
 
-                if (historyInfo is { HasMore: true } && GUILayout.Button("Next Page"))
+                if (historyInfo is { HasMore: true } && GUILayout.Button("Next Page", defaultColumnWidthOption))
                 {
                     EditorApplication.delayCall += () => FetchHistory(historyInfo.LastHistoryItemId);
                 }
@@ -1694,11 +1694,44 @@ namespace ElevenLabs.Editor
             EditorGUILayout.Space();
 
             EditorGUILayout.BeginHorizontal();
+            if (historySelections != null)
             {
                 GUILayout.Space(TabWidth);
                 GUI.enabled = !isFetchingHistory && !isDownloadingHistoryItem && historyInfo != null;
 
-                if (GUILayout.Button(isDownloadingHistoryItem ? downloadingContent : new GUIContent("Download Selected History for page"), expandWidthOption))
+                if (historySelections.Any(isSelected => !isSelected) && GUILayout.Button("Select All", defaultColumnWidthOption))
+                {
+                    for (var i = 0; i < historySelections.Length; i++)
+                    {
+                        historySelections[i] = true;
+                    }
+                }
+
+                if (historySelections.Any(isSelected => isSelected) && GUILayout.Button("Deselect All", defaultColumnWidthOption))
+                {
+                    for (var i = 0; i < historySelections.Length; i++)
+                    {
+                        historySelections[i] = false;
+                    }
+                }
+
+                var selectedCount = 0;
+
+                for (var i = 0; i < historySelections?.Length; i++)
+                {
+                    if (historySelections[i])
+                    {
+                        selectedCount++;
+                    }
+                }
+
+                GUILayout.FlexibleSpace();
+
+                var downloadSelectedContent = selectedCount > 0
+                    ? new GUIContent($" Download {selectedCount} items ")
+                    : new GUIContent(" Download All History for page ");
+
+                if (GUILayout.Button(isDownloadingHistoryItem ? downloadingContent : downloadSelectedContent, GUILayout.Width(DefaultColumnWidth * 2 + 4)))
                 {
                     EditorApplication.delayCall += () => DownloadHistoryAudio(historyInfo.HistoryItems);
                 }
@@ -1706,6 +1739,8 @@ namespace ElevenLabs.Editor
                 GUI.enabled = true;
             }
             EditorGUILayout.EndHorizontal();
+            EditorGUILayout.Space();
+            EditorGUILayoutExtensions.Divider();
             EditorGUILayout.Space();
             var historyItemCount = historyInfo?.HistoryItems?.Count;
 
@@ -1741,6 +1776,7 @@ namespace ElevenLabs.Editor
                 EditorGUILayout.EndHorizontal();
 
                 EditorGUI.indentLevel++;
+                EditorGUI.indentLevel++;
                 GUI.enabled = false;
 
                 if (isDownloaded)
@@ -1773,6 +1809,7 @@ namespace ElevenLabs.Editor
                 EditorGUILayout.TextArea(historyItem.Text);
                 GUI.enabled = true;
                 EditorGUILayout.Space();
+                EditorGUI.indentLevel--;
                 EditorGUI.indentLevel--;
             }
 
