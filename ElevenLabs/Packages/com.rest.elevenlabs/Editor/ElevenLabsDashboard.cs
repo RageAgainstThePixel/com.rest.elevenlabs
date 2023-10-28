@@ -1733,7 +1733,20 @@ namespace ElevenLabs.Editor
 
                 if (GUILayout.Button(isDownloadingHistoryItem ? downloadingContent : downloadSelectedContent, GUILayout.Width(DefaultColumnWidth * 2 + 4)))
                 {
-                    EditorApplication.delayCall += () => DownloadHistoryAudio(historyInfo.HistoryItems);
+                    EditorApplication.delayCall += () =>
+                    {
+                        var historyItemsToDownload = new List<HistoryItem>();
+
+                        for (var i = 0; i < historyInfo.HistoryItems.Count; i++)
+                        {
+                            if (historySelections[i])
+                            {
+                                historyItemsToDownload.Add(historyInfo.HistoryItems[i]);
+                            }
+                        }
+
+                        DownloadHistoryAudio(historyItemsToDownload);
+                    };
                 }
 
                 GUI.enabled = true;
