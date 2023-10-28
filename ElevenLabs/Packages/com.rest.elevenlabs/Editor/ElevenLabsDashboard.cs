@@ -1762,7 +1762,7 @@ namespace ElevenLabs.Editor
                 var historyItem = historyInfo.HistoryItems[i];
 
                 EditorGUILayout.BeginHorizontal();
-                historySelections[i] = EditorGUILayout.ToggleLeft(GUIContent.none, historySelections[i], GUILayout.Width(24));
+                historySelections![i] = EditorGUILayout.ToggleLeft(GUIContent.none, historySelections[i], GUILayout.Width(24));
                 EditorGUILayout.LabelField(GetHistoryItemLabel(historyItem));
 
                 if (!downloadedAudioClips.TryGetValue(historyItem.Id, out var audioClip))
