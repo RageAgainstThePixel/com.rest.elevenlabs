@@ -17,9 +17,16 @@
     "url": "https://github.com/StephenHodgson"
   },
   "dependencies": {
-    "com.utilities.rest": "2.2.2",
+    "com.utilities.rest": "2.2.3",
     "com.utilities.encoder.ogg": "3.0.12"
   },
+  "samples": [
+    {
+      "displayName": "Text To Speech",
+      "description": "Contains example TextToSpeechDemo behaviour and scene that streams chunks of text as synthesized speech.",
+      "path": "Samples~/TextToSpeech"
+    }
+  ],
   "publishConfig": {
     "registry": "https://package.openupm.com"
   }

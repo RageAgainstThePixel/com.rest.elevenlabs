@@ -45,16 +45,19 @@ namespace ElevenLabs.Demo
 
                 if (voice == null)
                 {
+                    api.VoicesEndpoint.EnableDebug = true;
                     voice = (await api.VoicesEndpoint.GetAllVoicesAsync(lifetimeCancellationTokenSource.Token)).FirstOrDefault();
                 }
 
                 streamClipQueue.Clear();
-                var downloadItem = await api.TextToSpeechEndpoint.StreamTextToSpeechAsync(message, voice, partialClip =>
+                api.TextToSpeechEndpoint.EnableDebug = true;
+                var voiceClip = await api.TextToSpeechEndpoint.StreamTextToSpeechAsync(message, voice, partialClip =>
                 {
                     streamClipQueue.Enqueue(partialClip);
                 }, cancellationToken: lifetimeCancellationTokenSource.Token);
 
-                audioSource.clip = downloadItem.AudioClip;
+                audioSource.clip = voiceClip.AudioClip;
+                Debug.Log($"Full clip: {voiceClip.Id}");
             }
             catch (Exception e)
             {
@@ -75,6 +78,8 @@ namespace ElevenLabs.Demo
         private void OnDestroy()
         {
             lifetimeCancellationTokenSource?.Cancel();
+            lifetimeCancellationTokenSource?.Dispose();
+            lifetimeCancellationTokenSource = null;
         }
     }
 }

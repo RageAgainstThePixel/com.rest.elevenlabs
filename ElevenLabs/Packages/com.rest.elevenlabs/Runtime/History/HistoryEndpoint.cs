@@ -100,8 +100,8 @@ namespace ElevenLabs.History
                         break;
                     case AudioType.OGGVORBIS:
                         var pcmData = PCMEncoder.Decode(response.Data, PCMFormatSize.SixteenBit);
-                        // TODO unknown frequency. Need to get it out from metadata.
-                        var oggBytes = await OggEncoder.ConvertToBytesAsync(pcmData, 44100, 1, cancellationToken: cancellationToken).ConfigureAwait(false);
+                        var sampleRate = 44100; // TODO unknown sample rate.
+                        var oggBytes = await OggEncoder.ConvertToBytesAsync(pcmData, sampleRate, 1, cancellationToken: cancellationToken).ConfigureAwait(false);
                         await File.WriteAllBytesAsync(cachedPath, oggBytes, cancellationToken: cancellationToken).ConfigureAwait(false);
                         break;
                     default:
