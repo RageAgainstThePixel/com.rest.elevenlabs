@@ -30,7 +30,7 @@ namespace ElevenLabs.History
             VoiceId = voiceId;
             VoiceName = voiceName;
             Text = text;
-            TextHash = $"{voiceId}{text}".GenerateGuid().ToString();
+            TextHash = $"{id}{text}".GenerateGuid().ToString("N");
             DateUnix = dateUnix;
             CharacterCountChangeFrom = characterCountChangeFrom;
             CharacterCountChangeTo = characterCountChangeTo;

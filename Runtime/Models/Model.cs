@@ -85,6 +85,10 @@ namespace ElevenLabs.Models
         [JsonIgnore]
         public static Model MultiLingualV1 { get; } = new Model("eleven_multilingual_v1");
 
+        [Preserve]
+        [JsonIgnore]
+        public static Model MultiLingualV2 { get; } = new Model("eleven_multilingual_v2");
+
         #endregion Predefined Models
     }
 }

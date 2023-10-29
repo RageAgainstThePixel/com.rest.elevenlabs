@@ -10,6 +10,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Scripting;
+using Utilities.Audio;
+using Utilities.Encoding.OggVorbis;
 using Utilities.WebRequestRest;
 
 namespace ElevenLabs.Voices
@@ -61,8 +63,8 @@ namespace ElevenLabs.Voices
         public async Task<IReadOnlyList<Voice>> GetAllVoicesAsync(CancellationToken cancellationToken = default)
         {
             var response = await Rest.GetAsync(GetUrl(), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.Validate();
-            var voices = JsonConvert.DeserializeObject<VoiceList>(response.Body, client.JsonSerializationOptions).Voices;
+            response.Validate(EnableDebug);
+            var voices = JsonConvert.DeserializeObject<VoiceList>(response.Body, ElevenLabsClient.JsonSerializationOptions).Voices;
             var voiceSettingsTasks = new List<Task>();
 
             foreach (var voice in voices)
@@ -87,8 +89,8 @@ namespace ElevenLabs.Voices
         public async Task<VoiceSettings> GetDefaultVoiceSettingsAsync(CancellationToken cancellationToken = default)
         {
             var response = await Rest.GetAsync(GetUrl("/settings/default"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.Validate();
-            return JsonConvert.DeserializeObject<VoiceSettings>(response.Body, client.JsonSerializationOptions);
+            response.Validate(EnableDebug);
+            return JsonConvert.DeserializeObject<VoiceSettings>(response.Body, ElevenLabsClient.JsonSerializationOptions);
         }
 
         /// <summary>
@@ -105,8 +107,8 @@ namespace ElevenLabs.Voices
             }
 
             var response = await Rest.GetAsync(GetUrl($"/{voiceId}/settings"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.Validate();
-            return JsonConvert.DeserializeObject<VoiceSettings>(response.Body, client.JsonSerializationOptions);
+            response.Validate(EnableDebug);
+            return JsonConvert.DeserializeObject<VoiceSettings>(response.Body, ElevenLabsClient.JsonSerializationOptions);
         }
 
         /// <summary>
@@ -116,7 +118,7 @@ namespace ElevenLabs.Voices
         /// <param name="withSettings">Should the response include the <see cref="VoiceSettings"/>?</param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         /// <returns><see cref="Voice"/>.</returns>
-        public async Task<Voice> GetVoiceAsync(string voiceId, bool withSettings = true, CancellationToken cancellationToken = default)
+        public async Task<Voice> GetVoiceAsync(string voiceId, bool withSettings = false, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(voiceId))
             {
@@ -124,8 +126,8 @@ namespace ElevenLabs.Voices
             }
 
             var response = await Rest.GetAsync(GetUrl($"/{voiceId}?with_settings={withSettings}"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.Validate();
-            return JsonConvert.DeserializeObject<Voice>(response.Body, client.JsonSerializationOptions);
+            response.Validate(EnableDebug);
+            return JsonConvert.DeserializeObject<Voice>(response.Body, ElevenLabsClient.JsonSerializationOptions);
         }
 
         /// <summary>
@@ -142,9 +144,9 @@ namespace ElevenLabs.Voices
                 throw new ArgumentNullException(nameof(voiceId));
             }
 
-            var payload = JsonConvert.SerializeObject(voiceSettings, client.JsonSerializationOptions);
+            var payload = JsonConvert.SerializeObject(voiceSettings, ElevenLabsClient.JsonSerializationOptions);
             var response = await Rest.PostAsync(GetUrl($"/{voiceId}/settings/edit"), payload, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.Validate();
+            response.Validate(EnableDebug);
             return response.Successful;
         }
 
@@ -168,37 +170,40 @@ namespace ElevenLabs.Voices
 
             if (samplePaths != null)
             {
-                samplePaths = samplePaths.ToList();
+                var paths = samplePaths.Where(path => !string.IsNullOrWhiteSpace(path)).ToList();
 
-                if (samplePaths.Any())
+                if (paths.Any())
                 {
-                    foreach (var sample in samplePaths)
+                    foreach (var sample in paths)
                     {
-                        if (string.IsNullOrWhiteSpace(sample))
+                        if (!File.Exists(sample))
                         {
+                            Debug.LogError($"No sample clip found at {sample}!");
                             continue;
                         }
 
-                        var fileStream = File.OpenRead(sample);
-                        var stream = new MemoryStream();
-                        await fileStream.CopyToAsync(stream, cancellationToken);
-                        form.AddBinaryData("files", stream.ToArray(), Path.GetFileName(sample));
-                        await fileStream.DisposeAsync();
-                        await stream.DisposeAsync();
+                        try
+                        {
+                            var fileBytes = await File.ReadAllBytesAsync(sample, cancellationToken);
+                            form.AddBinaryData("files", fileBytes, Path.GetFileName(sample));
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.LogError(e);
+                        }
                     }
                 }
             }
 
             if (labels != null)
             {
-                form.AddField("labels", JsonConvert.SerializeObject(labels, client.JsonSerializationOptions));
+                form.AddField("labels", JsonConvert.SerializeObject(labels, ElevenLabsClient.JsonSerializationOptions));
             }
 
             var response = await Rest.PostAsync(GetUrl("/add"), form, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.Validate();
-            var voiceResponse = JsonConvert.DeserializeObject<VoiceResponse>(response.Body, client.JsonSerializationOptions);
-            var voice = await GetVoiceAsync(voiceResponse.VoiceId, cancellationToken: cancellationToken);
-            return voice;
+            response.Validate(EnableDebug);
+            var voiceResponse = JsonConvert.DeserializeObject<VoiceResponse>(response.Body, ElevenLabsClient.JsonSerializationOptions);
+            return await GetVoiceAsync(voiceResponse.VoiceId, cancellationToken: cancellationToken);
         }
 
         /// <summary>
@@ -222,34 +227,38 @@ namespace ElevenLabs.Voices
 
             if (samplePaths != null)
             {
-                samplePaths = samplePaths.ToList();
+                var paths = samplePaths.Where(path => !string.IsNullOrWhiteSpace(path)).ToList();
 
-                if (samplePaths.Any())
+                if (paths.Any())
                 {
-                    foreach (var sample in samplePaths)
+                    foreach (var sample in paths)
                     {
-                        if (string.IsNullOrWhiteSpace(sample))
+                        if (!File.Exists(sample))
                         {
+                            Debug.LogError($"No sample clip found at {sample}!");
                             continue;
                         }
 
-                        var fileStream = File.OpenRead(sample);
-                        var stream = new MemoryStream();
-                        await fileStream.CopyToAsync(stream, cancellationToken);
-                        form.AddBinaryData("files", stream.ToArray(), Path.GetFileName(sample));
-                        await fileStream.DisposeAsync();
-                        await stream.DisposeAsync();
+                        try
+                        {
+                            var fileBytes = await File.ReadAllBytesAsync(sample, cancellationToken);
+                            form.AddBinaryData("files", fileBytes, Path.GetFileName(sample));
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.LogError(e);
+                        }
                     }
                 }
             }
 
             if (labels != null)
             {
-                form.AddField("labels", JsonConvert.SerializeObject(labels, client.JsonSerializationOptions));
+                form.AddField("labels", JsonConvert.SerializeObject(labels, ElevenLabsClient.JsonSerializationOptions));
             }
 
             var response = await Rest.PostAsync(GetUrl($"/{voice.Id}/edit"), form, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.Validate();
+            response.Validate(EnableDebug);
             return response.Successful;
         }
 
@@ -267,77 +276,71 @@ namespace ElevenLabs.Voices
             }
 
             var response = await Rest.DeleteAsync(GetUrl($"/{voiceId}"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.Validate();
+            response.Validate(EnableDebug);
             return response.Successful;
         }
 
         #region Samples
 
         /// <summary>
-        /// Get the audio corresponding to a sample attached to a voice.
+        /// Download the audio corresponding to a <see cref="Sample"/> attached to a <see cref="Voice"/>.
         /// </summary>
-        /// <param name="voiceId">The <see cref="Voice"/> id this <see cref="Sample"/> belongs to.</param>
-        /// <param name="sampleId">The <see cref="Sample"/> id to download.</param>
-        /// <param name="saveDirectory">Optional, directory to save the <see cref="Sample"/>.</param>
+        /// <param name="voice">The <see cref="Voice"/> this <see cref="Sample"/> belongs to.</param>
+        /// <param name="sample">The <see cref="Sample"/> id to download.</param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
-        /// <returns><see cref="AudioClip"/>.</returns>
-        public async Task<AudioClip> GetVoiceSampleAsync(string voiceId, string sampleId, string saveDirectory = null, CancellationToken cancellationToken = default)
+        /// <returns><see cref="VoiceClip"/>.</returns>
+        public async Task<VoiceClip> DownloadVoiceSampleAudioAsync(Voice voice, Sample sample, CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(voiceId))
+            if (voice == null ||
+                string.IsNullOrWhiteSpace(voice.Id))
             {
-                throw new ArgumentNullException(nameof(voiceId));
+                throw new ArgumentNullException(nameof(voice));
             }
 
-            if (string.IsNullOrWhiteSpace(sampleId))
+            if (sample == null ||
+                string.IsNullOrWhiteSpace(sample.Id))
             {
-                throw new ArgumentNullException(nameof(sampleId));
+                throw new ArgumentNullException(nameof(sample));
             }
 
-            var response = await Rest.GetAsync(GetUrl($"/{voiceId}/samples/{sampleId}/audio"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.Validate();
             await Rest.ValidateCacheDirectoryAsync();
-
-            var rootDirectory = (saveDirectory ?? Rest.DownloadCacheDirectory).CreateNewDirectory(nameof(ElevenLabs));
-            var downloadDirectory = rootDirectory.CreateNewDirectory(voiceId);
-            var filePath = Path.Combine(downloadDirectory, $"{sampleId}.mp3");
-
-            if (File.Exists(filePath))
+            var downloadDirectory = Rest.DownloadCacheDirectory
+                .CreateNewDirectory(nameof(ElevenLabs))
+                .CreateNewDirectory(voice.Id)
+                .CreateNewDirectory("Samples");
+            // TODO possibly handle other types?
+            var audioType = sample.MimeType.Contains("mpeg") ? AudioType.MPEG : AudioType.OGGVORBIS;
+            var extension = audioType switch
             {
-                File.Delete(filePath);
-            }
+                AudioType.MPEG => "mp3",
+                AudioType.OGGVORBIS => "ogg",
+                _ => throw new ArgumentOutOfRangeException($"Unsupported {nameof(AudioType)}: {audioType}")
+            };
+            var cachedPath = Path.Combine(downloadDirectory, $"{sample.Id}.{extension}");
 
-            var responseStream = new MemoryStream(response.Data);
-
-            try
+            if (!File.Exists(cachedPath))
             {
-                var fileStream = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+                var response = await Rest.GetAsync(GetUrl($"/{voice.Id}/samples/{sample.Id}/audio"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
+                response.Validate(EnableDebug);
 
-                try
+                switch (audioType)
                 {
-                    await responseStream.CopyToAsync(fileStream, cancellationToken);
-                    await fileStream.FlushAsync(cancellationToken);
+                    case AudioType.MPEG:
+                        await File.WriteAllBytesAsync(cachedPath, response.Data, cancellationToken).ConfigureAwait(false);
+                        break;
+                    case AudioType.OGGVORBIS:
+                        var pcmData = PCMEncoder.Decode(response.Data, PCMFormatSize.SixteenBit);
+                        var sampleRate = 44100; // TODO unknown sample rate.
+                        var oggBytes = await OggEncoder.ConvertToBytesAsync(pcmData, sampleRate, 1, cancellationToken: cancellationToken).ConfigureAwait(false);
+                        await File.WriteAllBytesAsync(cachedPath, oggBytes, cancellationToken: cancellationToken).ConfigureAwait(false);
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException($"Unsupported {nameof(AudioType)}: {audioType}");
                 }
-                catch (Exception e)
-                {
-                    Debug.LogError(e);
-                }
-                finally
-                {
-                    fileStream.Close();
-                    await fileStream.DisposeAsync();
-                }
-            }
-            catch (Exception e)
-            {
-                Debug.LogError(e);
-            }
-            finally
-            {
-                await responseStream.DisposeAsync();
             }
 
-            var audioClip = await Rest.DownloadAudioClipAsync($"file://{filePath}", AudioType.MPEG, parameters: null, cancellationToken: cancellationToken);
-            return audioClip;
+            var audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", audioType, cancellationToken: cancellationToken);
+            return new VoiceClip(sample.Id, string.Empty, voice, audioClip, cachedPath);
         }
 
         /// <summary>
@@ -360,7 +363,7 @@ namespace ElevenLabs.Voices
             }
 
             var response = await Rest.DeleteAsync(GetUrl($"/{voiceId}/samples/{sampleId}"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.Validate();
+            response.Validate(EnableDebug);
             return response.Successful;
         }
 

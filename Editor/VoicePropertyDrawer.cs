@@ -11,7 +11,7 @@ using UnityEngine;
 namespace ElevenLabs.Editor
 {
     [CustomPropertyDrawer(typeof(Voice))]
-    public class VoicePropertyDrawer : PropertyDrawer
+    public sealed class VoicePropertyDrawer : PropertyDrawer
     {
         private static ElevenLabsClient elevenLabsClient;
 

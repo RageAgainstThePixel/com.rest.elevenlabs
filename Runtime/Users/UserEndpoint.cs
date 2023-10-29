@@ -21,8 +21,8 @@ namespace ElevenLabs.User
         public async Task<UserInfo> GetUserInfoAsync()
         {
             var response = await Rest.GetAsync(GetUrl(), new RestParameters(client.DefaultRequestHeaders));
-            response.Validate();
-            return JsonConvert.DeserializeObject<UserInfo>(response.Body, client.JsonSerializationOptions);
+            response.Validate(EnableDebug);
+            return JsonConvert.DeserializeObject<UserInfo>(response.Body, ElevenLabsClient.JsonSerializationOptions);
         }
 
         /// <summary>
@@ -31,8 +31,8 @@ namespace ElevenLabs.User
         public async Task<SubscriptionInfo> GetSubscriptionInfoAsync()
         {
             var response = await Rest.GetAsync(GetUrl("/subscription"), new RestParameters(client.DefaultRequestHeaders));
-            response.Validate();
-            return JsonConvert.DeserializeObject<SubscriptionInfo>(response.Body, client.JsonSerializationOptions);
+            response.Validate(EnableDebug);
+            return JsonConvert.DeserializeObject<SubscriptionInfo>(response.Body, ElevenLabsClient.JsonSerializationOptions);
         }
     }
 }
