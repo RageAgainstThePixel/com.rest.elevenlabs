@@ -324,16 +324,18 @@ namespace ElevenLabs.Editor
 
         private const int TabWidth = 18;
         private const int EndWidth = 10;
-        private const int InnerLabelIndentLevel = 13;
+        private const int MaxHistoryItems = 1000;
         private const int MaxCharacterLength = 5000;
+        private const int InnerLabelIndentLevel = 13;
 
         private const float InnerLabelWidth = 1.9f;
-        private const float DefaultColumnWidth = 96f;
         private const float WideColumnWidth = 128f;
+        private const float DefaultColumnWidth = 96f;
         private const float SettingsLabelWidth = 1.56f;
 
         private const string NewLabel = "New Label";
         private const string LabelControlField = "LabelControlField";
+
 
         private static readonly GUIContent saveDirectoryContent = new GUIContent("Save Directory");
 
@@ -469,7 +471,7 @@ namespace ElevenLabs.Editor
 
         private static bool isFetchingHistory;
 
-        private static int historyItems = 100;
+        private static int historyItems = 25;
 
         private static HistoryInfo historyInfo;
 
@@ -1683,9 +1685,9 @@ namespace ElevenLabs.Editor
 
                 if (EditorGUI.EndChangeCheck())
                 {
-                    if (historyItems > 1000)
+                    if (historyItems > MaxHistoryItems)
                     {
-                        historyItems = 1000;
+                        historyItems = MaxHistoryItems;
                     }
 
                     if (historyItems < 1)
