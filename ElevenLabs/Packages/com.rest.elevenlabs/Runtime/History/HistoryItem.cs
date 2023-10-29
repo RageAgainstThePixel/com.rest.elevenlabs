@@ -30,7 +30,7 @@ namespace ElevenLabs.History
             VoiceId = voiceId;
             VoiceName = voiceName;
             Text = text;
-            TextHash = $"{id}{text}".GenerateGuid();
+            TextHash = $"{id}{text}".GenerateGuid().ToString("N");
             DateUnix = dateUnix;
             CharacterCountChangeFrom = characterCountChangeFrom;
             CharacterCountChangeTo = characterCountChangeTo;
@@ -56,7 +56,7 @@ namespace ElevenLabs.History
 
         [Preserve]
         [JsonIgnore]
-        public Guid TextHash { get; }
+        public string TextHash { get; }
 
         [Preserve]
         [JsonProperty("date_unix")]

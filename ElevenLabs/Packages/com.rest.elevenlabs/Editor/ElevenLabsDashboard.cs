@@ -787,24 +787,23 @@ namespace ElevenLabs.Editor
                     var assetName = Path.GetFileNameWithoutExtension(assetPath);
                     var historyItem = historyInfo.HistoryItems.FirstOrDefault(item =>
                     {
-                        var assetGuid = item.TextHash.ToString("N");
+                        var assetGuid = item.TextHash;
                         return guid.Equals(assetGuid) || assetName.Equals(assetGuid) || assetName.Equals(item.Id);
                     });
 
-                    if (historyItem != null)
-                    {
-                        var historyGuid = historyItem.TextHash.ToString("N");
+                    if (historyItem == null) { continue; }
 
-                        if (guid != historyGuid)
-                        {
-                            GuidRegenerator.SetGuidForAssetAtPath(assetPath, historyGuid, false);
-                            importCount++;
-                        }
-                        else
-                        {
-                            var audioClip = AssetDatabase.LoadAssetAtPath<AudioClip>(assetPath);
-                            downloadedAudioClips.TryAdd(historyGuid, audioClip);
-                        }
+                    var historyGuid = historyItem.TextHash;
+
+                    if (guid != historyGuid)
+                    {
+                        GuidRegenerator.SetGuidForAssetAtPath(assetPath, historyGuid, false);
+                        importCount++;
+                    }
+                    else
+                    {
+                        var audioClip = AssetDatabase.LoadAssetAtPath<AudioClip>(assetPath);
+                        downloadedAudioClips.TryAdd(historyGuid, audioClip);
                     }
                 }
                 catch (Exception e)
@@ -818,7 +817,6 @@ namespace ElevenLabs.Editor
 
             if (importCount > 0)
             {
-                Debug.LogWarning("Check again!");
                 AssetDatabase.Refresh();
                 EditorApplication.delayCall += CheckHistory;
             }
@@ -1772,7 +1770,7 @@ namespace ElevenLabs.Editor
                         for (var i = 0; i < historyInfo.HistoryItems.Count; i++)
                         {
                             var historyItem = historyInfo.HistoryItems[i];
-                            var guid = historyItem.TextHash.ToString("N");
+                            var guid = historyItem.TextHash;
 
                             if (!downloadedAudioClips.ContainsKey(guid) &&
                                 (selectedCount == 0 || historySelections[i]))
@@ -1789,18 +1787,18 @@ namespace ElevenLabs.Editor
             }
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.Space();
-            EditorGUILayoutExtensions.Divider();
-            EditorGUILayout.Space();
             var historyItemCount = historyInfo?.HistoryItems?.Count;
 
             for (var i = 0; i < historyItemCount; i++)
             {
+                EditorGUILayout.Space();
+                EditorGUILayoutExtensions.Divider();
+                EditorGUILayout.Space();
                 var historyItem = historyInfo.HistoryItems[i];
 
                 EditorGUILayout.BeginHorizontal();
-                historySelections![i] = EditorGUILayout.ToggleLeft(GUIContent.none, historySelections[i], GUILayout.Width(24));
-                EditorGUILayout.LabelField(GetHistoryItemLabel(historyItem));
-                downloadedAudioClips.TryGetValue(historyItem.TextHash.ToString("N"), out var audioClip);
+                historySelections![i] = EditorGUILayout.ToggleLeft(GetHistoryItemLabel(historyItem), historySelections[i], expandWidthOption);
+                downloadedAudioClips.TryGetValue(historyItem.TextHash, out var audioClip);
                 var isDownloaded = audioClip != null;
                 GUI.enabled = !isFetchingHistory && !isDownloadingHistoryItem;
 
@@ -1818,13 +1816,11 @@ namespace ElevenLabs.Editor
 
                 GUI.enabled = true;
                 EditorGUILayout.EndHorizontal();
-
-                EditorGUI.indentLevel++;
-                EditorGUI.indentLevel++;
                 GUI.enabled = false;
 
                 if (isDownloaded)
                 {
+                    EditorGUILayout.Space();
                     EditorGUILayout.BeginHorizontal();
                     GUILayout.Space(TabWidth * EditorGUI.indentLevel);
 
@@ -1850,11 +1846,12 @@ namespace ElevenLabs.Editor
                     EditorGUILayout.EndHorizontal();
                 }
 
-                EditorGUILayout.TextArea(historyItem.Text);
-                GUI.enabled = true;
                 EditorGUILayout.Space();
-                EditorGUI.indentLevel--;
-                EditorGUI.indentLevel--;
+                StartIndent(3);
+                EditorGUILayout.TextArea(historyItem.Text);
+                EndIndent(3);
+                EditorGUILayout.Space();
+                GUI.enabled = true;
             }
 
             EditorGUILayout.EndVertical();
@@ -1926,17 +1923,22 @@ namespace ElevenLabs.Editor
 
                 try
                 {
-                    var cachedPath = voiceClip.CachedPath;
                     // TODO replace or strip voice name in case it is too long or has invalid characters
                     var targetDirectory = directory.CreateNewDirectory(voiceClip.Voice.Name);
 
+                    // if the text is null or empty then the voice clip is for a sample
                     if (string.IsNullOrWhiteSpace(voiceClip.Text))
                     {
                         targetDirectory = targetDirectory.CreateNewDirectory("Samples");
                     }
 
-                    var ext = Path.GetExtension(cachedPath);
-                    File.Copy(cachedPath, Path.Combine(targetDirectory, $"{voiceClip.Id}{ext}"));
+                    var extension = Path.GetExtension(voiceClip.CachedPath);
+                    var targetPath = Path.Combine(targetDirectory, $"{voiceClip.Id}{extension}");
+
+                    if (!File.Exists(targetPath))
+                    {
+                        File.Copy(voiceClip.CachedPath!, targetPath);
+                    }
                 }
                 catch (Exception e)
                 {
@@ -1979,25 +1981,16 @@ namespace ElevenLabs.Editor
 
         private static GUIContent GetHistoryItemLabel(HistoryItem item)
         {
-            var id = item.Id;
+            if (historyItemLabelCache.TryGetValue(item.Id, out var label)) { return label; }
 
-            if (historyItemLabelCache.TryGetValue(id, out var label))
-            {
-                return label;
-            }
-
-            label = new GUIContent($"{item.Date} | {item.VoiceName} | {item.ContentType}");
-            historyItemLabelCache.TryAdd(id, label);
-
+            label = new GUIContent($" {item.Id} | {item.Date} | {item.VoiceName}");
+            historyItemLabelCache.TryAdd(item.Id, label);
             return label;
         }
 
         private static IEnumerable<AudioClip> GetSampleClips(string filter)
         {
-            if (voiceSampleCache.TryGetValue(filter, out var audioClips))
-            {
-                return audioClips;
-            }
+            if (voiceSampleCache.TryGetValue(filter, out var audioClips)) { return audioClips; }
 
             var guids = AssetDatabase.FindAssets(filter);
             var sampleClips = new List<AudioClip>(guids.Length);
