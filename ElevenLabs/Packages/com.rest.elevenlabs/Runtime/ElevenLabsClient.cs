@@ -16,7 +16,7 @@ namespace ElevenLabs
     public sealed class ElevenLabsClient : BaseClient<ElevenLabsAuthentication, ElevenLabsSettings>
     {
         /// <summary>
-        /// Creates a new client for the Eleven Labs API, handling auth and allowing for access to various API endpoints.
+        /// Creates a new client for the ElevenLabs API, handling auth and allowing for access to various API endpoints.
         /// </summary>
         /// <param name="elevenLabsAuthentication">The API authentication information to use for API calls,
         /// or <see langword="null"/> to attempt to use the <see cref="ElevenLabsAuthentication.Default"/>,
@@ -26,11 +26,6 @@ namespace ElevenLabs
         public ElevenLabsClient(ElevenLabsAuthentication elevenLabsAuthentication = null, ElevenLabsSettings clientSettings = null)
             : base(elevenLabsAuthentication ?? ElevenLabsAuthentication.Default, clientSettings ?? ElevenLabsSettings.Default)
         {
-            JsonSerializationOptions = new JsonSerializerSettings
-            {
-                DefaultValueHandling = DefaultValueHandling.Ignore
-            };
-
             UserEndpoint = new UserEndpoint(this);
             VoicesEndpoint = new VoicesEndpoint(this);
             ModelsEndpoint = new ModelsEndpoint(this);
@@ -64,7 +59,10 @@ namespace ElevenLabs
         /// <summary>
         /// The <see cref="JsonSerializationOptions"/> to use when making calls to the API.
         /// </summary>
-        internal JsonSerializerSettings JsonSerializationOptions { get; }
+        internal static JsonSerializerSettings JsonSerializationOptions { get; } = new JsonSerializerSettings
+        {
+            DefaultValueHandling = DefaultValueHandling.Ignore
+        };
 
         public UserEndpoint UserEndpoint { get; }
 

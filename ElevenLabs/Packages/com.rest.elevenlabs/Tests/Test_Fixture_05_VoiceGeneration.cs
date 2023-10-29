@@ -28,8 +28,8 @@ namespace ElevenLabs.Voice.Tests
             var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
             Assert.NotNull(api.VoiceGenerationEndpoint);
             var options = await api.VoiceGenerationEndpoint.GetVoiceGenerationOptionsAsync();
-            var generateRequest = new GeneratedVoiceRequest("First we thought the PC was a calculator. Then we found out how to turn numbers into letters and we thought it was a typewriter.", options.Genders.FirstOrDefault(), options.Accents.FirstOrDefault(), options.Ages.FirstOrDefault());
-            var (generatedVoiceId, audioClip) = await api.VoiceGenerationEndpoint.GenerateVoiceAsync(generateRequest);
+            var generateRequest = new GeneratedVoicePreviewRequest("First we thought the PC was a calculator. Then we found out how to turn numbers into letters and we thought it was a typewriter.", options.Genders.FirstOrDefault(), options.Accents.FirstOrDefault(), options.Ages.FirstOrDefault());
+            var (generatedVoiceId, audioClip) = await api.VoiceGenerationEndpoint.GenerateVoicePreviewAsync(generateRequest);
             Debug.Log(generatedVoiceId);
             Assert.NotNull(audioClip);
             var createVoiceRequest = new CreateVoiceRequest("Test Voice Lab Create Voice", "This is a test voice", generatedVoiceId);

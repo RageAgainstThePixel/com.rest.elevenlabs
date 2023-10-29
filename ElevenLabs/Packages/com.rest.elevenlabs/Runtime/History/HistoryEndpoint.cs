@@ -9,10 +9,10 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Unity.SharpZipLib.Zip;
 using UnityEngine;
-using UnityEngine.Scripting;
 using Utilities.Async;
+using Utilities.Audio;
+using Utilities.Encoding.OggVorbis;
 using Utilities.WebRequestRest;
 
 namespace ElevenLabs.History
@@ -22,21 +22,6 @@ namespace ElevenLabs.History
     /// </summary>
     public sealed class HistoryEndpoint : ElevenLabsBaseEndPoint
     {
-        [Preserve]
-        private class HistoryInfo
-        {
-            [Preserve]
-            [JsonConstructor]
-            public HistoryInfo([JsonProperty(nameof(History))] List<HistoryItem> history)
-            {
-                History = history;
-            }
-
-            [Preserve]
-            [JsonProperty(nameof(History))]
-            public IReadOnlyList<HistoryItem> History { get; }
-        }
-
         public HistoryEndpoint(ElevenLabsClient client) : base(client) { }
 
         protected override string Root => "history";
@@ -44,210 +29,140 @@ namespace ElevenLabs.History
         /// <summary>
         /// Get metadata about all your generated audio.
         /// </summary>
+        /// <param name="pageSize">
+        /// Optional, number of items to return. Cannot exceed 1000.<br/>
+        /// Default: 100
+        /// </param>
+        /// <param name="startAfterId">Optional, the id of the item to start after.</param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
-        /// <returns>A list of history items containing metadata about generated audio.</returns>
-        public async Task<IReadOnlyList<HistoryItem>> GetHistoryAsync(CancellationToken cancellationToken = default)
+        /// <returns><see cref="HistoryInfo"/>.</returns>
+        public async Task<HistoryInfo> GetHistoryAsync(int? pageSize = null, string startAfterId = null, CancellationToken cancellationToken = default)
         {
-            var response = await Rest.GetAsync(GetUrl(), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.Validate();
-            return JsonConvert.DeserializeObject<HistoryInfo>(response.Body, client.JsonSerializationOptions)?.History;
+            var parameters = new Dictionary<string, string>();
+
+            if (pageSize.HasValue)
+            {
+                parameters.Add("page_size", pageSize.ToString());
+            }
+
+            if (!string.IsNullOrWhiteSpace(startAfterId))
+            {
+                parameters.Add("start_after_history_item_id", startAfterId);
+            }
+
+            var response = await Rest.GetAsync(GetUrl(queryParameters: parameters), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
+            response.Validate(EnableDebug);
+            return JsonConvert.DeserializeObject<HistoryInfo>(response.Body, ElevenLabsClient.JsonSerializationOptions);
         }
 
         /// <summary>
-        /// Get audio of a history item.
+        /// Gets a history item by id.
         /// </summary>
-        /// <param name="historyItem"><see cref="HistoryItem.Id"/></param>
-        /// <param name="saveDirectory">Optional, save directory for the downloaded <see cref="AudioClip"/>.</param>
+        /// <param name="id"><see cref="HistoryItem.Id"/> or <see cref="VoiceClip.Id"/></param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
-        /// <returns><see cref="AudioClip"/>.</returns>
-        public async Task<AudioClip> GetHistoryAudioAsync(HistoryItem historyItem, string saveDirectory = null, CancellationToken cancellationToken = default)
+        /// <returns><see cref="HistoryItem"/></returns>
+        public async Task<HistoryItem> GetHistoryItemAsync(string id, CancellationToken cancellationToken = default)
+        {
+            var response = await Rest.GetAsync(GetUrl($"/{id}"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
+            response.Validate(EnableDebug);
+            return JsonConvert.DeserializeObject<HistoryItem>(response.Body, ElevenLabsClient.JsonSerializationOptions);
+        }
+
+        /// <summary>
+        /// Download audio of a history item.
+        /// </summary>
+        /// <param name="historyItem"><see cref="HistoryItem"/></param>
+        /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
+        /// <returns><see cref="VoiceClip"/>.</returns>
+        public async Task<VoiceClip> DownloadHistoryAudioAsync(HistoryItem historyItem, CancellationToken cancellationToken = default)
         {
             await Rest.ValidateCacheDirectoryAsync();
-
-            var rootDirectory = (saveDirectory ?? Rest.DownloadCacheDirectory).CreateNewDirectory(nameof(ElevenLabs));
-            var downloadDirectory = rootDirectory.CreateNewDirectory(nameof(History));
-            var voiceDirectory = downloadDirectory.CreateNewDirectory(historyItem.VoiceName);
-            var filePath = Path.Combine(voiceDirectory, $"{historyItem.Id}.mp3");
-
-            if (File.Exists(filePath))
+            var voiceDirectory = Rest.DownloadCacheDirectory
+                .CreateNewDirectory(nameof(ElevenLabs))
+                .CreateNewDirectory(nameof(History))
+                .CreateNewDirectory(historyItem.VoiceId);
+            var voice = await client.VoicesEndpoint.GetVoiceAsync(historyItem.VoiceId, cancellationToken: cancellationToken);
+            var audioType = historyItem.ContentType.Contains("mpeg") ? AudioType.MPEG : AudioType.OGGVORBIS;
+            var extension = audioType switch
             {
-                File.Delete(filePath);
-            }
+                AudioType.MPEG => "mp3",
+                AudioType.OGGVORBIS => "ogg",
+                _ => throw new ArgumentOutOfRangeException($"Unsupported {nameof(AudioType)}: {audioType}")
+            };
+            var cachedPath = Path.Combine(voiceDirectory, $"{historyItem.Id}.{extension}");
 
-            var response = await Rest.GetAsync(GetUrl($"/{historyItem.Id}/audio"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.Validate();
-
-            var responseStream = new MemoryStream(response.Data);
-
-            try
+            if (!File.Exists(cachedPath))
             {
-                var fileStream = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+                var response = await Rest.GetAsync(GetUrl($"/{historyItem.Id}/audio"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
+                response.Validate(EnableDebug);
 
-                try
+                switch (audioType)
                 {
-                    await responseStream.CopyToAsync(fileStream, cancellationToken);
-                    await fileStream.FlushAsync(cancellationToken);
+                    case AudioType.MPEG:
+                        await File.WriteAllBytesAsync(cachedPath, response.Data, cancellationToken).ConfigureAwait(false);
+                        break;
+                    case AudioType.OGGVORBIS:
+                        var pcmData = PCMEncoder.Decode(response.Data, PCMFormatSize.SixteenBit);
+                        var sampleRate = 44100; // TODO unknown sample rate.
+                        var oggBytes = await OggEncoder.ConvertToBytesAsync(pcmData, sampleRate, 1, cancellationToken: cancellationToken).ConfigureAwait(false);
+                        await File.WriteAllBytesAsync(cachedPath, oggBytes, cancellationToken: cancellationToken).ConfigureAwait(false);
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException($"Unsupported {nameof(AudioType)}: {audioType}");
                 }
-                catch (Exception e)
-                {
-                    Debug.LogError(e);
-                }
-                finally
-                {
-                    fileStream.Close();
-                    await fileStream.DisposeAsync();
-                }
-            }
-            catch (Exception e)
-            {
-                Debug.LogError(e);
-            }
-            finally
-            {
-                await responseStream.DisposeAsync();
             }
 
-            var audioClip = await Rest.DownloadAudioClipAsync($"file://{filePath}", AudioType.MPEG, parameters: null, cancellationToken: cancellationToken);
-            return audioClip;
+            await Awaiters.UnityMainThread;
+            var audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", AudioType.UNKNOWN, cancellationToken: cancellationToken);
+            return new VoiceClip(historyItem.Id, historyItem.Text, voice, audioClip, cachedPath);
         }
 
         /// <summary>
         /// Delete a history item by its id.
         /// </summary>
-        /// <param name="historyId"><see cref="HistoryItem.Id"/></param>
+        /// <param name="id"><see cref="HistoryItem.Id"/> or <see cref="VoiceClip.Id"/>.</param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         /// <returns>True, if history item was successfully deleted.</returns>
-        public async Task<bool> DeleteHistoryItemAsync(string historyId, CancellationToken cancellationToken = default)
+        public async Task<bool> DeleteHistoryItemAsync(string id, CancellationToken cancellationToken = default)
         {
-            var response = await Rest.DeleteAsync(GetUrl($"/{historyId}"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.Validate();
+            var response = await Rest.DeleteAsync(GetUrl($"/{id}"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
+            response.Validate(EnableDebug);
             return response.Successful;
         }
 
         /// <summary>
         /// Download one or more history items.<br/>
-        /// If no ids are specified, then all history items are downloaded.<br/>
+        /// If no ids are specified, then the last 100 history items are downloaded.<br/>
         /// If one history item id is provided, we will return a single audio file.<br/>
         /// If more than one history item ids are provided multiple audio files will be downloaded.
         /// </summary>
         /// <param name="historyItemIds">Optional, One or more history item ids queued for download.</param>
-        /// <param name="saveDirectory">Optional, directory path to save the history in.</param>
         /// <param name="progress">Optional, <see cref="IProgress{T}"/>.</param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
-        /// <returns>A list of Audio Clips downloaded by the request.</returns>
-        public async Task<IReadOnlyList<AudioClip>> DownloadHistoryItemsAsync(List<string> historyItemIds = null, string saveDirectory = null, IProgress<string> progress = null, CancellationToken cancellationToken = default)
+        /// <returns>A list of voice clips downloaded by the request.</returns>
+        public async Task<IReadOnlyList<VoiceClip>> DownloadHistoryItemsAsync(List<string> historyItemIds = null, IProgress<string> progress = null, CancellationToken cancellationToken = default)
         {
-            historyItemIds ??= (await GetHistoryAsync(cancellationToken)).Select(item => item.Id).ToList();
+            historyItemIds ??= (await GetHistoryAsync(cancellationToken: cancellationToken)).HistoryItems.Select(item => item.Id).ToList();
+            var voiceClips = new ConcurrentBag<VoiceClip>();
 
-            var audioClips = new ConcurrentBag<AudioClip>();
-
-            if (historyItemIds.Count == 1)
+            async Task DownloadItem(string historyItemId)
             {
-                var history = await GetHistoryAsync(cancellationToken);
-                var historyItem = history.FirstOrDefault(item => item.Id == historyItemIds.FirstOrDefault())!;
-                audioClips.Add(await GetHistoryAudioAsync(historyItem, saveDirectory, cancellationToken));
-                await Awaiters.UnityMainThread;
-                progress?.Report(historyItem.Id);
-            }
-            else
-            {
-                var jsonContent = $"{{\"history_item_ids\":[\"{string.Join("\",\"", historyItemIds)}\"]}}";
-                var response = await Rest.PostAsync(GetUrl("/download"), jsonContent, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-                response.Validate();
-                var unZipTasks = new List<Task>();
-                var responseStream = new MemoryStream(response.Data);
-
                 try
                 {
-                    var zipFile = new ZipFile(responseStream);
-
-                    if (saveDirectory == null)
-                    {
-                        await Rest.ValidateCacheDirectoryAsync();
-                    }
-
-                    var rootDirectory = Path.Combine(saveDirectory ?? Rest.DownloadCacheDirectory, nameof(ElevenLabs));
-
-                    if (!Directory.Exists(rootDirectory))
-                    {
-                        Directory.CreateDirectory(rootDirectory);
-                    }
-
-                    var downloadDirectory = Path.Combine(rootDirectory, nameof(History));
-
-                    Directory.CreateDirectory(downloadDirectory);
-
-                    foreach (ZipEntry entry in zipFile)
-                    {
-                        unZipTasks.Add(Task.Run(UnZipAudioClipAsync, cancellationToken));
-
-                        async Task UnZipAudioClipAsync()
-                        {
-                            var filePath = Path.Combine(downloadDirectory, entry.Name);
-
-                            if (File.Exists(filePath))
-                            {
-                                return;
-                            }
-
-                            var parentDirectory = Directory.GetParent(filePath)!;
-
-                            if (!parentDirectory.Exists)
-                            {
-                                Directory.CreateDirectory(parentDirectory.FullName);
-                            }
-
-                            var itemStream = zipFile.GetInputStream(entry);
-
-                            try
-                            {
-                                var fileStream = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
-
-                                try
-                                {
-                                    await itemStream.CopyToAsync(fileStream, cancellationToken);
-                                    await fileStream.FlushAsync(cancellationToken);
-                                }
-                                catch (Exception e)
-                                {
-                                    Debug.LogError(e);
-                                }
-                                finally
-                                {
-                                    fileStream.Close();
-                                    await fileStream.DisposeAsync();
-                                }
-                            }
-                            catch (Exception e)
-                            {
-                                Debug.LogError(e);
-                            }
-                            finally
-                            {
-                                itemStream.Close();
-                                await itemStream.DisposeAsync();
-                            }
-
-                            var audioClip = await Rest.DownloadAudioClipAsync($"file://{filePath}", AudioType.MPEG, parameters: null, cancellationToken: cancellationToken);
-                            audioClips.Add(audioClip);
-                            await Awaiters.UnityMainThread;
-                            progress?.Report(filePath);
-                        }
-                    }
-
-                    await Task.WhenAll(unZipTasks);
+                    await Awaiters.UnityMainThread;
+                    var historyItem = await GetHistoryItemAsync(historyItemId, cancellationToken);
+                    var voiceClip = await DownloadHistoryAudioAsync(historyItem, cancellationToken);
+                    voiceClips.Add(voiceClip);
+                    progress?.Report(historyItem.Id);
                 }
                 catch (Exception e)
                 {
                     Debug.LogError(e);
                 }
-                finally
-                {
-                    await responseStream.DisposeAsync();
-                }
             }
 
-            return audioClips.ToList();
+            await Task.WhenAll(historyItemIds.Select(DownloadItem)).ConfigureAwait(true);
+            return voiceClips.ToList();
         }
     }
 }

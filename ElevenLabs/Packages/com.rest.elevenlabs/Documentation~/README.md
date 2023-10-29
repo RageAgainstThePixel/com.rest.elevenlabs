@@ -39,6 +39,7 @@ The recommended installation method is though the unity package manager and [Ope
   - [com.utilities.async](https://github.com/RageAgainstThePixel/com.utilities.async)
   - [com.utilities.extensions](https://github.com/RageAgainstThePixel/com.utilities.extensions)
   - [com.utilities.audio](https://github.com/RageAgainstThePixel/com.utilities.audio)
+  - [com.utilities.encoder.ogg](https://github.com/RageAgainstThePixel/com.utilities.encoder.ogg)
   - [com.utilities.rest](https://github.com/RageAgainstThePixel/com.utilities.rest)
 
 ---
@@ -48,7 +49,7 @@ The recommended installation method is though the unity package manager and [Ope
 ### Table of Contents
 
 - [Authentication](#authentication)
-- [API Proxy](#api-proxy) :new:
+- [API Proxy](#api-proxy)
 - [Editor Dashboard](#editor-dashboard)
   - [Speech Synthesis](#speech-synthesis)
   - [Voice Lab](#voice-lab)
@@ -56,7 +57,7 @@ The recommended installation method is though the unity package manager and [Ope
     - [Voice Cloning](#voice-cloning)
   - [History](#history)
 - [Text to Speech](#text-to-speech)
-  - [Stream Text to Speech](#stream-text-to-speech)
+  - [Stream Text to Speech](#stream-text-to-speech) :new:
 - [Voices](#voices)
   - [Get All Voices](#get-all-voices)
   - [Get Default Voice Settings](#get-default-voice-settings)
@@ -69,9 +70,10 @@ The recommended installation method is though the unity package manager and [Ope
     - [Get Voice Sample](#get-voice-sample)
     - [Delete Voice Sample](#delete-voice-sample)
 - [History](#history)
-  - [Get History](#get-history)
-  - [Get History Audio](#get-history-audio)
-  - [Download All History](#download-all-history)
+  - [Get History Items](#get-history-items)
+  - [Get History Item](#get-history-item) :new:
+  - [Download History Audio](#download-history-audio)
+  - [Download History Items](#download-history-items)
   - [Delete History Item](#delete-history-item)
 - [User](#user)
   - [Get User Info](#get-user-info)
@@ -207,6 +209,9 @@ Once you have set up your proxy server, your end users can now make authenticate
 ### Editor Dashboard
 
 You can perform all of the same actions from the ElevenLabs website, in the Editor using the ElevenLabs Dashboard!
+
+`Window/Dashboards/ElevenLabs`
+
 ![dashboard](images/dashboard.png)
 
 #### Speech Synthesis
@@ -248,32 +253,34 @@ var api = new ElevenLabsClient();
 var text = "The quick brown fox jumps over the lazy dog.";
 var voice = (await api.VoicesEndpoint.GetAllVoicesAsync()).FirstOrDefault();
 var defaultVoiceSettings = await api.VoicesEndpoint.GetDefaultVoiceSettingsAsync();
-var (clipPath, audioClip) = await api.TextToSpeechEndpoint.TextToSpeechAsync(text, voice, defaultVoiceSettings);
-Debug.Log(clipPath);
+var voiceClip = await api.TextToSpeechEndpoint.TextToSpeechAsync(text, voice, defaultVoiceSettings);
+audioSource.PlayOneShot(voiceClip.AudioClip);
 ```
 
-> Note, only a single audio clip is created per text string. If you'd like to get different variations of the audio, you'll need to pass in `deleteCachedFile: true`.
+> Note: if you want to save the voice clip into your project, you will need to copy it from the cached path into the specified location in your project:
+
+```csharp
+voiceClip.CopyIntoProject(editorDownloadDirectory);
+```
 
 ### Stream Text to Speech
-
-:warning: WARNING :bangbang: This feature is experimental, and may not work as expected! Unity doesn't seem to respect streaming when setting [`DownloadHandlerAudioClip.streamAudio`](https://docs.unity3d.com/ScriptReference/Networking.DownloadHandlerAudioClip-streamAudio.html) to true.
 
 ```csharp
 var api = new ElevenLabsClient();
 var text = "The quick brown fox jumps over the lazy dog.";
 var voice = (await api.VoicesEndpoint.GetAllVoicesAsync()).FirstOrDefault();
-var defaultVoiceSettings = await api.VoicesEndpoint.GetDefaultVoiceSettingsAsync();
-var (clipPath, audioClip) = await api.TextToSpeechEndpoint.StreamTextToSpeechAsync(
+var partialClips = new Queue<AudioClip>();
+var voiceClip = await api.TextToSpeechEndpoint.StreamTextToSpeechAsync(
     text,
     voice,
-    clip =>
+    partialClip =>
     {
-        // Event raised as soon as the clip has loaded enough data to play.
-        // May not provide or play full clip until Unity bug is addressed.
-        audioSource.PlayOneShot(clip);
-    },
-    defaultVoiceSettings);
-Debug.Log(clipPath);
+        // Note: Best to queue them and play them in update loop!
+        // See TextToSpeech sample demo for details
+        partialClips.Enqueue(partialClip);
+    });
+// The full completed clip:
+audioSource.clip = voiceClip.AudioClip;
 ```
 
 ### [Voices](https://api.elevenlabs.io/docs#/voices)
@@ -363,7 +370,7 @@ Access to your samples, created by you when cloning voices.
 
 ```csharp
 var api = new ElevenLabsClient();
-var audioClip = await api.VoicesEndpoint.GetVoiceSampleAsync(voiceId, sampleId);
+var voiceClip = await api.VoicesEndpoint.DownloadVoiceSampleAsync(voice, sample);
 ```
 
 ##### Delete Voice Sample
@@ -378,37 +385,56 @@ Debug.Log($"Was successful? {success}");
 
 Access to your previously synthesized audio clips including its metadata.
 
-#### Get History
+#### Get History Items
+
+Get metadata about all your generated audio.
 
 ```csharp
 var api = new ElevenLabsClient();
-var historyItems = await api.HistoryEndpoint.GetHistoryAsync();
+var historyInfo = await api.HistoryEndpoint.GetHistoryAsync();
 
-foreach (var historyItem in historyItems.OrderBy(historyItem => historyItem.Date))
+foreach (var item in historyInfo.HistoryItems.OrderBy(item => item.Date))
 {
-    Debug.Log($"{historyItem.State} {historyItem.Date} | {historyItem.Id} | {historyItem.Text.Length} | {historyItem.Text}");
+    Debug.Log($"{item.State} {item.Date} | {item.Id} | {item.Text.Length} | {item.Text}");
 }
 ```
 
-#### Get History Audio
+#### Get History Item
+
+Get information about a specific item.
 
 ```csharp
 var api = new ElevenLabsClient();
-var audioClip = await api.HistoryEndpoint.GetHistoryAudioAsync(historyItem);
+var historyItem = api.HistoryEndpoint.GetHistoryItemAsync(voiceClip.Id);
 ```
 
-#### Download All History
+#### Download History Audio
 
 ```csharp
 var api = new ElevenLabsClient();
-var success = await api.HistoryEndpoint.DownloadHistoryItemsAsync();
+var voiceClip = await api.HistoryEndpoint.DownloadHistoryAudioAsync(historyItem);
+```
+
+#### Download History Items
+
+Downloads the last 100 history items, or the collection of specified items.
+
+```csharp
+var api = new ElevenLabsClient();
+var voiceClips = await api.HistoryEndpoint.DownloadHistoryItemsAsync();
+```
+
+> Note: to copy the clips directly into your project you can additionally call:
+
+```csharp
+VoiceClipUtilities.CopyIntoProject(editorDownloadDirectory, downloadItems.ToArray());
 ```
 
 #### Delete History Item
 
 ```csharp
 var api = new ElevenLabsClient();
-var result = await api.HistoryEndpoint.DeleteHistoryItemAsync(historyItem);
+var success = await api.HistoryEndpoint.DeleteHistoryItemAsync(historyItem);
 Debug.Log($"Was successful? {success}");
 ```
 
