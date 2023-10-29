@@ -51,13 +51,13 @@ The recommended installation method is though the unity package manager and [Ope
 - [Authentication](#authentication)
 - [API Proxy](#api-proxy)
 - [Editor Dashboard](#editor-dashboard)
-  - [Speech Synthesis](#speech-synthesis)
-  - [Voice Lab](#voice-lab)
-    - [Voice Designer](#voice-designer)
-    - [Voice Cloning](#voice-cloning)
+  - [Speech Synthesis Dashboard](#speech-synthesis-dashboard)
+  - [Voice Lab Dashboard](#voice-lab-dashboard)
+    - [Voice Designer Dashboard](#voice-designer-dashboard)
+    - [Voice Cloning Dashboard](#voice-cloning-dashboard)
   - [History](#history)
 - [Text to Speech](#text-to-speech)
-  - [Stream Text to Speech](#stream-text-to-speech) :new:
+  - [Stream Text To Speech](#stream-text-to-speech) :new:
 - [Voices](#voices)
   - [Get All Voices](#get-all-voices)
   - [Get Default Voice Settings](#get-default-voice-settings)
@@ -67,13 +67,13 @@ The recommended installation method is though the unity package manager and [Ope
   - [Edit Voice](#edit-voice)
   - [Delete Voice](#delete-voice)
   - [Samples](#samples)
-    - [Get Voice Sample](#get-voice-sample)
+    - [Download Voice Sample](#download-voice-sample) :new:
     - [Delete Voice Sample](#delete-voice-sample)
 - [History](#history)
-  - [Get History Items](#get-history-items)
-  - [Get History Item](#get-history-item) :new:
-  - [Download History Audio](#download-history-audio)
-  - [Download History Items](#download-history-items)
+  - [Get History](#get-history)
+  - [Get History Item](#get-history-item)
+  - [Download History Audio](#download-history-audio) :new:
+  - [Download History Items](#download-history-items) :new:
   - [Delete History Item](#delete-history-item)
 - [User](#user)
   - [Get User Info](#get-user-info)
@@ -214,37 +214,37 @@ You can perform all of the same actions from the ElevenLabs website, in the Edit
 
 ![dashboard](images/dashboard.png)
 
-#### Speech Synthesis
+#### Speech Synthesis Dashboard
 
 Just like in the ElevenLabs website, you can synthesize new audio clips using available voices. This tool makes it even more handy as the clips are automatically downloaded and imported into your project, ready for you to use!
 
 ![Speech Synthesis](images/voice-synthesis-editor.png)
 
-#### Voice Lab
+#### Voice Lab Dashboard
 
 Just like in the ElevenLabs website, you can manage all your voices directly in the editor.
 
 ![Voice Lab](images/voice-lab-editor.png)
 
-##### Voice Designer
+##### Voice Designer Dashboard
 
 Selecting `Create New Voice` will display a popup where you can design entirely new voices using ElevenLabs generative models.
 
 ![Voice Designer](images/voice-design-editor.png)
 
-##### Voice Cloning
+##### Voice Cloning Dashboard
 
 Additionally, you're also able to clone a voice from sample recordings.
 
 ![Voice Cloning](images/voice-clone-editor.png)
 
-#### History
+#### History Editor Dashboard
 
 You also have access to the full list of all your generated samples, ready for download.
 
 ![History](images/history-editor.png)
 
-### [Text to Speech](https://api.elevenlabs.io/docs#/text-to-speech)
+### [Text to Speech](https://docs.elevenlabs.io/api-reference/text-to-speech)
 
 Convert text to speech.
 
@@ -283,7 +283,7 @@ var voiceClip = await api.TextToSpeechEndpoint.StreamTextToSpeechAsync(
 audioSource.clip = voiceClip.AudioClip;
 ```
 
-### [Voices](https://api.elevenlabs.io/docs#/voices)
+### [Voices](https://docs.elevenlabs.io/api-reference/voices)
 
 Access to voices created either by the user or ElevenLabs.
 
@@ -362,11 +362,11 @@ var success = await api.VoicesEndpoint.DeleteVoiceAsync(voiceId);
 Debug.Log($"Was successful? {success}");
 ```
 
-#### [Samples](https://api.elevenlabs.io/docs#/samples)
+#### [Samples](https://docs.elevenlabs.io/api-reference/samples)
 
 Access to your samples, created by you when cloning voices.
 
-##### Get Voice Sample
+##### Download Voice Sample
 
 ```csharp
 var api = new ElevenLabsClient();
@@ -381,11 +381,11 @@ var success = await api.VoicesEndpoint.DeleteVoiceSampleAsync(voiceId, sampleId)
 Debug.Log($"Was successful? {success}");
 ```
 
-### [History](https://api.elevenlabs.io/docs#/history)
+### [History](https://docs.elevenlabs.io/api-reference/history)
 
 Access to your previously synthesized audio clips including its metadata.
 
-#### Get History Items
+#### Get History
 
 Get metadata about all your generated audio.
 
@@ -438,7 +438,7 @@ var success = await api.HistoryEndpoint.DeleteHistoryItemAsync(historyItem);
 Debug.Log($"Was successful? {success}");
 ```
 
-### [User](https://api.elevenlabs.io/docs#/user)
+### [User](https://docs.elevenlabs.io/api-reference/user)
 
 Access to your user Information and subscription status.
 
