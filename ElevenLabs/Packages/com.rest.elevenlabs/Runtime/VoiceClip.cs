@@ -1,5 +1,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System;
 using ElevenLabs.Extensions;
 using ElevenLabs.Voices;
 using UnityEngine;
@@ -16,7 +17,7 @@ namespace ElevenLabs
             Id = id;
             Text = text;
             Voice = voice;
-            TextHash = $"{id}{text}".GenerateGuid().ToString();
+            TextHash = $"{id}{text}".GenerateGuid();
             AudioClip = audioClip;
             CachedPath = cachedPath;
         }
@@ -31,7 +32,7 @@ namespace ElevenLabs
         public Voice Voice { get; }
 
         [Preserve]
-        public string TextHash { get; }
+        public Guid TextHash { get; }
 
         [Preserve]
         public AudioClip AudioClip { get; }

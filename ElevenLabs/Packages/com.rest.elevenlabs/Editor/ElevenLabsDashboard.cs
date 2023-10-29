@@ -14,7 +14,6 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEditor;
 using UnityEngine;
-using Utilities.Async;
 using Utilities.Audio.Editor;
 using Utilities.Extensions.Editor;
 
@@ -777,18 +776,51 @@ namespace ElevenLabs.Editor
             if (historyInfo == null) { return; }
             var assets = AssetDatabase.FindAssets($"t:{nameof(AudioClip)}");
             downloadedAudioClips.Clear();
+            AssetDatabase.StartAssetEditing();
+            var importCount = 0;
 
             foreach (var guid in assets)
             {
-                var assetPath = AssetDatabase.GUIDToAssetPath(guid);
-                var assetName = Path.GetFileNameWithoutExtension(assetPath);
-                var key = historyInfo.HistoryItems.FirstOrDefault(item => assetName.Equals(item.Id) || assetName.Equals(item.TextHash) || guid.Equals(item.TextHash));
-
-                if (key != null)
+                try
                 {
-                    var audioClip = AssetDatabase.LoadAssetAtPath<AudioClip>(assetPath);
-                    downloadedAudioClips.TryAdd(key.Id, audioClip);
+                    var assetPath = AssetDatabase.GUIDToAssetPath(guid);
+                    var assetName = Path.GetFileNameWithoutExtension(assetPath);
+                    var historyItem = historyInfo.HistoryItems.FirstOrDefault(item =>
+                    {
+                        var assetGuid = item.TextHash.ToString("N");
+                        return guid.Equals(assetGuid) || assetName.Equals(assetGuid) || assetName.Equals(item.Id);
+                    });
+
+                    if (historyItem != null)
+                    {
+                        var historyGuid = historyItem.TextHash.ToString("N");
+
+                        if (guid != historyGuid)
+                        {
+                            GuidRegenerator.SetGuidForAssetAtPath(assetPath, historyGuid, false);
+                            importCount++;
+                        }
+                        else
+                        {
+                            var audioClip = AssetDatabase.LoadAssetAtPath<AudioClip>(assetPath);
+                            downloadedAudioClips.TryAdd(historyGuid, audioClip);
+                        }
+                    }
                 }
+                catch (Exception e)
+                {
+                    Debug.LogError($"Failed to check history!\n{e}");
+                    break;
+                }
+            }
+
+            AssetDatabase.StopAssetEditing();
+
+            if (importCount > 0)
+            {
+                Debug.LogWarning("Check again!");
+                AssetDatabase.Refresh();
+                EditorApplication.delayCall += CheckHistory;
             }
         }
 
@@ -1739,7 +1771,11 @@ namespace ElevenLabs.Editor
 
                         for (var i = 0; i < historyInfo.HistoryItems.Count; i++)
                         {
-                            if (historySelections[i])
+                            var historyItem = historyInfo.HistoryItems[i];
+                            var guid = historyItem.TextHash.ToString("N");
+
+                            if (!downloadedAudioClips.ContainsKey(guid) &&
+                                (selectedCount == 0 || historySelections[i]))
                             {
                                 historyItemsToDownload.Add(historyInfo.HistoryItems[i]);
                             }
@@ -1764,12 +1800,7 @@ namespace ElevenLabs.Editor
                 EditorGUILayout.BeginHorizontal();
                 historySelections![i] = EditorGUILayout.ToggleLeft(GUIContent.none, historySelections[i], GUILayout.Width(24));
                 EditorGUILayout.LabelField(GetHistoryItemLabel(historyItem));
-
-                if (!downloadedAudioClips.TryGetValue(historyItem.Id, out var audioClip))
-                {
-                    downloadedAudioClips.TryGetValue(historyItem.TextHash, out audioClip);
-                }
-
+                downloadedAudioClips.TryGetValue(historyItem.TextHash.ToString("N"), out var audioClip);
                 var isDownloaded = audioClip != null;
                 GUI.enabled = !isFetchingHistory && !isDownloadingHistoryItem;
 
@@ -1840,18 +1871,6 @@ namespace ElevenLabs.Editor
 
             var historyItemsToDownload = itemsToDownload.Select(item => item.Id).ToList();
 
-            foreach (var (id, audioClip) in downloadedAudioClips)
-            {
-                var clipPath = AssetDatabase.GetAssetPath(audioClip);
-
-                if (!string.IsNullOrWhiteSpace(clipPath) &&
-                    File.Exists(clipPath) &&
-                    historyItemsToDownload.Contains(id))
-                {
-                    historyItemsToDownload.Remove(id);
-                }
-            }
-
             if (historyItemsToDownload.Count > 0)
             {
                 var count = 0;
@@ -1899,9 +1918,12 @@ namespace ElevenLabs.Editor
             if (voiceClips is not { Length: not 0 }) { return; }
 
             AssetDatabase.DisallowAutoRefresh();
+            var count = 0;
 
             foreach (var voiceClip in voiceClips)
             {
+                EditorUtility.DisplayProgressBar("Importing assets...", $"Importing {voiceClip.Id}", ++count / (float)voiceClips.Length);
+
                 try
                 {
                     var cachedPath = voiceClip.CachedPath;
@@ -1915,7 +1937,6 @@ namespace ElevenLabs.Editor
 
                     var ext = Path.GetExtension(cachedPath);
                     File.Copy(cachedPath, Path.Combine(targetDirectory, $"{voiceClip.Id}{ext}"));
-                    // TODO rewrite guid for file to match downloadItem.TextHash
                 }
                 catch (Exception e)
                 {
@@ -1924,6 +1945,7 @@ namespace ElevenLabs.Editor
             }
 
             AssetDatabase.AllowAutoRefresh();
+            EditorUtility.ClearProgressBar();
             AssetDatabase.Refresh();
         }
 
