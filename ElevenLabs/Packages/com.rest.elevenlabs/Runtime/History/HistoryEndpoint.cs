@@ -29,7 +29,10 @@ namespace ElevenLabs.History
         /// <summary>
         /// Get metadata about all your generated audio.
         /// </summary>
-        /// <param name="pageSize">Optional, number of items to return. Cannot exceed 1000.</param>
+        /// <param name="pageSize">
+        /// Optional, number of items to return. Cannot exceed 1000.<br/>
+        /// Default: 100
+        /// </param>
         /// <param name="startAfterId">Optional, the id of the item to start after.</param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         /// <returns><see cref="HistoryInfo"/>.</returns>
@@ -129,7 +132,7 @@ namespace ElevenLabs.History
 
         /// <summary>
         /// Download one or more history items.<br/>
-        /// If no ids are specified, then all history items are downloaded.<br/>
+        /// If no ids are specified, then the last 100 history items are downloaded.<br/>
         /// If one history item id is provided, we will return a single audio file.<br/>
         /// If more than one history item ids are provided multiple audio files will be downloaded.
         /// </summary>

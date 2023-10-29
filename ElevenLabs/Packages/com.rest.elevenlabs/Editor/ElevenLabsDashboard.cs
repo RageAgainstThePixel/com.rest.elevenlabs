@@ -1087,7 +1087,7 @@ namespace ElevenLabs.Editor
                 }
 
                 voiceClip = await api.TextToSpeechEndpoint.TextToSpeechAsync(speechSynthesisTextInput, currentVoiceOption, currentVoiceSettings, currentModelOption);
-                CopyIntoProject(editorDownloadDirectory, voiceClip);
+                voiceClip.CopyIntoProject(editorDownloadDirectory);
             }
             catch (Exception e)
             {
@@ -1654,7 +1654,7 @@ namespace ElevenLabs.Editor
             try
             {
                 var downloadItem = await api.VoicesEndpoint.DownloadVoiceSampleAudioAsync(voice, sample);
-                CopyIntoProject(editorDownloadDirectory, downloadItem);
+                VoiceClipUtilities.CopyIntoProject(editorDownloadDirectory, downloadItem);
             }
             catch (Exception e)
             {
@@ -1885,7 +1885,7 @@ namespace ElevenLabs.Editor
                 try
                 {
                     var downloadItems = await api.HistoryEndpoint.DownloadHistoryItemsAsync(historyItemsToDownload, progressReport);
-                    CopyIntoProject(editorDownloadDirectory, downloadItems.ToArray());
+                    VoiceClipUtilities.CopyIntoProject(editorDownloadDirectory, downloadItems.ToArray());
                 }
                 catch (Exception e)
                 {
@@ -1904,53 +1904,6 @@ namespace ElevenLabs.Editor
 
             isDownloadingHistoryItem = false;
             EditorUtility.ClearProgressBar();
-        }
-
-        private static void CopyIntoProject(string directory, params VoiceClip[] voiceClips)
-        {
-            if (string.IsNullOrWhiteSpace(directory))
-            {
-                Debug.LogError($"Directory not found! \"{directory}\"");
-                return;
-            }
-
-            if (voiceClips is not { Length: not 0 }) { return; }
-
-            AssetDatabase.DisallowAutoRefresh();
-            var count = 0;
-
-            foreach (var voiceClip in voiceClips)
-            {
-                EditorUtility.DisplayProgressBar("Importing assets...", $"Importing {voiceClip.Id}", ++count / (float)voiceClips.Length);
-
-                try
-                {
-                    // TODO replace or strip voice name in case it is too long or has invalid characters
-                    var targetDirectory = directory.CreateNewDirectory(voiceClip.Voice.Name);
-
-                    // if the text is null or empty then the voice clip is for a sample
-                    if (string.IsNullOrWhiteSpace(voiceClip.Text))
-                    {
-                        targetDirectory = targetDirectory.CreateNewDirectory("Samples");
-                    }
-
-                    var extension = Path.GetExtension(voiceClip.CachedPath);
-                    var targetPath = Path.Combine(targetDirectory, $"{voiceClip.Id}{extension}");
-
-                    if (!File.Exists(targetPath))
-                    {
-                        File.Copy(voiceClip.CachedPath!, targetPath);
-                    }
-                }
-                catch (Exception e)
-                {
-                    Debug.LogError(e);
-                }
-            }
-
-            AssetDatabase.AllowAutoRefresh();
-            EditorUtility.ClearProgressBar();
-            AssetDatabase.Refresh();
         }
 
         private static async void DeleteHistoryItem(HistoryItem item)

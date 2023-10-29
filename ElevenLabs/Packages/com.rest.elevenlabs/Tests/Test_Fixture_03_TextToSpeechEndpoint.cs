@@ -17,8 +17,7 @@ namespace ElevenLabs.Voice.Tests
             Assert.NotNull(api.TextToSpeechEndpoint);
             var voice = Voices.Voice.Adam;
             Assert.NotNull(voice);
-            var defaultVoiceSettings = await api.VoicesEndpoint.GetDefaultVoiceSettingsAsync();
-            var voiceClip = await api.TextToSpeechEndpoint.TextToSpeechAsync("The quick brown fox jumps over the lazy dog.", voice, defaultVoiceSettings);
+            var voiceClip = await api.TextToSpeechEndpoint.TextToSpeechAsync("The quick brown fox jumps over the lazy dog.", voice);
             Assert.NotNull(voiceClip.AudioClip);
             Debug.Log(voiceClip.CachedPath);
         }
@@ -30,13 +29,11 @@ namespace ElevenLabs.Voice.Tests
             Assert.NotNull(api.TextToSpeechEndpoint);
             var voice = (await api.VoicesEndpoint.GetAllVoicesAsync()).FirstOrDefault();
             Assert.NotNull(voice);
-            var defaultVoiceSettings = await api.VoicesEndpoint.GetDefaultVoiceSettingsAsync();
             var partialClips = new Queue<AudioClip>();
             var voiceClip = await api.TextToSpeechEndpoint.StreamTextToSpeechAsync(
                  "The quick brown fox jumps over the lazy dog.",
                  voice,
-                 clip => partialClips.Enqueue(clip),
-                 defaultVoiceSettings);
+                 clip => partialClips.Enqueue(clip));
             Assert.NotNull(partialClips);
             Assert.IsNotEmpty(partialClips);
             Assert.NotNull(voiceClip);

@@ -15,11 +15,11 @@ namespace ElevenLabs.Voice.Tests
         {
             var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
             Assert.NotNull(api.HistoryEndpoint);
-            var results = await api.HistoryEndpoint.GetHistoryAsync();
-            Assert.NotNull(results);
-            Assert.IsNotEmpty(results.HistoryItems);
+            var historyInfo = await api.HistoryEndpoint.GetHistoryAsync();
+            Assert.NotNull(historyInfo);
+            Assert.IsNotEmpty(historyInfo.HistoryItems);
 
-            foreach (var item in results.HistoryItems.OrderBy(item => item.Date))
+            foreach (var item in historyInfo.HistoryItems.OrderBy(item => item.Date))
             {
                 Debug.Log($"{item.State} {item.Date} | {item.Id} | {item.Text.Length} | {item.Text}");
             }
@@ -36,8 +36,8 @@ namespace ElevenLabs.Voice.Tests
             var downloadItem = historyInfo.HistoryItems.OrderByDescending(item => item.Date).FirstOrDefault();
             Assert.NotNull(downloadItem);
             Debug.Log($"Downloading {downloadItem.Id}...");
-            var result = await api.HistoryEndpoint.DownloadHistoryAudioAsync(downloadItem);
-            Assert.NotNull(result);
+            var voiceClip = await api.HistoryEndpoint.DownloadHistoryAudioAsync(downloadItem);
+            Assert.NotNull(voiceClip);
         }
 
         [Test]
@@ -53,9 +53,9 @@ namespace ElevenLabs.Voice.Tests
             Assert.NotNull(singleItemResult);
             Assert.IsNotEmpty(singleItemResult);
             var downloadItems = historyInfo.HistoryItems.Select(item => item.Id).ToList();
-            var results = await api.HistoryEndpoint.DownloadHistoryItemsAsync(downloadItems);
-            Assert.NotNull(results);
-            Assert.IsNotEmpty(results);
+            var voiceClips = await api.HistoryEndpoint.DownloadHistoryItemsAsync(downloadItems);
+            Assert.NotNull(voiceClips);
+            Assert.IsNotEmpty(voiceClips);
         }
 
         [Test]
