@@ -80,7 +80,7 @@ namespace ElevenLabs.Voice.Tests
 
             var updatedHistoryInfo = await api.HistoryEndpoint.GetHistoryAsync();
             Assert.NotNull(updatedHistoryInfo);
-            Assert.That(updatedHistoryInfo, Has.None.EqualTo(itemsToDelete));
+            Assert.That(updatedHistoryInfo.HistoryItems, Has.None.EqualTo(itemsToDelete));
 
             foreach (var item in updatedHistoryInfo.HistoryItems.OrderBy(item => item.Date))
             {
