@@ -18,9 +18,9 @@ namespace ElevenLabs.Voice.Tests
             var voice = Voices.Voice.Adam;
             Assert.NotNull(voice);
             var defaultVoiceSettings = await api.VoicesEndpoint.GetDefaultVoiceSettingsAsync();
-            var downloadItem = await api.TextToSpeechEndpoint.TextToSpeechAsync("The quick brown fox jumps over the lazy dog.", voice, defaultVoiceSettings);
-            Assert.NotNull(downloadItem.AudioClip);
-            Debug.Log(downloadItem.CachedPath);
+            var voiceClip = await api.TextToSpeechEndpoint.TextToSpeechAsync("The quick brown fox jumps over the lazy dog.", voice, defaultVoiceSettings);
+            Assert.NotNull(voiceClip.AudioClip);
+            Debug.Log(voiceClip.CachedPath);
         }
 
         [Test]
@@ -32,15 +32,15 @@ namespace ElevenLabs.Voice.Tests
             Assert.NotNull(voice);
             var defaultVoiceSettings = await api.VoicesEndpoint.GetDefaultVoiceSettingsAsync();
             var partialClips = new Queue<AudioClip>();
-            var downloadItem = await api.TextToSpeechEndpoint.StreamTextToSpeechAsync(
+            var voiceClip = await api.TextToSpeechEndpoint.StreamTextToSpeechAsync(
                  "The quick brown fox jumps over the lazy dog.",
                  voice,
                  clip => partialClips.Enqueue(clip),
                  defaultVoiceSettings);
             Assert.NotNull(partialClips);
             Assert.IsNotEmpty(partialClips);
-            Assert.NotNull(downloadItem);
-            Assert.IsNotNull(downloadItem.AudioClip);
+            Assert.NotNull(voiceClip);
+            Assert.IsNotNull(voiceClip.AudioClip);
         }
     }
 }
