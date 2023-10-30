@@ -224,7 +224,7 @@ namespace ElevenLabs.TextToSpeech
                     }
 
                     var chunk = PCMEncoder.Decode(partialResponse.Data, PCMFormatSize.SixteenBit);
-                    var audioClip = AudioClip.Create($"{clipId}_{++part}", chunk.Length, 1, 44100, false);
+                    var audioClip = AudioClip.Create($"{clipId}_{++part}", chunk.Length, 1, frequency, false);
 
                     if (!audioClip.SetData(chunk, 0))
                     {
