@@ -757,9 +757,10 @@ namespace ElevenLabs.Editor
                     }
                 }
 
-                var result = await api.HistoryEndpoint.GetHistoryAsync(pageSize: historyItems, startAfterId: historyId);
-                historySelections = new bool[result.HistoryItems.Count];
-                historyInfo = result;
+                historyInfo = null;
+                var list = await api.HistoryEndpoint.GetHistoryAsync(pageSize: historyItems, startAfterId: historyId);
+                historySelections = new bool[list.HistoryItems.Count];
+                historyInfo = list;
             }
             catch (Exception e)
             {
