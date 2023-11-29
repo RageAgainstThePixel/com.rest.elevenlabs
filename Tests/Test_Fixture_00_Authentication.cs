@@ -22,7 +22,7 @@ namespace ElevenLabs.Voice.Tests
         [Test]
         public void Test_01_GetAuthFromEnv()
         {
-            var auth = ElevenLabsAuthentication.Default.LoadFromEnvironment();
+            var auth = new ElevenLabsAuthentication().LoadFromEnvironment();
             Assert.IsNotNull(auth);
             Assert.IsNotNull(auth.Info.ApiKey);
             Assert.IsNotEmpty(auth.Info.ApiKey);
@@ -31,7 +31,7 @@ namespace ElevenLabs.Voice.Tests
         [Test]
         public void Test_02_GetAuthFromFile()
         {
-            var auth = ElevenLabsAuthentication.Default.LoadFromDirectory();
+            var auth = new ElevenLabsAuthentication().LoadFromPath(Path.GetFullPath(ElevenLabsAuthentication.CONFIG_FILE));
             Assert.IsNotNull(auth);
             Assert.IsNotNull(auth.Info.ApiKey);
             Assert.AreEqual("key-test12", auth.Info.ApiKey);
@@ -40,7 +40,7 @@ namespace ElevenLabs.Voice.Tests
         [Test]
         public void Test_03_GetAuthFromNonExistentFile()
         {
-            var auth = ElevenLabsAuthentication.Default.LoadFromDirectory(filename: "bad.config");
+            var auth = new ElevenLabsAuthentication().LoadFromDirectory(filename: "bad.config");
             Assert.IsNull(auth);
         }
 
@@ -63,13 +63,14 @@ namespace ElevenLabs.Voice.Tests
                 cleanup = true;
             }
 
-            var config = AssetDatabase.LoadAssetAtPath<ElevenLabsConfiguration>(configPath);
-            var auth = ElevenLabsAuthentication.Default.LoadFromAsset<ElevenLabsConfiguration>();
+            var configuration = AssetDatabase.LoadAssetAtPath<ElevenLabsConfiguration>(configPath);
+            Assert.IsNotNull(configuration);
+            var auth = new ElevenLabsAuthentication().LoadFromAsset(configuration);
 
             Assert.IsNotNull(auth);
             Assert.IsNotNull(auth.Info.ApiKey);
             Assert.IsNotEmpty(auth.Info.ApiKey);
-            Assert.AreEqual(auth.Info.ApiKey, config.ApiKey);
+            Assert.AreEqual(auth.Info.ApiKey, configuration.ApiKey);
 
             if (cleanup)
             {
@@ -81,15 +82,16 @@ namespace ElevenLabs.Voice.Tests
         [Test]
         public void Test_05_Authentication()
         {
-            var defaultAuth = ElevenLabsAuthentication.Default;
-            var manualAuth = new ElevenLabsAuthentication("key-testAA");
+            var defaultAuth = ElevenLabsAuthentication.Default = new ElevenLabsAuthentication().LoadDefault();
 
             Assert.IsNotNull(defaultAuth);
+            Assert.IsNotNull(defaultAuth.Info);
             Assert.IsNotNull(defaultAuth.Info.ApiKey);
             Assert.AreEqual(defaultAuth.Info.ApiKey, ElevenLabsAuthentication.Default.Info.ApiKey);
 
-            ElevenLabsAuthentication.Default = new ElevenLabsAuthentication("key-testAA");
+            var manualAuth = new ElevenLabsAuthentication("key-testAA");
             Assert.IsNotNull(manualAuth);
+            Assert.IsNotNull(manualAuth.Info);
             Assert.IsNotNull(manualAuth.Info.ApiKey);
             Assert.AreEqual(manualAuth.Info.ApiKey, ElevenLabsAuthentication.Default.Info.ApiKey);
 
@@ -154,6 +156,9 @@ namespace ElevenLabs.Voice.Tests
             {
                 File.Delete(ElevenLabsAuthentication.CONFIG_FILE);
             }
+
+            ElevenLabsSettings.Default = null;
+            ElevenLabsAuthentication.Default = null;
         }
     }
 }
