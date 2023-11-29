@@ -3,7 +3,7 @@
 using NUnit.Framework;
 using System.Threading.Tasks;
 
-namespace ElevenLabs.Voice.Tests
+namespace ElevenLabs.Tests
 {
     internal class Test_Fixture_01_UserEndpoint : AbstractTestFixture
     {

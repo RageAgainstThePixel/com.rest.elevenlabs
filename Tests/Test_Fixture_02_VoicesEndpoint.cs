@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 
-namespace ElevenLabs.Voice.Tests
+namespace ElevenLabs.Tests
 {
     internal class Test_Fixture_02_VoicesEndpoint : AbstractTestFixture
     {
@@ -118,8 +118,8 @@ namespace ElevenLabs.Voice.Tests
             Assert.IsNotEmpty(updatedVoice.Samples);
             var sample = updatedVoice.Samples.FirstOrDefault();
             Assert.NotNull(sample);
-            var voiceClip = await ElevenLabsClient.VoicesEndpoint.DownloadVoiceSampleAudioAsync(updatedVoice, updatedVoice.Samples.FirstOrDefault());
-            Assert.NotNull(voiceClip);
+            var result = await ElevenLabsClient.VoicesEndpoint.DownloadVoiceSampleAudioAsync(updatedVoice, sample);
+            Assert.NotNull(result);
         }
 
         [Test]

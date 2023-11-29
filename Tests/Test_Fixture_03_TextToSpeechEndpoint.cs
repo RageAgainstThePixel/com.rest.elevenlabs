@@ -6,7 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace ElevenLabs.Voice.Tests
+namespace ElevenLabs.Tests
 {
     internal class Test_Fixture_03_TextToSpeechEndpoint : AbstractTestFixture
     {
@@ -16,9 +16,11 @@ namespace ElevenLabs.Voice.Tests
             Assert.NotNull(ElevenLabsClient.TextToSpeechEndpoint);
             var voice = Voices.Voice.Adam;
             Assert.NotNull(voice);
-            var voiceClip = await ElevenLabsClient.TextToSpeechEndpoint.TextToSpeechAsync("The quick brown fox jumps over the lazy dog.", voice);
+            var defaultVoiceSettings = await ElevenLabsClient.VoicesEndpoint.GetDefaultVoiceSettingsAsync();
+            var voiceClip = await ElevenLabsClient.TextToSpeechEndpoint.TextToSpeechAsync("The quick brown fox jumps over the lazy dog.", voice, defaultVoiceSettings);
+            Assert.NotNull(voiceClip);
             Assert.NotNull(voiceClip.AudioClip);
-            Debug.Log(voiceClip.CachedPath);
+            Debug.Log(voiceClip.Id);
         }
 
         [Test]
@@ -27,15 +29,16 @@ namespace ElevenLabs.Voice.Tests
             Assert.NotNull(ElevenLabsClient.TextToSpeechEndpoint);
             var voice = (await ElevenLabsClient.VoicesEndpoint.GetAllVoicesAsync()).FirstOrDefault();
             Assert.NotNull(voice);
+            var defaultVoiceSettings = await ElevenLabsClient.VoicesEndpoint.GetDefaultVoiceSettingsAsync();
             var partialClips = new Queue<AudioClip>();
-            var voiceClip = await ElevenLabsClient.TextToSpeechEndpoint.StreamTextToSpeechAsync(
-                 "The quick brown fox jumps over the lazy dog.",
-                 voice,
-                 clip => partialClips.Enqueue(clip));
+            var voiceClip = await ElevenLabsClient.TextToSpeechEndpoint.StreamTextToSpeechAsync("The quick brown fox jumps over the lazy dog.", voice,
+                 clip => partialClips.Enqueue(clip),
+                 defaultVoiceSettings);
             Assert.NotNull(partialClips);
             Assert.IsNotEmpty(partialClips);
             Assert.NotNull(voiceClip);
             Assert.IsNotNull(voiceClip.AudioClip);
+            Debug.Log(voiceClip.Id);
         }
     }
 }

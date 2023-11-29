@@ -6,7 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace ElevenLabs.Voice.Tests
+namespace ElevenLabs.Tests
 {
     internal class Test_Fixture_04_HistoryEndpoint : AbstractTestFixture
     {
@@ -69,7 +69,7 @@ namespace ElevenLabs.Voice.Tests
             foreach (var historyItem in itemsToDelete)
             {
                 Debug.Log($"Deleting {historyItem.Id}...");
-                var result = await ElevenLabsClient.HistoryEndpoint.DeleteHistoryItemAsync(historyItem.Id);
+                var result = await ElevenLabsClient.HistoryEndpoint.DeleteHistoryItemAsync(historyItem);
                 Assert.NotNull(result);
                 Assert.IsTrue(result);
             }
