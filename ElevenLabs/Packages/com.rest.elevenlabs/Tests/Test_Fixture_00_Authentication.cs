@@ -64,6 +64,7 @@ namespace ElevenLabs.Voice.Tests
             }
 
             var configuration = AssetDatabase.LoadAssetAtPath<ElevenLabsConfiguration>(configPath);
+            Assert.IsNotNull(configuration);
             var auth = new ElevenLabsAuthentication().LoadFromAsset(configuration);
 
             Assert.IsNotNull(auth);

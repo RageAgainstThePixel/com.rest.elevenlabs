@@ -18,8 +18,9 @@ namespace ElevenLabs
         }
 
         /// <summary>
-        /// Creates a new instance of <see cref="ElevenLabsSettings"/> with provided <see cref="ElevenLabsConfiguration"/>.
+        /// Creates a new instance of <see cref="ElevenLabsSettings"/> with provided <see cref="configuration"/>.
         /// </summary>
+        /// <param name="configuration"><see cref="ElevenLabsConfiguration"/>.</param>
         public ElevenLabsSettings(ElevenLabsConfiguration configuration)
         {
             if (configuration == null)
@@ -38,9 +39,9 @@ namespace ElevenLabs
         }
 
         /// <summary>
-        /// Creates a new instance of <see cref="ElevenLabsSettings"/> with the provided <see cref="ElevenLabsSettingsInfo"/>.
+        /// Creates a new instance of <see cref="ElevenLabsSettings"/> with the provided <see cref="settingsInfo"/>.
         /// </summary>
-        /// <param name="settingsInfo"></param>
+        /// <param name="settingsInfo"><see cref="ElevenLabsSettingsInfo"/>.</param>
         public ElevenLabsSettings(ElevenLabsSettingsInfo settingsInfo)
             => Info = settingsInfo;
 
