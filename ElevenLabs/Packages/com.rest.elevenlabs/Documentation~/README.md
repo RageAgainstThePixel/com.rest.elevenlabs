@@ -48,7 +48,7 @@ The recommended installation method is though the unity package manager and [Ope
 
 ### Table of Contents
 
-- [Authentication](#authentication)
+- [Authentication](#authentication) :construction:
 - [API Proxy](#api-proxy)
 - [Editor Dashboard](#editor-dashboard)
   - [Speech Synthesis Dashboard](#speech-synthesis-dashboard)
