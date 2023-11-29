@@ -57,7 +57,7 @@ The recommended installation method is though the unity package manager and [Ope
     - [Voice Cloning Dashboard](#voice-cloning-dashboard)
   - [History](#history)
 - [Text to Speech](#text-to-speech)
-  - [Stream Text To Speech](#stream-text-to-speech) :new:
+  - [Stream Text To Speech](#stream-text-to-speech)
 - [Voices](#voices)
   - [Get All Voices](#get-all-voices)
   - [Get Default Voice Settings](#get-default-voice-settings)
@@ -67,13 +67,13 @@ The recommended installation method is though the unity package manager and [Ope
   - [Edit Voice](#edit-voice)
   - [Delete Voice](#delete-voice)
   - [Samples](#samples)
-    - [Download Voice Sample](#download-voice-sample) :new:
+    - [Download Voice Sample](#download-voice-sample)
     - [Delete Voice Sample](#delete-voice-sample)
 - [History](#history)
   - [Get History](#get-history)
   - [Get History Item](#get-history-item)
-  - [Download History Audio](#download-history-audio) :new:
-  - [Download History Items](#download-history-items) :new:
+  - [Download History Audio](#download-history-audio)
+  - [Download History Items](#download-history-items)
   - [Delete History Item](#delete-history-item)
 - [User](#user)
   - [Get User Info](#get-user-info)
@@ -83,8 +83,10 @@ The recommended installation method is though the unity package manager and [Ope
 
 There are 4 ways to provide your API keys, in order of precedence:
 
-1. [Pass keys directly with constructor](#pass-keys-directly-with-constructor)
-2. [Unity Scriptable Object](#unity-scriptable-object)
+:warning: We recommended using the environment variables to load the API key instead of having it hard coded in your source. It is not recommended use this method in production, but only for accepting user credentials, local testing and quick start scenarios.
+
+1. [Pass keys directly with constructor](#pass-keys-directly-with-constructor) :warning:
+2. [Unity Scriptable Object](#unity-scriptable-object) :warning:
 3. [Load key from configuration file](#load-key-from-configuration-file)
 4. [Use System Environment Variables](#use-system-environment-variables)
 
@@ -125,7 +127,7 @@ To create a configuration file, create a new text file named `.elevenlabs` and c
 You can also load the file directly with known path by calling a static method in Authentication:
 
 ```csharp
-var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromDirectory("your/path/to/.elevenlabs"));;
+var api = new ElevenLabsClient(new ElevenLabsAuthentication().LoadFromDirectory("your/path/to/.elevenlabs"));;
 ```
 
 #### Use System Environment Variables
@@ -135,7 +137,7 @@ Use your system's environment variables specify an api key to use.
 - Use `ELEVEN_LABS_API_KEY` for your api key.
 
 ```csharp
-var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
+var api = new ElevenLabsClient(new ElevenLabsAuthentication().LoadFromEnvironment());
 ```
 
 ### [API Proxy](https://github.com/RageAgainstThePixel/ElevenLabs-DotNet/main/ElevenLabs-DotNet-Proxy/README.md)
@@ -226,7 +228,7 @@ Just like in the ElevenLabs website, you can manage all your voices directly in 
 
 ![Voice Lab](ElevenLabs/Packages/com.rest.elevenlabs/Documentation~/images/voice-lab-editor.png)
 
-##### Voice Designer
+##### Voice Designer Dashboard
 
 Selecting `Create New Voice` will display a popup where you can design entirely new voices using ElevenLabs generative models.
 
