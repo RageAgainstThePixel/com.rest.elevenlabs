@@ -70,15 +70,15 @@ namespace ElevenLabs
         }
 
         /// <inheritdoc />
-        public override ElevenLabsAuthentication LoadFromAsset(ElevenLabsConfiguration asset = null)
+        public override ElevenLabsAuthentication LoadFromAsset(ElevenLabsConfiguration configuration = null)
         {
-            if (asset == null)
+            if (configuration == null)
             {
                 Debug.LogWarning($"This can be speed this up by passing a {nameof(ElevenLabsConfiguration)} to the {nameof(ElevenLabsAuthentication)}.ctr");
-                asset = Resources.LoadAll<ElevenLabsConfiguration>(string.Empty).FirstOrDefault(o => o != null);
+                configuration = Resources.LoadAll<ElevenLabsConfiguration>(string.Empty).FirstOrDefault(o => o != null);
             }
 
-            return asset == null ? null : new ElevenLabsAuthentication(asset);
+            return configuration != null ? new ElevenLabsAuthentication(configuration) : null;
         }
 
         /// <inheritdoc />
