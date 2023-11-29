@@ -1,18 +1,18 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System.Threading.Tasks;
 using NUnit.Framework;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace ElevenLabs.Voice.Tests
 {
-    internal class Test_Fixture_06_Models
+    internal class Test_Fixture_06_Models : AbstractTestFixture
     {
+        [Test]
         public async Task Test_01_GetModels()
         {
-            var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
-            Assert.NotNull(api.ModelsEndpoint);
-            var models = await api.ModelsEndpoint.GetModelsAsync();
+            Assert.NotNull(ElevenLabsClient.ModelsEndpoint);
+            var models = await ElevenLabsClient.ModelsEndpoint.GetModelsAsync();
             Assert.NotNull(models);
             Assert.IsNotEmpty(models);
 

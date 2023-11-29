@@ -11,7 +11,7 @@ namespace ElevenLabs
     /// <summary>
     /// Represents authentication for ElevenLabs
     /// </summary>
-    public sealed class ElevenLabsAuthentication : AbstractAuthentication<ElevenLabsAuthentication, ElevenLabsAuthInfo>
+    public sealed class ElevenLabsAuthentication : AbstractAuthentication<ElevenLabsAuthentication, ElevenLabsAuthInfo, ElevenLabsConfiguration>
     {
         internal const string CONFIG_FILE = ".elevenlabs";
         private const string ELEVEN_LABS_API_KEY = nameof(ELEVEN_LABS_API_KEY);
@@ -23,30 +23,35 @@ namespace ElevenLabs
         public static implicit operator ElevenLabsAuthentication(string apiKey) => new ElevenLabsAuthentication(apiKey);
 
         /// <summary>
-        /// Instantiates a new Authentication object that will load the default config.
+        /// Instantiates an empty Authentication object.
         /// </summary>
-        public ElevenLabsAuthentication()
-        {
-            if (cachedDefault != null) { return; }
-
-            cachedDefault = (LoadFromAsset<ElevenLabsConfiguration>() ??
-                             LoadFromDirectory()) ??
-                             LoadFromDirectory(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)) ??
-                             LoadFromEnvironment();
-            Info = cachedDefault?.Info;
-        }
+        public ElevenLabsAuthentication() { }
 
         /// <summary>
         /// Instantiates a new Authentication object with the given <paramref name="apiKey"/>, which may be <see langword="null"/>.
         /// </summary>
         /// <param name="apiKey">The API key, required to access the API endpoint.</param>
-        public ElevenLabsAuthentication(string apiKey) => Info = new ElevenLabsAuthInfo(apiKey);
+        public ElevenLabsAuthentication(string apiKey)
+        {
+            Info = new ElevenLabsAuthInfo(apiKey);
+            cachedDefault = this;
+        }
 
         /// <summary>
         /// Instantiates a new Authentication object with the given <paramref name="authInfo"/>, which may be <see langword="null"/>.
         /// </summary>
         /// <param name="authInfo"></param>
-        public ElevenLabsAuthentication(ElevenLabsAuthInfo authInfo) => this.Info = authInfo;
+        public ElevenLabsAuthentication(ElevenLabsAuthInfo authInfo)
+        {
+            Info = authInfo;
+            cachedDefault = this;
+        }
+
+        /// <summary>
+        /// Instantiates a new Authentication object with the given <see cref="configuration"/>.
+        /// </summary>
+        /// <param name="configuration"><see cref="ElevenLabsConfiguration"/>.</param>
+        public ElevenLabsAuthentication(ElevenLabsConfiguration configuration) : this(configuration.ApiKey) { }
 
         /// <inheritdoc />
         public override ElevenLabsAuthInfo Info { get; }
@@ -60,23 +65,21 @@ namespace ElevenLabs
         /// </summary>
         public static ElevenLabsAuthentication Default
         {
-            get => cachedDefault ?? new ElevenLabsAuthentication();
+            get => cachedDefault ?? new ElevenLabsAuthentication().LoadDefault();
             internal set => cachedDefault = value;
         }
 
-        [Obsolete("Use ElevenLabsAuthentication.Info.ApiKey")]
-        public string ApiKey => Info.ApiKey;
-
         /// <inheritdoc />
-        public override ElevenLabsAuthentication LoadFromAsset<T>()
-            => Resources.LoadAll<T>(string.Empty)
-                .Where(asset => asset != null)
-                .Where(asset => asset is ElevenLabsConfiguration config &&
-                                !string.IsNullOrWhiteSpace(config.ApiKey))
-                .Select(asset => asset is ElevenLabsConfiguration config
-                    ? new ElevenLabsAuthentication(config.ApiKey)
-                    : null)
-                .FirstOrDefault();
+        public override ElevenLabsAuthentication LoadFromAsset(ElevenLabsConfiguration asset = null)
+        {
+            if (asset == null)
+            {
+                Debug.LogWarning($"This can be speed this up by passing a {nameof(ElevenLabsConfiguration)} to the {nameof(ElevenLabsAuthentication)}.ctr");
+                asset = Resources.LoadAll<ElevenLabsConfiguration>(string.Empty).FirstOrDefault(o => o != null);
+            }
+
+            return asset == null ? null : new ElevenLabsAuthentication(asset);
+        }
 
         /// <inheritdoc />
         public override ElevenLabsAuthentication LoadFromEnvironment()
@@ -94,11 +97,16 @@ namespace ElevenLabs
                 directory = Environment.CurrentDirectory;
             }
 
+            if (string.IsNullOrWhiteSpace(filename))
+            {
+                filename = CONFIG_FILE;
+            }
+
             ElevenLabsAuthInfo tempAuthInfo = null;
 
             var currentDirectory = new DirectoryInfo(directory);
 
-            while (tempAuthInfo == null && currentDirectory.Parent != null)
+            while (tempAuthInfo == null && currentDirectory?.Parent != null)
             {
                 var filePath = Path.Combine(currentDirectory.FullName, filename);
 
@@ -126,12 +134,11 @@ namespace ElevenLabs
                             var part = parts[i];
                             var nextPart = parts[i + 1];
 
-                            switch (part)
+                            apiKey = part switch
                             {
-                                case ELEVEN_LABS_API_KEY:
-                                    apiKey = nextPart.Trim();
-                                    break;
-                            }
+                                ELEVEN_LABS_API_KEY => nextPart.Trim(),
+                                _ => apiKey
+                            };
                         }
                     }
 
@@ -148,16 +155,7 @@ namespace ElevenLabs
                 }
             }
 
-            if (tempAuthInfo == null ||
-                string.IsNullOrEmpty(tempAuthInfo.ApiKey))
-            {
-                return null;
-            }
-
-            return new ElevenLabsAuthentication(tempAuthInfo);
+            return string.IsNullOrEmpty(tempAuthInfo?.ApiKey) ? null : new ElevenLabsAuthentication(tempAuthInfo);
         }
-
-        [Obsolete("use ElevenLabsAuthentication.Default.LoadFromEnvironment")]
-        public static ElevenLabsAuthentication LoadFromEnv() => Default.LoadFromEnvironment();
     }
 }

@@ -8,14 +8,13 @@ using UnityEngine;
 
 namespace ElevenLabs.Voice.Tests
 {
-    internal class Test_Fixture_04_HistoryEndpoint
+    internal class Test_Fixture_04_HistoryEndpoint : AbstractTestFixture
     {
         [Test]
         public async Task Test_01_GetHistory()
         {
-            var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
-            Assert.NotNull(api.HistoryEndpoint);
-            var historyInfo = await api.HistoryEndpoint.GetHistoryAsync();
+            Assert.NotNull(ElevenLabsClient.HistoryEndpoint);
+            var historyInfo = await ElevenLabsClient.HistoryEndpoint.GetHistoryAsync();
             Assert.NotNull(historyInfo);
             Assert.IsNotEmpty(historyInfo.HistoryItems);
 
@@ -28,32 +27,30 @@ namespace ElevenLabs.Voice.Tests
         [Test]
         public async Task Test_02_GetHistoryAudio()
         {
-            var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
-            Assert.NotNull(api.HistoryEndpoint);
-            var historyInfo = await api.HistoryEndpoint.GetHistoryAsync();
+            Assert.NotNull(ElevenLabsClient.HistoryEndpoint);
+            var historyInfo = await ElevenLabsClient.HistoryEndpoint.GetHistoryAsync();
             Assert.NotNull(historyInfo);
             Assert.IsNotEmpty(historyInfo.HistoryItems);
             var downloadItem = historyInfo.HistoryItems.OrderByDescending(item => item.Date).FirstOrDefault();
             Assert.NotNull(downloadItem);
             Debug.Log($"Downloading {downloadItem.Id}...");
-            var voiceClip = await api.HistoryEndpoint.DownloadHistoryAudioAsync(downloadItem);
+            var voiceClip = await ElevenLabsClient.HistoryEndpoint.DownloadHistoryAudioAsync(downloadItem);
             Assert.NotNull(voiceClip);
         }
 
         [Test]
         public async Task Test_03_DownloadAllHistoryItems()
         {
-            var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
-            Assert.NotNull(api.HistoryEndpoint);
-            var historyInfo = await api.HistoryEndpoint.GetHistoryAsync();
+            Assert.NotNull(ElevenLabsClient.HistoryEndpoint);
+            var historyInfo = await ElevenLabsClient.HistoryEndpoint.GetHistoryAsync();
             Assert.NotNull(historyInfo);
             Assert.IsNotEmpty(historyInfo.HistoryItems);
             var singleItem = historyInfo.HistoryItems.FirstOrDefault();
-            var singleItemResult = await api.HistoryEndpoint.DownloadHistoryItemsAsync(new List<string> { singleItem });
+            var singleItemResult = await ElevenLabsClient.HistoryEndpoint.DownloadHistoryItemsAsync(new List<string> { singleItem });
             Assert.NotNull(singleItemResult);
             Assert.IsNotEmpty(singleItemResult);
             var downloadItems = historyInfo.HistoryItems.Select(item => item.Id).ToList();
-            var voiceClips = await api.HistoryEndpoint.DownloadHistoryItemsAsync(downloadItems);
+            var voiceClips = await ElevenLabsClient.HistoryEndpoint.DownloadHistoryItemsAsync(downloadItems);
             Assert.NotNull(voiceClips);
             Assert.IsNotEmpty(voiceClips);
         }
@@ -61,9 +58,8 @@ namespace ElevenLabs.Voice.Tests
         [Test]
         public async Task Test_04_DeleteHistoryItem()
         {
-            var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
-            Assert.NotNull(api.HistoryEndpoint);
-            var historyInfo = await api.HistoryEndpoint.GetHistoryAsync();
+            Assert.NotNull(ElevenLabsClient.HistoryEndpoint);
+            var historyInfo = await ElevenLabsClient.HistoryEndpoint.GetHistoryAsync();
             Assert.NotNull(historyInfo);
             Assert.IsNotEmpty(historyInfo.HistoryItems);
             var itemsToDelete = historyInfo.HistoryItems.Where(item => item.Text.Contains("The quick brown fox jumps over the lazy dog.")).ToList();
@@ -73,12 +69,12 @@ namespace ElevenLabs.Voice.Tests
             foreach (var historyItem in itemsToDelete)
             {
                 Debug.Log($"Deleting {historyItem.Id}...");
-                var result = await api.HistoryEndpoint.DeleteHistoryItemAsync(historyItem.Id);
+                var result = await ElevenLabsClient.HistoryEndpoint.DeleteHistoryItemAsync(historyItem.Id);
                 Assert.NotNull(result);
                 Assert.IsTrue(result);
             }
 
-            var updatedHistoryInfo = await api.HistoryEndpoint.GetHistoryAsync();
+            var updatedHistoryInfo = await ElevenLabsClient.HistoryEndpoint.GetHistoryAsync();
             Assert.NotNull(updatedHistoryInfo);
             Assert.That(updatedHistoryInfo.HistoryItems, Has.None.EqualTo(itemsToDelete));
 

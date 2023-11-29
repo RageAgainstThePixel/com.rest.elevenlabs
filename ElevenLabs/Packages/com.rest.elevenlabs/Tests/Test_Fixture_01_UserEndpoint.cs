@@ -5,23 +5,21 @@ using System.Threading.Tasks;
 
 namespace ElevenLabs.Voice.Tests
 {
-    internal class Test_Fixture_01_UserEndpoint
+    internal class Test_Fixture_01_UserEndpoint : AbstractTestFixture
     {
         [Test]
         public async Task Test_01_GetUserInfo()
         {
-            var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
-            Assert.NotNull(api.UserEndpoint);
-            var result = await api.UserEndpoint.GetUserInfoAsync();
+            Assert.NotNull(ElevenLabsClient.UserEndpoint);
+            var result = await ElevenLabsClient.UserEndpoint.GetUserInfoAsync();
             Assert.NotNull(result);
         }
 
         [Test]
         public async Task Test_02_GetSubscriptionInfo()
         {
-            var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
-            Assert.NotNull(api.UserEndpoint);
-            var result = await api.UserEndpoint.GetSubscriptionInfoAsync();
+            Assert.NotNull(ElevenLabsClient.UserEndpoint);
+            var result = await ElevenLabsClient.UserEndpoint.GetSubscriptionInfoAsync();
             Assert.NotNull(result);
         }
     }

@@ -1,6 +1,5 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System;
 using System.Linq;
 using UnityEngine;
 using Utilities.WebRequestRest.Interfaces;
@@ -10,25 +9,32 @@ namespace ElevenLabs
     public sealed class ElevenLabsSettings : ISettings<ElevenLabsSettingsInfo>
     {
         /// <summary>
-        /// Creates a new instance of <see cref="ElevenLabsSettings"/> for use with ElevenLabs.
+        /// Creates a new instance of <see cref="ElevenLabsSettings"/> with default <see cref="ElevenLabsSettingsInfo"/>.
         /// </summary>
         public ElevenLabsSettings()
         {
-            if (cachedDefault != null) { return; }
+            Info = new ElevenLabsSettingsInfo();
+            cachedDefault = new ElevenLabsSettings(Info);
+        }
 
-            var config = Resources.LoadAll<ElevenLabsConfiguration>(string.Empty)
-                .FirstOrDefault(asset => asset != null);
+        /// <summary>
+        /// Creates a new instance of <see cref="ElevenLabsSettings"/> with provided <see cref="ElevenLabsConfiguration"/>.
+        /// </summary>
+        public ElevenLabsSettings(ElevenLabsConfiguration configuration)
+        {
+            if (configuration == null)
+            {
+                Debug.LogWarning($"You can speed this up by passing a {nameof(ElevenLabsConfiguration)} to the {nameof(ElevenLabsSettings)}.ctr");
+                configuration = Resources.LoadAll<ElevenLabsConfiguration>(string.Empty).FirstOrDefault(asset => asset != null);
+            }
 
-            if (config != null)
+            if (configuration == null)
             {
-                Info = new ElevenLabsSettingsInfo(config.ProxyDomain, config.ApiVersion);
-                cachedDefault = new ElevenLabsSettings(Info);
+                throw new MissingReferenceException($"Failed to find a valid {nameof(ElevenLabsConfiguration)}!");
             }
-            else
-            {
-                Info = new ElevenLabsSettingsInfo();
-                cachedDefault = new ElevenLabsSettings(Info);
-            }
+
+            Info = new ElevenLabsSettingsInfo(configuration.ProxyDomain, configuration.ApiVersion);
+            cachedDefault = new ElevenLabsSettings(Info);
         }
 
         /// <summary>
@@ -39,21 +45,18 @@ namespace ElevenLabs
             => Info = settingsInfo;
 
         /// <summary>
-        /// Creates a new instance of <see cref="ElevenLabsSettings"/> for use with ElevenLabs.
+        /// Creates a new instance of <see cref="ElevenLabsSettings"/>.
         /// </summary>
         /// <param name="domain">Base api domain.</param>
         /// <param name="apiVersion">The version of the ElevenLabs api you want to use.</param>
         public ElevenLabsSettings(string domain, string apiVersion = ElevenLabsSettingsInfo.DefaultApiVersion)
             => Info = new ElevenLabsSettingsInfo(domain, apiVersion);
 
-        [Obsolete("Obsolete")]
-        internal ElevenLabsSettings(ElevenLabsClientSettings clientSettings) => Info = new ElevenLabsSettingsInfo(clientSettings);
-
         private static ElevenLabsSettings cachedDefault;
 
         public static ElevenLabsSettings Default
         {
-            get => cachedDefault ?? new ElevenLabsSettings();
+            get => cachedDefault ?? new ElevenLabsSettings(configuration: null);
             internal set => cachedDefault = value;
         }
 
