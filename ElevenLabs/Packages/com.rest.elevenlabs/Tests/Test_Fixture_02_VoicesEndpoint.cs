@@ -10,14 +10,13 @@ using UnityEngine;
 
 namespace ElevenLabs.Voice.Tests
 {
-    internal class Test_Fixture_02_VoicesEndpoint
+    internal class Test_Fixture_02_VoicesEndpoint : AbstractTestFixture
     {
         [Test]
         public async Task Test_01_GetVoices()
         {
-            var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
-            Assert.NotNull(api.VoicesEndpoint);
-            var results = await api.VoicesEndpoint.GetAllVoicesAsync();
+            Assert.NotNull(ElevenLabsClient.VoicesEndpoint);
+            var results = await ElevenLabsClient.VoicesEndpoint.GetAllVoicesAsync();
             Assert.NotNull(results);
             Assert.IsNotEmpty(results);
 
@@ -30,9 +29,8 @@ namespace ElevenLabs.Voice.Tests
         [Test]
         public async Task Test_02_GetDefaultVoiceSettings()
         {
-            var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
-            Assert.NotNull(api.VoicesEndpoint);
-            var result = await api.VoicesEndpoint.GetDefaultVoiceSettingsAsync();
+            Assert.NotNull(ElevenLabsClient.VoicesEndpoint);
+            var result = await ElevenLabsClient.VoicesEndpoint.GetDefaultVoiceSettingsAsync();
             Assert.NotNull(result);
             Debug.Log($"stability: {result.Stability} | similarity boost: {result.SimilarityBoost}");
         }
@@ -40,13 +38,12 @@ namespace ElevenLabs.Voice.Tests
         [Test]
         public async Task Test_03_GetVoice()
         {
-            var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
-            Assert.NotNull(api.VoicesEndpoint);
-            var results = await api.VoicesEndpoint.GetAllVoicesAsync();
+            Assert.NotNull(ElevenLabsClient.VoicesEndpoint);
+            var results = await ElevenLabsClient.VoicesEndpoint.GetAllVoicesAsync();
             Assert.NotNull(results);
             Assert.IsNotEmpty(results);
             var voiceToGet = results.OrderBy(voice => voice.Name).FirstOrDefault();
-            var result = await api.VoicesEndpoint.GetVoiceAsync(voiceToGet);
+            var result = await ElevenLabsClient.VoicesEndpoint.GetVoiceAsync(voiceToGet);
             Assert.NotNull(result);
             Debug.Log($"{result.Id} | {result.Name} | {result.PreviewUrl}");
         }
@@ -54,21 +51,20 @@ namespace ElevenLabs.Voice.Tests
         [Test]
         public async Task Test_04_EditVoiceSettings()
         {
-            var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
-            Assert.NotNull(api.VoicesEndpoint);
-            var results = await api.VoicesEndpoint.GetAllVoicesAsync();
+            Assert.NotNull(ElevenLabsClient.VoicesEndpoint);
+            var results = await ElevenLabsClient.VoicesEndpoint.GetAllVoicesAsync();
             Assert.NotNull(results);
             Assert.IsNotEmpty(results);
             var voice = results.FirstOrDefault();
-            var result = await api.VoicesEndpoint.EditVoiceSettingsAsync(voice, new VoiceSettings(0.7f, 0.7f));
+            var result = await ElevenLabsClient.VoicesEndpoint.EditVoiceSettingsAsync(voice, new VoiceSettings(0.7f, 0.7f));
             Assert.NotNull(result);
             Assert.IsTrue(result);
-            var updatedVoice = await api.VoicesEndpoint.GetVoiceAsync(voice);
+            var updatedVoice = await ElevenLabsClient.VoicesEndpoint.GetVoiceAsync(voice);
             Assert.NotNull(updatedVoice);
             Debug.Log($"{updatedVoice.Id} | similarity boost: {updatedVoice.Settings?.SimilarityBoost} | stability: {updatedVoice.Settings?.Stability}");
-            var defaultVoiceSettings = await api.VoicesEndpoint.GetDefaultVoiceSettingsAsync();
+            var defaultVoiceSettings = await ElevenLabsClient.VoicesEndpoint.GetDefaultVoiceSettingsAsync();
             Assert.NotNull(defaultVoiceSettings);
-            var defaultResult = await api.VoicesEndpoint.EditVoiceSettingsAsync(voice, defaultVoiceSettings);
+            var defaultResult = await ElevenLabsClient.VoicesEndpoint.EditVoiceSettingsAsync(voice, defaultVoiceSettings);
             Assert.NotNull(defaultResult);
             Assert.IsTrue(defaultResult);
         }
@@ -76,14 +72,13 @@ namespace ElevenLabs.Voice.Tests
         [Test]
         public async Task Test_05_AddVoice()
         {
-            var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
-            Assert.NotNull(api.VoicesEndpoint);
+            Assert.NotNull(ElevenLabsClient.VoicesEndpoint);
             var testLabels = new Dictionary<string, string>
             {
                 { "accent", "american" }
             };
             var clipPath = AssetDatabase.GUIDToAssetPath("96e9fdf73bc7a944f93886694973b90e");
-            var result = await api.VoicesEndpoint.AddVoiceAsync("Test Voice", new[] { clipPath }, testLabels);
+            var result = await ElevenLabsClient.VoicesEndpoint.AddVoiceAsync("Test Voice", new[] { clipPath }, testLabels);
             Assert.NotNull(result);
             Debug.Log($"{result.Name}");
             Assert.IsNotEmpty(result.Samples);
@@ -92,9 +87,8 @@ namespace ElevenLabs.Voice.Tests
         [Test]
         public async Task Test_06_EditVoice()
         {
-            var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
-            Assert.NotNull(api.VoicesEndpoint);
-            var results = await api.VoicesEndpoint.GetAllVoicesAsync();
+            Assert.NotNull(ElevenLabsClient.VoicesEndpoint);
+            var results = await ElevenLabsClient.VoicesEndpoint.GetAllVoicesAsync();
             Assert.NotNull(results);
             Assert.IsNotEmpty(results);
             var voiceToEdit = results.FirstOrDefault(voice => voice.Name.Contains("Test Voice"));
@@ -105,7 +99,7 @@ namespace ElevenLabs.Voice.Tests
                 { "key", "value" }
             };
             var clipPath = AssetDatabase.GUIDToAssetPath("96e9fdf73bc7a944f93886694973b90e");
-            var result = await api.VoicesEndpoint.EditVoiceAsync(voiceToEdit, new[] { clipPath }, testLabels);
+            var result = await ElevenLabsClient.VoicesEndpoint.EditVoiceAsync(voiceToEdit, new[] { clipPath }, testLabels);
             Assert.NotNull(result);
             Assert.IsTrue(result);
         }
@@ -113,38 +107,36 @@ namespace ElevenLabs.Voice.Tests
         [Test]
         public async Task Test_07_GetVoiceSample()
         {
-            var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
-            Assert.NotNull(api.VoicesEndpoint);
-            var results = await api.VoicesEndpoint.GetAllVoicesAsync();
+            Assert.NotNull(ElevenLabsClient.VoicesEndpoint);
+            var results = await ElevenLabsClient.VoicesEndpoint.GetAllVoicesAsync();
             Assert.NotNull(results);
             Assert.IsNotEmpty(results);
             var voice = results.FirstOrDefault(voice => voice.Name.Contains("Test Voice"));
             Assert.NotNull(voice);
-            var updatedVoice = await api.VoicesEndpoint.GetVoiceAsync(voice);
+            var updatedVoice = await ElevenLabsClient.VoicesEndpoint.GetVoiceAsync(voice);
             Assert.NotNull(updatedVoice);
             Assert.IsNotEmpty(updatedVoice.Samples);
             var sample = updatedVoice.Samples.FirstOrDefault();
             Assert.NotNull(sample);
-            var voiceClip = await api.VoicesEndpoint.DownloadVoiceSampleAudioAsync(updatedVoice, updatedVoice.Samples.FirstOrDefault());
+            var voiceClip = await ElevenLabsClient.VoicesEndpoint.DownloadVoiceSampleAudioAsync(updatedVoice, updatedVoice.Samples.FirstOrDefault());
             Assert.NotNull(voiceClip);
         }
 
         [Test]
         public async Task Test_08_DeleteVoiceSample()
         {
-            var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
-            Assert.NotNull(api.VoicesEndpoint);
-            var results = await api.VoicesEndpoint.GetAllVoicesAsync();
+            Assert.NotNull(ElevenLabsClient.VoicesEndpoint);
+            var results = await ElevenLabsClient.VoicesEndpoint.GetAllVoicesAsync();
             Assert.NotNull(results);
             Assert.IsNotEmpty(results);
             var voice = results.FirstOrDefault(voice => voice.Name.Contains("Test Voice"));
             Assert.NotNull(voice);
-            var updatedVoice = await api.VoicesEndpoint.GetVoiceAsync(voice);
+            var updatedVoice = await ElevenLabsClient.VoicesEndpoint.GetVoiceAsync(voice);
             Assert.NotNull(updatedVoice);
             Assert.IsNotEmpty(updatedVoice.Samples);
             var sample = updatedVoice.Samples.FirstOrDefault();
             Assert.NotNull(sample);
-            var result = await api.VoicesEndpoint.DeleteVoiceSampleAsync(updatedVoice, sample);
+            var result = await ElevenLabsClient.VoicesEndpoint.DeleteVoiceSampleAsync(updatedVoice, sample);
             Assert.NotNull(result);
             Assert.IsTrue(result);
         }
@@ -152,9 +144,8 @@ namespace ElevenLabs.Voice.Tests
         [Test]
         public async Task Test_09_DeleteVoice()
         {
-            var api = new ElevenLabsClient(ElevenLabsAuthentication.Default.LoadFromEnvironment());
-            Assert.NotNull(api.VoicesEndpoint);
-            var results = await api.VoicesEndpoint.GetAllVoicesAsync();
+            Assert.NotNull(ElevenLabsClient.VoicesEndpoint);
+            var results = await ElevenLabsClient.VoicesEndpoint.GetAllVoicesAsync();
             Assert.NotNull(results);
             Assert.IsNotEmpty(results);
             var voicesToDelete = results.Where(voice => voice.Name.Contains("Test Voice")).ToList();
@@ -163,7 +154,7 @@ namespace ElevenLabs.Voice.Tests
 
             foreach (var voice in voicesToDelete)
             {
-                var result = await api.VoicesEndpoint.DeleteVoiceAsync(voice);
+                var result = await ElevenLabsClient.VoicesEndpoint.DeleteVoiceAsync(voice);
                 Assert.NotNull(result);
                 Assert.IsTrue(result);
             }

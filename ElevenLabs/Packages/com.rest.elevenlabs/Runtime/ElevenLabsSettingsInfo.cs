@@ -50,11 +50,6 @@ namespace ElevenLabs
             BaseRequestUrlFormat = $"https://{Domain}{BaseRequest}{{0}}";
         }
 
-        [Obsolete]
-        internal ElevenLabsSettingsInfo(ElevenLabsClientSettings clientSettings)
-        {
-        }
-
         public string Domain { get; }
 
         public string ApiVersion { get; }
