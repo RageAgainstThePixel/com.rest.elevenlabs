@@ -1,6 +1,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-namespace ElevenLabs.Voice.Tests
+namespace ElevenLabs.Tests
 {
     internal abstract class AbstractTestFixture
     {

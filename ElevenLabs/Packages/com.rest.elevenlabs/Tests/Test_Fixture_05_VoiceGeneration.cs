@@ -8,7 +8,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace ElevenLabs.Voice.Tests
+namespace ElevenLabs.Tests
 {
     internal class Test_Fixture_05_VoiceGeneration : AbstractTestFixture
     {

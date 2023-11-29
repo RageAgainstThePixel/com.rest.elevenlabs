@@ -2,7 +2,7 @@
 
 [![Discord](https://img.shields.io/discord/855294214065487932.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/xQgMW9ufN4) [![openupm](https://img.shields.io/npm/v/com.rest.elevenlabs?label=openupm&registry_uri=https://package.openupm.com)](https://openupm.com/packages/com.rest.elevenlabs/) [![openupm](https://img.shields.io/badge/dynamic/json?color=brightgreen&label=downloads&query=%24.downloads&suffix=%2Fmonth&url=https%3A%2F%2Fpackage.openupm.com%2Fdownloads%2Fpoint%2Flast-month%2Fcom.rest.elevenlabs)](https://openupm.com/packages/com.rest.elevenlabs/)
 
-A non-official [ElevenLabs](https://elevenlabs.io) voice synthesis RESTful client for the [Unity](https://unity.com/) Game Engine.
+A non-official [ElevenLabs](https://elevenlabs.io/?from=partnerbrown9849) voice synthesis RESTful client for the [Unity](https://unity.com/) Game Engine.
 
 Based on [ElevenLabs-DotNet](https://github.com/RageAgainstThePixel/ElevenLabs-DotNet)
 
@@ -265,7 +265,9 @@ audioSource.PlayOneShot(voiceClip.AudioClip);
 voiceClip.CopyIntoProject(editorDownloadDirectory);
 ```
 
-#### Stream Text to Speech
+#### [Stream Text To Speech](https://docs.elevenlabs.io/api-reference/text-to-speech-stream)
+
+Stream text to speech.
 
 ```csharp
 var api = new ElevenLabsClient();
@@ -393,9 +395,9 @@ Get metadata about all your generated audio.
 
 ```csharp
 var api = new ElevenLabsClient();
-var historyInfo = await api.HistoryEndpoint.GetHistoryAsync();
+var historyItems = await api.HistoryEndpoint.GetHistoryAsync();
 
-foreach (var item in historyInfo.HistoryItems.OrderBy(item => item.Date))
+foreach (var item in historyItems.OrderBy(historyItem => historyItem.Date))
 {
     Debug.Log($"{item.State} {item.Date} | {item.Id} | {item.Text.Length} | {item.Text}");
 }
@@ -407,7 +409,7 @@ Get information about a specific item.
 
 ```csharp
 var api = new ElevenLabsClient();
-var historyItem = api.HistoryEndpoint.GetHistoryItemAsync(voiceClip.Id);
+var historyItem = await api.HistoryEndpoint.GetHistoryItemAsync(voiceClip.Id);
 ```
 
 #### Download History Audio

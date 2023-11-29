@@ -71,7 +71,7 @@ namespace ElevenLabs.History
         /// <summary>
         /// Download audio of a history item.
         /// </summary>
-        /// <param name="historyItem"><see cref="HistoryItem"/></param>
+        /// <param name="historyItem"><see cref="HistoryItem"/>.</param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         /// <returns><see cref="VoiceClip"/>.</returns>
         public async Task<VoiceClip> DownloadHistoryAudioAsync(HistoryItem historyItem, CancellationToken cancellationToken = default)
