@@ -4,7 +4,7 @@ using NUnit.Framework;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace ElevenLabs.Voice.Tests
+namespace ElevenLabs.Tests
 {
     internal class Test_Fixture_06_Models : AbstractTestFixture
     {

@@ -7,7 +7,7 @@ using System.Security.Authentication;
 using UnityEditor;
 using UnityEngine;
 
-namespace ElevenLabs.Voice.Tests
+namespace ElevenLabs.Tests
 {
     internal class Test_Fixture_00_Authentication
     {

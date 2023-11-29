@@ -44,6 +44,13 @@ namespace ElevenLabs
         /// <remarks>
         /// Requires you to be subscribed to Independent Publisher tier or above.
         /// </remarks>
-        PCM_44100
+        PCM_44100,
+        /// <summary>
+        /// μ-law format (sometimes written mu-law, often approximated as u-law) with 8kHz sample rate.
+        /// </summary>
+        /// <remarks>
+        /// Note that this format is commonly used for Twilio audio inputs.
+        /// </remarks>
+        Ulaw_8000
     }
 }
