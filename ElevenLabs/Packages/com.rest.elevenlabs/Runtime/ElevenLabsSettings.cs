@@ -43,7 +43,10 @@ namespace ElevenLabs
         /// </summary>
         /// <param name="settingsInfo"><see cref="ElevenLabsSettingsInfo"/>.</param>
         public ElevenLabsSettings(ElevenLabsSettingsInfo settingsInfo)
-            => Info = settingsInfo;
+        {
+            Info = settingsInfo;
+            cachedDefault = this;
+        }
 
         /// <summary>
         /// Creates a new instance of <see cref="ElevenLabsSettings"/>.
@@ -51,7 +54,10 @@ namespace ElevenLabs
         /// <param name="domain">Base api domain.</param>
         /// <param name="apiVersion">The version of the ElevenLabs api you want to use.</param>
         public ElevenLabsSettings(string domain, string apiVersion = ElevenLabsSettingsInfo.DefaultApiVersion)
-            => Info = new ElevenLabsSettingsInfo(domain, apiVersion);
+        {
+            Info = new ElevenLabsSettingsInfo(domain, apiVersion);
+            cachedDefault = this;
+        }
 
         private static ElevenLabsSettings cachedDefault;
 
