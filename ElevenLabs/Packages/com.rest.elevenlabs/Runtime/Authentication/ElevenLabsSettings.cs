@@ -29,13 +29,16 @@ namespace ElevenLabs
                 configuration = Resources.LoadAll<ElevenLabsConfiguration>(string.Empty).FirstOrDefault(asset => asset != null);
             }
 
-            if (configuration == null)
+            if (configuration != null)
             {
-                throw new MissingReferenceException($"Failed to find a valid {nameof(ElevenLabsConfiguration)}!");
+                Info = new ElevenLabsSettingsInfo(configuration.ProxyDomain, configuration.ApiVersion);
+                cachedDefault = new ElevenLabsSettings(Info);
             }
-
-            Info = new ElevenLabsSettingsInfo(configuration.ProxyDomain, configuration.ApiVersion);
-            cachedDefault = new ElevenLabsSettings(Info);
+            else
+            {
+                Info = new ElevenLabsSettingsInfo();
+                cachedDefault = new ElevenLabsSettings(Info);
+            }
         }
 
         /// <summary>
