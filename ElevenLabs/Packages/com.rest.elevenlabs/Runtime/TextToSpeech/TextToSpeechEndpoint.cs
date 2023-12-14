@@ -66,7 +66,6 @@ namespace ElevenLabs.TextToSpeech
         {
             ValidateInputs(text, voice);
 
-            var downloadDirectory = await GetCacheDirectoryAsync(voice);
             var defaultVoiceSettings = voiceSettings ?? voice.Settings ?? await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken);
             var request = new TextToSpeechRequest(text, model, defaultVoiceSettings);
             var payload = JsonConvert.SerializeObject(request, ElevenLabsClient.JsonSerializationOptions);
@@ -95,6 +94,7 @@ namespace ElevenLabs.TextToSpeech
                 AudioType.OGGVORBIS => "ogg",
                 _ => throw new ArgumentOutOfRangeException($"Unsupported {nameof(AudioType)}: {audioType}")
             };
+            var downloadDirectory = await GetCacheDirectoryAsync(voice);
             var cachedPath = $"{downloadDirectory}/{clipId}.{extension}";
 
             if (!File.Exists(cachedPath))
@@ -115,7 +115,7 @@ namespace ElevenLabs.TextToSpeech
                             _ => throw new ArgumentOutOfRangeException(nameof(outputFormat), outputFormat, null)
                         };
                         var oggBytes = await OggEncoder.ConvertToBytesAsync(pcmData, frequency, 1, cancellationToken: cancellationToken).ConfigureAwait(false);
-                        await File.WriteAllBytesAsync(cachedPath, oggBytes, cancellationToken: cancellationToken).ConfigureAwait(false);
+                        await File.WriteAllBytesAsync(cachedPath, oggBytes, cancellationToken).ConfigureAwait(false);
                         break;
                     default:
                         throw new ArgumentOutOfRangeException($"Unsupported {nameof(AudioType)}: {audioType}");
@@ -123,7 +123,7 @@ namespace ElevenLabs.TextToSpeech
             }
 
             await Awaiters.UnityMainThread;
-            var audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", audioType, cancellationToken: cancellationToken);
+            var audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", audioType, debug: EnableDebug, cancellationToken: cancellationToken);
             return new VoiceClip(clipId, text, voice, audioClip, cachedPath);
         }
 
@@ -182,7 +182,6 @@ namespace ElevenLabs.TextToSpeech
                 OutputFormat.PCM_44100 => 44100,
                 _ => throw new ArgumentOutOfRangeException(nameof(outputFormat), outputFormat, null)
             };
-            var downloadDirectory = await GetCacheDirectoryAsync(voice);
             var defaultVoiceSettings = voiceSettings ?? voice.Settings ?? await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken);
             var request = new TextToSpeechRequest(text, model, defaultVoiceSettings);
             var payload = JsonConvert.SerializeObject(request, ElevenLabsClient.JsonSerializationOptions);
@@ -208,10 +207,11 @@ namespace ElevenLabs.TextToSpeech
             var pcmData = PCMEncoder.Decode(response.Data, PCMFormatSize.SixteenBit);
             var fullClip = AudioClip.Create(clipId, pcmData.Length, 1, frequency, false);
             var oggBytes = await OggEncoder.ConvertToBytesAsync(pcmData, frequency, 1, cancellationToken: cancellationToken).ConfigureAwait(false);
+            var downloadDirectory = await GetCacheDirectoryAsync(voice);
             var cachedPath = $"{downloadDirectory}/{clipId}.ogg";
             await File.WriteAllBytesAsync(cachedPath, oggBytes, cancellationToken: cancellationToken).ConfigureAwait(false);
             await Awaiters.UnityMainThread;
-            await Rest.DownloadAudioClipAsync($"file://{cachedPath}", AudioType.OGGVORBIS, cancellationToken: cancellationToken);
+            await Rest.DownloadAudioClipAsync($"file://{cachedPath}", AudioType.OGGVORBIS, debug: EnableDebug, cancellationToken: cancellationToken);
             return new VoiceClip(clipId, text, voice, fullClip, cachedPath);
 
             void StreamCallback(Response partialResponse)

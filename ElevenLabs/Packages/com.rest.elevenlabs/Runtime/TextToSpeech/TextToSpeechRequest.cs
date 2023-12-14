@@ -4,6 +4,7 @@ using ElevenLabs.Models;
 using ElevenLabs.Voices;
 using Newtonsoft.Json;
 using System;
+using System.Text;
 using UnityEngine.Scripting;
 
 namespace ElevenLabs.TextToSpeech
@@ -20,6 +21,11 @@ namespace ElevenLabs.TextToSpeech
             if (string.IsNullOrWhiteSpace(text))
             {
                 throw new ArgumentNullException(nameof(text));
+            }
+
+            if (!Encoding.GetEncoding(text).Equals(Encoding.UTF8))
+            {
+                text = Encoding.UTF8.GetString(Encoding.Default.GetBytes(text));
             }
 
             Text = text;
