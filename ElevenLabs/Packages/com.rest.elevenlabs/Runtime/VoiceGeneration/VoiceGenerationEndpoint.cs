@@ -55,7 +55,7 @@ namespace ElevenLabs.VoiceGeneration
             }
 
             await File.WriteAllBytesAsync(cachedPath, response.Data, cancellationToken).ConfigureAwait(true);
-            var audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", AudioType.MPEG, cancellationToken: cancellationToken);
+            var audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", AudioType.MPEG, debug: EnableDebug, cancellationToken: cancellationToken);
             return new Tuple<string, AudioClip>(generatedVoiceId, audioClip);
         }
 
