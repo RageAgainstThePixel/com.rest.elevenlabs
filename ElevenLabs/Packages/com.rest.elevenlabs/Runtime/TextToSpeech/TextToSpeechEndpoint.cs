@@ -64,7 +64,7 @@ namespace ElevenLabs.TextToSpeech
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         /// <returns><see cref="VoiceClip"/>.</returns>
         public async Task<VoiceClip> TextToSpeechAsync(string text, Voice voice, VoiceSettings voiceSettings = null, Model model = null, OutputFormat outputFormat = OutputFormat.MP3_44100_128, int? optimizeStreamingLatency = null, CancellationToken cancellationToken = default)
-            => await TextToSpeechAsync(new TextToSpeechRequest(voice, text, Encoding.Default, voiceSettings ?? voice.Settings ?? await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken), outputFormat, optimizeStreamingLatency, model), cancellationToken);
+            => await TextToSpeechAsync(new TextToSpeechRequest(voice, text, Encoding.UTF8, voiceSettings ?? voice.Settings ?? await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken), outputFormat, optimizeStreamingLatency, model), cancellationToken);
 
         /// <summary>
         /// Converts text into speech using a voice of your choice and returns audio.
@@ -173,7 +173,7 @@ namespace ElevenLabs.TextToSpeech
         /// </param>
         /// <returns>Downloaded clip path, and the loaded audio clip.</returns>
         public async Task<VoiceClip> StreamTextToSpeechAsync(string text, Voice voice, Action<AudioClip> partialClipCallback, VoiceSettings voiceSettings = null, Model model = null, OutputFormat outputFormat = OutputFormat.PCM_24000, int? optimizeStreamingLatency = null, CancellationToken cancellationToken = default)
-            => await StreamTextToSpeechAsync(new TextToSpeechRequest(voice, text, Encoding.Default, voiceSettings ?? voice.Settings ?? await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken), outputFormat, optimizeStreamingLatency, model), partialClipCallback, cancellationToken);
+            => await StreamTextToSpeechAsync(new TextToSpeechRequest(voice, text, Encoding.UTF8, voiceSettings ?? voice.Settings ?? await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken), outputFormat, optimizeStreamingLatency, model), partialClipCallback, cancellationToken);
 
         /// <summary>
         /// Converts text into speech using a voice of your choice and returns audio as an audio stream.
