@@ -12,20 +12,27 @@ namespace ElevenLabs.TextToSpeech
     [Preserve]
     internal sealed class TextToSpeechRequest
     {
+        [Preserve]
         [JsonConstructor]
         public TextToSpeechRequest(
             [JsonProperty("text")] string text,
-            [JsonProperty("model_id")] Model model,
-            [JsonProperty("voice_settings")] VoiceSettings voiceSettings)
+            [JsonProperty("model_id")] Model model = null,
+            [JsonProperty("voice_settings")] VoiceSettings voiceSettings = null)
+            : this(text, model, voiceSettings, Encoding.UTF8)
+        {
+        }
+
+        [Preserve]
+        public TextToSpeechRequest(string text, Model model = null, VoiceSettings voiceSettings = null, Encoding encoding = null)
         {
             if (string.IsNullOrWhiteSpace(text))
             {
                 throw new ArgumentNullException(nameof(text));
             }
 
-            if (!Encoding.GetEncoding(text).Equals(Encoding.UTF8))
+            if (encoding?.Equals(Encoding.UTF8) == false)
             {
-                text = Encoding.UTF8.GetString(Encoding.Default.GetBytes(text));
+                text = Encoding.UTF8.GetString(encoding.GetBytes(text));
             }
 
             Text = text;
