@@ -10,27 +10,38 @@ using UnityEngine.Scripting;
 namespace ElevenLabs.TextToSpeech
 {
     [Preserve]
-    internal sealed class TextToSpeechRequest
+    public sealed class TextToSpeechRequest
     {
-        [JsonConstructor]
-        public TextToSpeechRequest(
-            [JsonProperty("text")] string text,
-            [JsonProperty("model_id")] Model model,
-            [JsonProperty("voice_settings")] VoiceSettings voiceSettings)
+        [Preserve]
+        public TextToSpeechRequest(Voice voice, string text, Encoding encoding = null, VoiceSettings voiceSettings = null, OutputFormat outputFormat = OutputFormat.MP3_44100_128, int? optimizeStreamingLatency = null, Model model = null)
         {
             if (string.IsNullOrWhiteSpace(text))
             {
                 throw new ArgumentNullException(nameof(text));
             }
 
-            if (!Encoding.GetEncoding(text).Equals(Encoding.UTF8))
+            if (text.Length > 5000)
             {
-                text = Encoding.UTF8.GetString(Encoding.Default.GetBytes(text));
+                throw new ArgumentOutOfRangeException(nameof(text), $"{nameof(text)} cannot exceed 5000 characters");
+            }
+
+            if (voice == null ||
+                string.IsNullOrWhiteSpace(voice.Id))
+            {
+                throw new ArgumentNullException(nameof(voice));
+            }
+
+            if (encoding?.Equals(Encoding.UTF8) == false)
+            {
+                text = Encoding.UTF8.GetString(encoding.GetBytes(text));
             }
 
             Text = text;
-            Model = model ?? Models.Model.MonoLingualV1;
-            VoiceSettings = voiceSettings ?? throw new ArgumentNullException(nameof(voiceSettings));
+            Model = model ?? Models.Model.MultiLingualV2;
+            Voice = voice;
+            VoiceSettings = voiceSettings ?? voice.Settings ?? throw new ArgumentNullException(nameof(voiceSettings));
+            OutputFormat = outputFormat;
+            OptimizeStreamingLatency = optimizeStreamingLatency;
         }
 
         [Preserve]
@@ -42,7 +53,19 @@ namespace ElevenLabs.TextToSpeech
         public string Model { get; }
 
         [Preserve]
+        [JsonIgnore]
+        public Voice Voice { get; }
+
+        [Preserve]
         [JsonProperty("voice_settings")]
         public VoiceSettings VoiceSettings { get; internal set; }
+
+        [Preserve]
+        [JsonIgnore]
+        public OutputFormat OutputFormat { get; }
+
+        [Preserve]
+        [JsonIgnore]
+        public int? OptimizeStreamingLatency { get; }
     }
 }

@@ -1,5 +1,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using UnityEngine.Scripting;
@@ -79,12 +80,40 @@ namespace ElevenLabs.Models
 
         [Preserve]
         [JsonIgnore]
-        public static Model MonoLingualV1 { get; } = new Model("eleven_monolingual_v1");
+        [Obsolete("Use EnglishV1")]
+        public static Model MonoLingualV1 => EnglishV1;
 
+        /// <summary>
+        /// Use our standard English language model to generate speech in a variety of voices, styles and moods.
+        /// </summary>
+        [Preserve]
+        [JsonIgnore]
+        public static Model EnglishV1 { get; } = new Model("eleven_monolingual_v1");
+
+        /// <summary>
+        /// Speech to speech model suitable for scenarios where you need maximum control over the content and prosody of your generations.
+        /// </summary>
+        [Preserve]
+        [JsonIgnore]
+        public static Model EnglishV2 { get; } = new Model("eleven_english_sts_v2");
+
+        /// <summary>
+        /// Cutting-edge turbo model is ideally suited for tasks demanding extremely low latency.
+        /// </summary>
+        [Preserve]
+        [JsonIgnore]
+        public static Model EnglishTurboV2 { get; } = new Model("eleven_turbo_v2");
+
+        /// <summary>
+        /// Generate lifelike speech in multiple languages and create content that resonates with a broader audience.
+        /// </summary>
         [Preserve]
         [JsonIgnore]
         public static Model MultiLingualV1 { get; } = new Model("eleven_multilingual_v1");
 
+        /// <summary>
+        /// State of the art multilingual speech synthesis model, able to generate life-like speech in 29 languages.
+        /// </summary>
         [Preserve]
         [JsonIgnore]
         public static Model MultiLingualV2 { get; } = new Model("eleven_multilingual_v2");

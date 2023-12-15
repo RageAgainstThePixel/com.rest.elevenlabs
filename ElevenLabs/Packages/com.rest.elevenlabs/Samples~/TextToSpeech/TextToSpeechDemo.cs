@@ -1,5 +1,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using ElevenLabs.Models;
 using ElevenLabs.Voices;
 using System;
 using System.Collections.Generic;
@@ -54,8 +55,7 @@ namespace ElevenLabs.Demo
                 var voiceClip = await api.TextToSpeechEndpoint.StreamTextToSpeechAsync(message, voice, partialClip =>
                 {
                     streamClipQueue.Enqueue(partialClip);
-                }, cancellationToken: lifetimeCancellationTokenSource.Token);
-
+                }, model: Model.EnglishTurboV2, cancellationToken: lifetimeCancellationTokenSource.Token);
                 audioSource.clip = voiceClip.AudioClip;
                 Debug.Log($"Full clip: {voiceClip.Id}");
             }
