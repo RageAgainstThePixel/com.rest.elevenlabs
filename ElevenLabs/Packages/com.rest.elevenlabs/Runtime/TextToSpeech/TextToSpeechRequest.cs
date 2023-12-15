@@ -10,7 +10,7 @@ using UnityEngine.Scripting;
 namespace ElevenLabs.TextToSpeech
 {
     [Preserve]
-    internal sealed class TextToSpeechRequest
+    public sealed class TextToSpeechRequest
     {
         [Preserve]
         [JsonConstructor]
