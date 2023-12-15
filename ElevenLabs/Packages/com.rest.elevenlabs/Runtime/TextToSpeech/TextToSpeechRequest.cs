@@ -13,21 +13,22 @@ namespace ElevenLabs.TextToSpeech
     public sealed class TextToSpeechRequest
     {
         [Preserve]
-        [JsonConstructor]
-        public TextToSpeechRequest(
-            [JsonProperty("text")] string text,
-            [JsonProperty("model_id")] Model model = null,
-            [JsonProperty("voice_settings")] VoiceSettings voiceSettings = null)
-            : this(text, model, voiceSettings, Encoding.UTF8)
-        {
-        }
-
-        [Preserve]
-        public TextToSpeechRequest(string text, Model model = null, VoiceSettings voiceSettings = null, Encoding encoding = null)
+        public TextToSpeechRequest(Voice voice, string text, Encoding encoding = null, VoiceSettings voiceSettings = null, OutputFormat outputFormat = OutputFormat.MP3_44100_128, int? optimizeStreamingLatency = null, Model model = null)
         {
             if (string.IsNullOrWhiteSpace(text))
             {
                 throw new ArgumentNullException(nameof(text));
+            }
+
+            if (text.Length > 5000)
+            {
+                throw new ArgumentOutOfRangeException(nameof(text), $"{nameof(text)} cannot exceed 5000 characters");
+            }
+
+            if (voice == null ||
+                string.IsNullOrWhiteSpace(voice.Id))
+            {
+                throw new ArgumentNullException(nameof(voice));
             }
 
             if (encoding?.Equals(Encoding.UTF8) == false)
@@ -37,7 +38,10 @@ namespace ElevenLabs.TextToSpeech
 
             Text = text;
             Model = model ?? Models.Model.MonoLingualV1;
-            VoiceSettings = voiceSettings ?? throw new ArgumentNullException(nameof(voiceSettings));
+            Voice = voice;
+            VoiceSettings = voiceSettings ?? voice.Settings ?? throw new ArgumentNullException(nameof(voiceSettings));
+            OutputFormat = outputFormat;
+            OptimizeStreamingLatency = optimizeStreamingLatency;
         }
 
         [Preserve]
@@ -49,7 +53,19 @@ namespace ElevenLabs.TextToSpeech
         public string Model { get; }
 
         [Preserve]
+        [JsonIgnore]
+        public Voice Voice { get; }
+
+        [Preserve]
         [JsonProperty("voice_settings")]
         public VoiceSettings VoiceSettings { get; internal set; }
+
+        [Preserve]
+        [JsonIgnore]
+        public OutputFormat OutputFormat { get; }
+
+        [Preserve]
+        [JsonIgnore]
+        public int? OptimizeStreamingLatency { get; }
     }
 }
