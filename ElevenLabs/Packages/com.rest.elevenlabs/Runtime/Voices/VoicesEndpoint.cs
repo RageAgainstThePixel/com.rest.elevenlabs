@@ -339,7 +339,7 @@ namespace ElevenLabs.Voices
                 }
             }
 
-            var audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", audioType, debug: EnableDebug, cancellationToken: cancellationToken);
+            var audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", audioType, parameters: new RestParameters(debug: EnableDebug), cancellationToken: cancellationToken);
             return new VoiceClip(sample.Id, string.Empty, voice, audioClip, cachedPath);
         }
 
