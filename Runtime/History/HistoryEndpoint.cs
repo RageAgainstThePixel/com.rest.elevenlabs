@@ -113,7 +113,7 @@ namespace ElevenLabs.History
             }
 
             await Awaiters.UnityMainThread;
-            var audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", AudioType.UNKNOWN, debug: EnableDebug, cancellationToken: cancellationToken);
+            var audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", AudioType.UNKNOWN, parameters: new RestParameters(debug: EnableDebug), cancellationToken: cancellationToken);
             return new VoiceClip(historyItem.Id, historyItem.Text, voice, audioClip, cachedPath);
         }
 

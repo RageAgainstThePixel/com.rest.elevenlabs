@@ -498,6 +498,9 @@ namespace ElevenLabs.Editor
         #endregion Static Content
 
         [SerializeField]
+        private ElevenLabsConfiguration configuration;
+
+        [SerializeField]
         private int tab;
 
         [SerializeField]
@@ -517,6 +520,10 @@ namespace ElevenLabs.Editor
 
         [SerializeField]
         private List<AudioClip> newSampleClips;
+
+        private ElevenLabsAuthentication auth;
+
+        private ElevenLabsSettings settings;
 
         private Vector2 scrollPosition = Vector2.zero;
 
@@ -543,6 +550,17 @@ namespace ElevenLabs.Editor
             audioPlayButtonContent ??= EditorGUIUtility.IconContent("d_PlayButton");
             audioStopButtonContent ??= EditorGUIUtility.IconContent("d_PauseButton");
 
+            if (configuration == null)
+            {
+                configuration = Resources.Load<ElevenLabsConfiguration>($"{nameof(configuration)}.asset");
+            }
+
+            auth ??= configuration == null
+                ? new ElevenLabsAuthentication().LoadDefaultsReversed()
+                : new ElevenLabsAuthentication(configuration);
+            settings ??= configuration == null
+                ? new ElevenLabsSettings()
+                : new ElevenLabsSettings(configuration);
             api ??= new ElevenLabsClient();
 
             if (!hasFetchedUserInfo ||

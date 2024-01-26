@@ -129,7 +129,7 @@ namespace ElevenLabs.TextToSpeech
             }
 
             await Awaiters.UnityMainThread;
-            var audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", audioType, debug: EnableDebug, cancellationToken: cancellationToken);
+            var audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", audioType, parameters: new RestParameters(debug: EnableDebug), cancellationToken: cancellationToken);
             return new VoiceClip(clipId, request.Text, request.Voice, audioClip, cachedPath);
         }
 
@@ -228,7 +228,7 @@ namespace ElevenLabs.TextToSpeech
             var cachedPath = $"{downloadDirectory}/{clipId}.ogg";
             await File.WriteAllBytesAsync(cachedPath, oggBytes, cancellationToken: cancellationToken).ConfigureAwait(false);
             await Awaiters.UnityMainThread;
-            await Rest.DownloadAudioClipAsync($"file://{cachedPath}", AudioType.OGGVORBIS, debug: EnableDebug, cancellationToken: cancellationToken);
+            await Rest.DownloadAudioClipAsync($"file://{cachedPath}", AudioType.OGGVORBIS, parameters: new RestParameters(debug: EnableDebug), cancellationToken: cancellationToken);
             return new VoiceClip(clipId, request.Text, request.Voice, fullClip, cachedPath);
 
             void StreamCallback(Response partialResponse)
