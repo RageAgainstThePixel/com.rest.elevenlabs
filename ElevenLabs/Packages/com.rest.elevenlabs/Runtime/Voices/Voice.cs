@@ -103,39 +103,39 @@ namespace ElevenLabs.Voices
 
         [Preserve]
         [JsonIgnore]
-        public static Voice Adam { get; } = new Voice("pNInz6obpgDQGcFmaJgB", nameof(Adam));
+        public static Voice Adam { get; } = new("pNInz6obpgDQGcFmaJgB", nameof(Adam));
 
         [Preserve]
         [JsonIgnore]
-        public static Voice Antoni { get; } = new Voice("ErXwobaYiN019PkySvjV", nameof(Antoni));
+        public static Voice Antoni { get; } = new("ErXwobaYiN019PkySvjV", nameof(Antoni));
 
         [Preserve]
         [JsonIgnore]
-        public static Voice Arnold { get; } = new Voice("VR6AewLTigWG4xSOukaG", nameof(Arnold));
+        public static Voice Arnold { get; } = new("VR6AewLTigWG4xSOukaG", nameof(Arnold));
 
         [Preserve]
         [JsonIgnore]
-        public static Voice Bella { get; } = new Voice("EXAVITQu4vr4xnSDxMaL", nameof(Bella));
+        public static Voice Bella { get; } = new("EXAVITQu4vr4xnSDxMaL", nameof(Bella));
 
         [Preserve]
         [JsonIgnore]
-        public static Voice Domi { get; } = new Voice("AZnzlk1XvdvUeBnXmlld", nameof(Domi));
+        public static Voice Domi { get; } = new("AZnzlk1XvdvUeBnXmlld", nameof(Domi));
 
         [Preserve]
         [JsonIgnore]
-        public static Voice Elli { get; } = new Voice("MF3mGyEYCl7XYWbV9V6O", nameof(Elli));
+        public static Voice Elli { get; } = new("MF3mGyEYCl7XYWbV9V6O", nameof(Elli));
 
         [Preserve]
         [JsonIgnore]
-        public static Voice Josh { get; } = new Voice("TxGEqnHWrfWFTfGW9XjX", nameof(Josh));
+        public static Voice Josh { get; } = new("TxGEqnHWrfWFTfGW9XjX", nameof(Josh));
 
         [Preserve]
         [JsonIgnore]
-        public static Voice Rachel { get; } = new Voice("21m00Tcm4TlvDq8ikWAM", nameof(Rachel));
+        public static Voice Rachel { get; } = new("21m00Tcm4TlvDq8ikWAM", nameof(Rachel));
 
         [Preserve]
         [JsonIgnore]
-        public static Voice Sam { get; } = new Voice("yoZ06aMxZJJ28mfd3POQ", nameof(Sam));
+        public static Voice Sam { get; } = new("yoZ06aMxZJJ28mfd3POQ", nameof(Sam));
 
         #endregion Premade Voices
 

@@ -88,35 +88,35 @@ namespace ElevenLabs.Models
         /// </summary>
         [Preserve]
         [JsonIgnore]
-        public static Model EnglishV1 { get; } = new Model("eleven_monolingual_v1");
+        public static Model EnglishV1 { get; } = new("eleven_monolingual_v1");
 
         /// <summary>
         /// Speech to speech model suitable for scenarios where you need maximum control over the content and prosody of your generations.
         /// </summary>
         [Preserve]
         [JsonIgnore]
-        public static Model EnglishV2 { get; } = new Model("eleven_english_sts_v2");
+        public static Model EnglishV2 { get; } = new("eleven_english_sts_v2");
 
         /// <summary>
         /// Cutting-edge turbo model is ideally suited for tasks demanding extremely low latency.
         /// </summary>
         [Preserve]
         [JsonIgnore]
-        public static Model EnglishTurboV2 { get; } = new Model("eleven_turbo_v2");
+        public static Model EnglishTurboV2 { get; } = new("eleven_turbo_v2");
 
         /// <summary>
         /// Generate lifelike speech in multiple languages and create content that resonates with a broader audience.
         /// </summary>
         [Preserve]
         [JsonIgnore]
-        public static Model MultiLingualV1 { get; } = new Model("eleven_multilingual_v1");
+        public static Model MultiLingualV1 { get; } = new("eleven_multilingual_v1");
 
         /// <summary>
         /// State of the art multilingual speech synthesis model, able to generate life-like speech in 29 languages.
         /// </summary>
         [Preserve]
         [JsonIgnore]
-        public static Model MultiLingualV2 { get; } = new Model("eleven_multilingual_v2");
+        public static Model MultiLingualV2 { get; } = new("eleven_multilingual_v2");
 
         #endregion Predefined Models
     }

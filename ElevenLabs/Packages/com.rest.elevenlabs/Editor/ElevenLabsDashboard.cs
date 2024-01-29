@@ -41,19 +41,19 @@ namespace ElevenLabs.Editor
 
                 public string voiceName;
 
-                public List<AudioClip> voiceSamples = new List<AudioClip>();
+                public List<AudioClip> voiceSamples = new();
 
-                public readonly Dictionary<string, string> labels = new Dictionary<string, string>();
+                public readonly Dictionary<string, string> labels = new();
 
                 public GeneratedVoicePreviewRequest CreateRequest()
-                    => new GeneratedVoicePreviewRequest(
+                    => new(
                         speechSynthesisTextInput,
                         generatedVoiceOptions.Genders[genderSelection],
                         generatedVoiceOptions.Accents[accentSelection],
                         generatedVoiceOptions.Ages[ageSelection]);
             }
 
-            private readonly Vector2 windowSize = new Vector2(WideColumnWidth * 4, WideColumnWidth * 3);
+            private readonly Vector2 windowSize = new(WideColumnWidth * 4, WideColumnWidth * 3);
 
             private static readonly string[] popupTabTitles = { "Voice Designer", "Voice Cloning" };
 
@@ -337,39 +337,39 @@ namespace ElevenLabs.Editor
         private const string LabelControlField = "LabelControlField";
 
 
-        private static readonly GUIContent saveDirectoryContent = new GUIContent("Save Directory");
+        private static readonly GUIContent saveDirectoryContent = new("Save Directory");
 
-        private static readonly GUIContent guiTitleContent = new GUIContent($"{nameof(ElevenLabs)} Dashboard");
+        private static readonly GUIContent guiTitleContent = new($"{nameof(ElevenLabs)} Dashboard");
 
-        private static readonly GUIContent voiceContent = new GUIContent("Voice");
+        private static readonly GUIContent voiceContent = new("Voice");
 
-        private static readonly GUIContent modelContent = new GUIContent("Model");
+        private static readonly GUIContent modelContent = new("Model");
 
-        private static readonly GUIContent stabilityContent = new GUIContent("Stability");
+        private static readonly GUIContent stabilityContent = new("Stability");
 
-        private static readonly GUIContent moreVariableContent = new GUIContent("More Variable", "Increasing variability can make speech more expressive with output varying between re-generations. It can also lead to instabilities.");
+        private static readonly GUIContent moreVariableContent = new("More Variable", "Increasing variability can make speech more expressive with output varying between re-generations. It can also lead to instabilities.");
 
-        private static readonly GUIContent moreStableContent = new GUIContent("More Stable", "Increasing stability will make the voice more consistent between re-generations, but it can also make it sounds a bit monotone. On longer text fragments we recommend lowering this value.");
+        private static readonly GUIContent moreStableContent = new("More Stable", "Increasing stability will make the voice more consistent between re-generations, but it can also make it sounds a bit monotone. On longer text fragments we recommend lowering this value.");
 
-        private static readonly GUIContent clarityContent = new GUIContent("Clarity + Similarity Enhancement");
+        private static readonly GUIContent clarityContent = new("Clarity + Similarity Enhancement");
 
-        private static readonly GUIContent lowClarityContent = new GUIContent("Low", "Low values are recommended if background artifacts are present in generated speech.");
+        private static readonly GUIContent lowClarityContent = new("Low", "Low values are recommended if background artifacts are present in generated speech.");
 
-        private static readonly GUIContent highClarityContent = new GUIContent("High", "Recommended. High enhancement boosts overall voice clarity and target speaker similarity. Very high values can cause artifacts, so adjusting this setting to find the optimal value is encouraged.");
+        private static readonly GUIContent highClarityContent = new("High", "Recommended. High enhancement boosts overall voice clarity and target speaker similarity. Very high values can cause artifacts, so adjusting this setting to find the optimal value is encouraged.");
 
-        private static readonly GUIContent addNewSampleContent = new GUIContent("Add new Sample(s)");
+        private static readonly GUIContent addNewSampleContent = new("Add new Sample(s)");
 
-        private static readonly GUIContent downloadContent = new GUIContent("Download");
+        private static readonly GUIContent downloadContent = new("Download");
 
-        private static readonly GUIContent deleteContent = new GUIContent("Delete");
+        private static readonly GUIContent deleteContent = new("Delete");
 
-        private static readonly GUIContent refreshContent = new GUIContent("Refresh");
+        private static readonly GUIContent refreshContent = new("Refresh");
 
-        private static readonly GUIContent downloadingContent = new GUIContent("Download in progress...");
+        private static readonly GUIContent downloadingContent = new("Download in progress...");
 
-        private static readonly GUIContent keyContent = new GUIContent("Key");
+        private static readonly GUIContent keyContent = new("Key");
 
-        private static readonly GUIContent valueContent = new GUIContent("Value");
+        private static readonly GUIContent valueContent = new("Value");
 
         private static readonly string[] tabTitles = { "Speech Synthesis", "Voice Lab", "History" };
 
@@ -463,9 +463,9 @@ namespace ElevenLabs.Editor
 
         private static GeneratedVoiceOptions generatedVoiceOptions;
 
-        private static readonly ConcurrentDictionary<string, Dictionary<string, string>> voiceLabels = new ConcurrentDictionary<string, Dictionary<string, string>>();
+        private static readonly ConcurrentDictionary<string, Dictionary<string, string>> voiceLabels = new();
 
-        private static readonly ConcurrentDictionary<string, IEnumerable<AudioClip>> voiceSampleCache = new ConcurrentDictionary<string, IEnumerable<AudioClip>>();
+        private static readonly ConcurrentDictionary<string, IEnumerable<AudioClip>> voiceSampleCache = new();
 
         private static bool hasFetchedHistory;
 
@@ -477,11 +477,11 @@ namespace ElevenLabs.Editor
 
         private static bool[] historySelections;
 
-        private static readonly Stack<string> pageHistoryIds = new Stack<string>();
+        private static readonly Stack<string> pageHistoryIds = new();
 
-        private static readonly ConcurrentDictionary<string, GUIContent> historyItemLabelCache = new ConcurrentDictionary<string, GUIContent>();
+        private static readonly ConcurrentDictionary<string, GUIContent> historyItemLabelCache = new();
 
-        private static readonly ConcurrentDictionary<string, AudioClip> downloadedAudioClips = new ConcurrentDictionary<string, AudioClip>();
+        private static readonly ConcurrentDictionary<string, AudioClip> downloadedAudioClips = new();
 
         private static GUIContent audioPlayButtonContent;
 

@@ -221,14 +221,12 @@ namespace ElevenLabs.TextToSpeech
                 throw new ArgumentException("Failed to parse clip id!");
             }
 
-            var pcmData = PCMEncoder.Decode(response.Data, PCMFormatSize.SixteenBit);
-            var fullClip = AudioClip.Create(clipId, pcmData.Length, 1, frequency, false);
-            var oggBytes = await OggEncoder.ConvertToBytesAsync(pcmData, frequency, 1, cancellationToken: cancellationToken).ConfigureAwait(false);
+            var pcmData = PCMEncoder.Decode(response.Data);
             var downloadDirectory = await GetCacheDirectoryAsync(request.Voice);
             var cachedPath = $"{downloadDirectory}/{clipId}.ogg";
-            await File.WriteAllBytesAsync(cachedPath, oggBytes, cancellationToken: cancellationToken).ConfigureAwait(false);
-            await Awaiters.UnityMainThread;
-            await Rest.DownloadAudioClipAsync($"file://{cachedPath}", AudioType.OGGVORBIS, parameters: new RestParameters(debug: EnableDebug), cancellationToken: cancellationToken);
+            var oggBytes = await OggEncoder.ConvertToBytesAsync(pcmData, frequency, 1, cancellationToken: cancellationToken);
+            await File.WriteAllBytesAsync(cachedPath, oggBytes, cancellationToken: cancellationToken);
+            var fullClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", AudioType.OGGVORBIS, parameters: new RestParameters(debug: EnableDebug), compressed: false, streamingAudio: true, cancellationToken: cancellationToken);
             return new VoiceClip(clipId, request.Text, request.Voice, fullClip, cachedPath);
 
             void StreamCallback(Response partialResponse)
@@ -240,7 +238,7 @@ namespace ElevenLabs.TextToSpeech
                         throw new ArgumentException("Failed to parse clip id!");
                     }
 
-                    var chunk = PCMEncoder.Decode(partialResponse.Data, PCMFormatSize.SixteenBit);
+                    var chunk = PCMEncoder.Decode(partialResponse.Data);
                     var audioClip = AudioClip.Create($"{clipId}_{++part}", chunk.Length, 1, frequency, false);
 
                     if (!audioClip.SetData(chunk, 0))
