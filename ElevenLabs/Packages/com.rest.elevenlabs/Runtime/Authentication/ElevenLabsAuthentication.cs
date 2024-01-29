@@ -20,7 +20,7 @@ namespace ElevenLabs
         /// Allows implicit casting from a string, so that a simple string API key can be provided in place of an instance of Authentication.
         /// </summary>
         /// <param name="apiKey">The API key.</param>
-        public static implicit operator ElevenLabsAuthentication(string apiKey) => new ElevenLabsAuthentication(apiKey);
+        public static implicit operator ElevenLabsAuthentication(string apiKey) => new(apiKey);
 
         /// <summary>
         /// Instantiates an empty Authentication object.

@@ -15,6 +15,14 @@ namespace ElevenLabs
 {
     public sealed class ElevenLabsClient : BaseClient<ElevenLabsAuthentication, ElevenLabsSettings>
     {
+        /// <inheritdoc/>
+        public ElevenLabsClient(ElevenLabsConfiguration configuration)
+            : this(
+                configuration != null ? new ElevenLabsAuthentication(configuration) : null,
+                configuration != null ? new ElevenLabsSettings(configuration) : null)
+        {
+        }
+
         /// <summary>
         /// Creates a new client for the ElevenLabs API, handling auth and allowing for access to various API endpoints.
         /// </summary>
@@ -65,7 +73,7 @@ namespace ElevenLabs
         /// <summary>
         /// The <see cref="JsonSerializationOptions"/> to use when making calls to the API.
         /// </summary>
-        internal static JsonSerializerSettings JsonSerializationOptions { get; } = new JsonSerializerSettings
+        internal static JsonSerializerSettings JsonSerializationOptions { get; } = new()
         {
             DefaultValueHandling = DefaultValueHandling.Ignore
         };
