@@ -6,13 +6,21 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using UnityEngine;
+using Utilities.Async;
 
 namespace ElevenLabs.Demo
 {
     [RequireComponent(typeof(AudioSource))]
     public class TextToSpeechDemo : MonoBehaviour
     {
+        [SerializeField]
+        private ElevenLabsConfiguration configuration;
+
+        [SerializeField]
+        private bool debug = true;
+
         [SerializeField]
         private Voice voice;
 
@@ -23,9 +31,7 @@ namespace ElevenLabs.Demo
         [SerializeField]
         private AudioSource audioSource;
 
-        private readonly Queue<AudioClip> streamClipQueue = new Queue<AudioClip>();
-
-        private CancellationTokenSource lifetimeCancellationTokenSource;
+        private readonly Queue<AudioClip> streamClipQueue = new();
 
         private void OnValidate()
         {
@@ -38,26 +44,34 @@ namespace ElevenLabs.Demo
         private async void Start()
         {
             OnValidate();
-            lifetimeCancellationTokenSource = new CancellationTokenSource();
 
             try
             {
-                var api = new ElevenLabsClient();
+                var api = new ElevenLabsClient(configuration)
+                {
+                    EnableDebug = debug
+                };
 
                 if (voice == null)
                 {
-                    api.VoicesEndpoint.EnableDebug = true;
-                    voice = (await api.VoicesEndpoint.GetAllVoicesAsync(lifetimeCancellationTokenSource.Token)).FirstOrDefault();
+                    voice = (await api.VoicesEndpoint.GetAllVoicesAsync(destroyCancellationToken)).FirstOrDefault();
                 }
 
                 streamClipQueue.Clear();
-                api.TextToSpeechEndpoint.EnableDebug = true;
+                var streamQueueCts = CancellationTokenSource.CreateLinkedTokenSource(destroyCancellationToken);
+                PlayStreamQueue(streamQueueCts.Token);
                 var voiceClip = await api.TextToSpeechEndpoint.StreamTextToSpeechAsync(message, voice, partialClip =>
                 {
                     streamClipQueue.Enqueue(partialClip);
-                }, model: Model.EnglishTurboV2, cancellationToken: lifetimeCancellationTokenSource.Token);
+                }, model: Model.EnglishTurboV2, cancellationToken: destroyCancellationToken);
                 audioSource.clip = voiceClip.AudioClip;
-                Debug.Log($"Full clip: {voiceClip.Id}");
+                await new WaitUntil(() => streamClipQueue.Count == 0 && !audioSource.isPlaying);
+                streamQueueCts.Cancel();
+
+                if (debug)
+                {
+                    Debug.Log($"Full clip: {voiceClip.Id}");
+                }
             }
             catch (Exception e)
             {
@@ -65,21 +79,29 @@ namespace ElevenLabs.Demo
             }
         }
 
-        private void Update()
+        private async void PlayStreamQueue(CancellationToken cancellationToken)
         {
-            if (!audioSource.isPlaying &&
-                streamClipQueue.TryDequeue(out var clip))
+            try
             {
-                Debug.Log($"Playing {clip.name}");
-                audioSource.PlayOneShot(clip);
-            }
-        }
+                await new WaitUntil(() => streamClipQueue.Count > 0);
+                var endOfFrame = new WaitForEndOfFrame();
 
-        private void OnDestroy()
-        {
-            lifetimeCancellationTokenSource?.Cancel();
-            lifetimeCancellationTokenSource?.Dispose();
-            lifetimeCancellationTokenSource = null;
+                do
+                {
+                    if (!audioSource.isPlaying &&
+                        streamClipQueue.TryDequeue(out var clip))
+                    {
+                        Debug.Log($"playing partial clip: {clip.name}");
+                        audioSource.PlayOneShot(clip);
+                    }
+
+                    await endOfFrame;
+                } while (!cancellationToken.IsCancellationRequested);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(e);
+            }
         }
     }
 }
