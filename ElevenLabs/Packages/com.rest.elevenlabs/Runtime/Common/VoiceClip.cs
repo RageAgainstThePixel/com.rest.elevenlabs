@@ -9,35 +9,59 @@ using UnityEngine.Scripting;
 namespace ElevenLabs
 {
     [Preserve]
-    public sealed class VoiceClip
+    [Serializable]
+    public sealed class VoiceClip : ISerializationCallbackReceiver
     {
         [Preserve]
         internal VoiceClip(string id, string text, Voice voice, AudioClip audioClip, string cachedPath)
         {
-            Id = id;
-            Text = text;
-            Voice = voice;
+            this.id = id;
+            this.text = text;
+            this.voice = voice;
             TextHash = $"{id}{text}".GenerateGuid();
-            AudioClip = audioClip;
-            CachedPath = cachedPath;
+            textHash = TextHash.ToString();
+            this.audioClip = audioClip;
+            this.cachedPath = cachedPath;
         }
 
-        [Preserve]
-        public string Id { get; }
+        [SerializeField]
+        private string id;
 
         [Preserve]
-        public string Text { get; }
+        public string Id => id;
+
+        [SerializeField]
+        private string text;
 
         [Preserve]
-        public Voice Voice { get; }
+        public string Text => text;
+
+        [SerializeField]
+        private Voice voice;
 
         [Preserve]
-        public Guid TextHash { get; }
+        public Voice Voice => voice;
+
+        [SerializeField]
+        private string textHash;
 
         [Preserve]
-        public AudioClip AudioClip { get; }
+        public Guid TextHash { get; private set; }
+
+        [SerializeField]
+        private AudioClip audioClip;
 
         [Preserve]
-        public string CachedPath { get; }
+        public AudioClip AudioClip => audioClip;
+
+        [SerializeField]
+        private string cachedPath;
+
+        [Preserve]
+        public string CachedPath => cachedPath;
+
+        public void OnBeforeSerialize() => textHash = TextHash.ToString();
+
+        public void OnAfterDeserialize() => TextHash = Guid.Parse(textHash);
     }
 }
