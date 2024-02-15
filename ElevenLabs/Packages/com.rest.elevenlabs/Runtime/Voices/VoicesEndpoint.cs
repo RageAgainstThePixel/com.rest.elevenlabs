@@ -83,7 +83,7 @@ namespace ElevenLabs.Voices
 
                 foreach (var voice in voices)
                 {
-                    voiceSettingsTasks.Add(LocalGetVoiceSettings());
+                    voiceSettingsTasks.Add(LocalGetVoiceSettingsAsync());
     
                     async Task LocalGetVoiceSettingsAsync()
                     {
