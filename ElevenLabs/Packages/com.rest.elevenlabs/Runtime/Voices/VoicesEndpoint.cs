@@ -87,6 +87,7 @@ namespace ElevenLabs.Voices
     
                     async Task LocalGetVoiceSettingsAsync()
                     {
+                        await Awaiters.UnityMainThread;
                         voice.Settings = await GetVoiceSettingsAsync(voice, cancellationToken).ConfigureAwait(true);
                     }
                 }
