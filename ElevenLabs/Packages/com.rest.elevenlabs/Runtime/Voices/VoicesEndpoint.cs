@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Scripting;
+using Utilities.Async;
 using Utilities.Audio;
 using Utilities.Encoding.OggVorbis;
 using Utilities.WebRequestRest;
