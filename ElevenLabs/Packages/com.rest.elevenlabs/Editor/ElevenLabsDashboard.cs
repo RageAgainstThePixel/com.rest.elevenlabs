@@ -363,6 +363,8 @@ namespace ElevenLabs.Editor
 
         private static readonly GUIContent deleteContent = new("Delete");
 
+        private static readonly GUIContent copyContent = new("Copy");
+
         private static readonly GUIContent refreshContent = new("Refresh");
 
         private static readonly GUIContent downloadingContent = new("Download in progress...");
@@ -1224,8 +1226,24 @@ namespace ElevenLabs.Editor
                 EditorGUILayout.Space(EndWidth);
                 EditorGUILayout.EndHorizontal();
                 EditorGUI.indentLevel++;
-                EditorGUILayout.LabelField(voice.Id, EditorStyles.boldLabel);
+                
+                EditorGUILayout.BeginHorizontal();
+                {
+                    EditorGUILayout.LabelField(voice.Id, EditorStyles.boldLabel);
+                    GUILayout.FlexibleSpace();
 
+                    if (GUILayout.Button(copyContent, defaultColumnWidthOption))
+                    {
+                        EditorGUIUtility.systemCopyBuffer = voice.Id;
+                        Debug.Log($"Voice ID {voice.Id} copied to clipboard");
+                    }
+
+                    GUI.enabled = true;
+                }
+                EditorGUILayout.Space(EndWidth);
+                EditorGUILayout.EndHorizontal();
+                EditorGUI.indentLevel++;
+                
                 if (!voiceLabels.TryGetValue(voice.Id, out var cachedLabels))
                 {
                     cachedLabels = new Dictionary<string, string>();
