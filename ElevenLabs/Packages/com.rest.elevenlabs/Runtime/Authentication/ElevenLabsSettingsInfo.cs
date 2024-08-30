@@ -49,7 +49,6 @@ namespace ElevenLabs
             ApiVersion = apiVersion;
             BaseRequest = $"/{ApiVersion}/";
             BaseRequestUrlFormat = $"{Domain}{BaseRequest}{{0}}";
-            BaseWebSocketUrlFormat = $"{WebSocketDomain}{BaseRequest}{{0}}";
         }
 
         public string Domain { get; }
