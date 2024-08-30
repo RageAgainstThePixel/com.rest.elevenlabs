@@ -5,7 +5,7 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 0
-    path: Packages/com.rest.elevenlabs/Samples/TextToSpeech/TextToSpeechDemo.unity
+  - enabled: 1
+    path: Assets/Samples/TextToSpeech/TextToSpeechDemo.unity
     guid: 3b842cda17469c742bf556fdc78710f2
   m_configObjects: {}

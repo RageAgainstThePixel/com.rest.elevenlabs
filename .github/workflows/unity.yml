@@ -1,0 +1,60 @@
+name: Unity Build And Test
+on:
+  schedule:
+    - cron: '0 0 * * 0' # Every Sunday at midnight
+  push:
+    branches:
+      - 'main'
+  pull_request:
+    branches:
+      - '*'
+  workflow_dispatch:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ ( github.event_name == 'pull_request' || github.event.action == 'synchronize' ) }}
+permissions:
+  checks: write
+  pull-requests: write
+jobs:
+  build:
+    env:
+      UNITY_PROJECT_PATH: ''
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-13]
+        unity-versions: [2021.x, 2022.x, 6000.x]
+        include:
+          - os: ubuntu-latest
+            build-target: StandaloneLinux64
+          - os: windows-latest
+            build-target: StandaloneWindows64
+          - os: macos-13
+            build-target: StandaloneOSX
+    steps:
+      - uses: actions/checkout@v4
+      - uses: RageAgainstThePixel/unity-setup@v1
+        with:
+          unity-version: ${{ matrix.unity-versions }}
+          build-targets: ${{ matrix.build-target }}
+      - uses: RageAgainstThePixel/activate-unity-license@v1
+        with:
+          license: 'Personal'
+          username: ${{ secrets.UNITY_USERNAME }}
+          password: ${{ secrets.UNITY_PASSWORD }}
+      - uses: RageAgainstThePixel/unity-action@v1
+        name: '${{ matrix.build-target }}-Validate'
+        with:
+          log-name: '${{ matrix.build-target }}-Validate'
+          args: '-quit -nographics -batchmode -executeMethod Utilities.Editor.BuildPipeline.UnityPlayerBuildTools.ValidateProject -importTMProEssentialsAsset'
+      - uses: RageAgainstThePixel/unity-action@v1
+        name: '${{ matrix.build-target }}-Build'
+        with:
+          log-name: '${{ matrix.build-target }}-Build'
+          args: '-quit -nographics -batchmode -executeMethod Utilities.Editor.BuildPipeline.UnityPlayerBuildTools.StartCommandLineBuild'
+      - uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: '${{ github.run_number }}.${{ github.run_attempt }}-${{ matrix.os }}-${{ matrix.unity-versions }}-${{ matrix.build-target }}-Artifacts'
+          path: '${{ github.workspace }}/**/*.log'

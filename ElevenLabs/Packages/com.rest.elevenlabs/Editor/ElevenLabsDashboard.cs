@@ -1,6 +1,5 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using ElevenLabs.Extensions;
 using ElevenLabs.History;
 using ElevenLabs.Models;
 using ElevenLabs.User;
