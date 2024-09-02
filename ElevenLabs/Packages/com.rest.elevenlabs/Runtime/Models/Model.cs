@@ -118,6 +118,14 @@ namespace ElevenLabs.Models
         [JsonIgnore]
         public static Model MultiLingualV2 { get; } = new("eleven_multilingual_v2");
 
+        [Preserve]
+        [JsonIgnore]
+        public static Model EnglishSpeechToSpeechV2 { get; } = new("eleven_english_sts_v2");
+
+        [Preserve]
+        [JsonIgnore]
+        public static Model MultilingualSpeechToSpeechV2 { get; } = new("eleven_multilingual_sts_v2");
+
         #endregion Predefined Models
     }
 }
