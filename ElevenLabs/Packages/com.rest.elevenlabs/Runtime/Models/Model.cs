@@ -71,7 +71,7 @@ namespace ElevenLabs.Models
         public IReadOnlyList<Language> Languages { get; }
 
         [Preserve]
-        public static implicit operator string(Model model) => model.ToString();
+        public static implicit operator string(Model model) => model?.ToString();
 
         [Preserve]
         public override string ToString() => Id;
@@ -84,47 +84,55 @@ namespace ElevenLabs.Models
         public static Model MonoLingualV1 => EnglishV1;
 
         /// <summary>
-        /// Use our standard English language model to generate speech in a variety of voices, styles and moods.
+        /// Our first ever text to speech model. Now outclassed by Multilingual v2 (for content creation) and Turbo v2.5 (for low latency use cases).
         /// </summary>
         [Preserve]
         [JsonIgnore]
         public static Model EnglishV1 { get; } = new("eleven_monolingual_v1");
 
         /// <summary>
-        /// Speech to speech model suitable for scenarios where you need maximum control over the content and prosody of your generations.
-        /// </summary>
-        [Preserve]
-        [JsonIgnore]
-        public static Model EnglishV2 { get; } = new("eleven_english_sts_v2");
-
-        /// <summary>
-        /// Cutting-edge turbo model is ideally suited for tasks demanding extremely low latency.
+        /// Our English-only, low latency model. Best for developer use cases where speed matters and you only need English. Performance is on par with Turbo v2.5.
         /// </summary>
         [Preserve]
         [JsonIgnore]
         public static Model EnglishTurboV2 { get; } = new("eleven_turbo_v2");
 
         /// <summary>
-        /// Generate lifelike speech in multiple languages and create content that resonates with a broader audience.
+        /// Our high quality, low latency model in 32 languages. Best for developer use cases where speed matters and you need non-English languages.
+        /// </summary>
+        [Preserve]
+        [JsonIgnore]
+        public static Model TurboV2_5 { get; } = new("eleven_turbo_v2_5");
+
+        /// <summary>
+        /// Our first Multilingual model, capability of generating speech in 10 languages.
+        /// Now outclassed by Multilingual v2 (for content creation) and Turbo v2.5 (for low latency use cases).
         /// </summary>
         [Preserve]
         [JsonIgnore]
         public static Model MultiLingualV1 { get; } = new("eleven_multilingual_v1");
 
         /// <summary>
-        /// State of the art multilingual speech synthesis model, able to generate life-like speech in 29 languages.
+        /// Our most life-like, emotionally rich mode in 29 languages. Best for voice overs, audiobooks, post-production, or any other content creation needs.
         /// </summary>
         [Preserve]
         [JsonIgnore]
         public static Model MultiLingualV2 { get; } = new("eleven_multilingual_v2");
 
+        /// <summary>
+        /// Our state-of-the-art speech to speech model suitable for scenarios where you need maximum control over the content and prosody of your generations.
+        /// </summary>
         [Preserve]
         [JsonIgnore]
         public static Model EnglishSpeechToSpeechV2 { get; } = new("eleven_english_sts_v2");
 
+        /// <summary>
+        /// Our cutting-edge, multilingual speech-to-speech model is designed for situations that demand unparalleled control over both
+        /// the content and the prosody of the generated speech across various languages.
+        /// </summary>
         [Preserve]
         [JsonIgnore]
-        public static Model MultilingualSpeechToSpeechV2 { get; } = new("eleven_multilingual_sts_v2");
+        public static Model MultiLingualSpeechToSpeechV2 { get; } = new("eleven_multilingual_sts_v2");
 
         #endregion Predefined Models
     }
