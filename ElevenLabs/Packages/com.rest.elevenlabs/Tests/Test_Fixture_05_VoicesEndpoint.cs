@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace ElevenLabs.Tests
 {
-    internal class Test_Fixture_02_VoicesEndpoint : AbstractTestFixture
+    internal class Test_Fixture_05_VoicesEndpoint : AbstractTestFixture
     {
         [Test]
         public async Task Test_01_GetVoices()

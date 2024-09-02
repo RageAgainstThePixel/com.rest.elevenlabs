@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace ElevenLabs.Tests
 {
-    internal class Test_Fixture_03_TextToSpeechEndpoint : AbstractTestFixture
+    internal class Test_Fixture_04_TextToSpeechEndpoint : AbstractTestFixture
     {
         [Test]
         public async Task Test_01_TextToSpeech()

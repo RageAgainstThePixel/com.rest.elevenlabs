@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace ElevenLabs.Tests
 {
-    internal class Test_Fixture_04_HistoryEndpoint : AbstractTestFixture
+    internal class Test_Fixture_07_HistoryEndpoint : AbstractTestFixture
     {
         [Test]
         public async Task Test_01_GetHistory()
