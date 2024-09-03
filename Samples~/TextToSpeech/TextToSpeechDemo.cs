@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using UnityEngine;
 using Utilities.Async;
 
@@ -32,6 +31,11 @@ namespace ElevenLabs.Demo
         private AudioSource audioSource;
 
         private readonly Queue<AudioClip> streamClipQueue = new();
+
+#if !UNITY_2022_3_OR_NEWER
+        private readonly CancellationTokenSource lifetimeCts = new();
+        private CancellationToken destroyCancellationToken => lifetimeCts.Token;
+#endif
 
         private void OnValidate()
         {
@@ -78,6 +82,14 @@ namespace ElevenLabs.Demo
                 Debug.LogError(e);
             }
         }
+
+#if !UNITY_2022_3_OR_NEWER
+        private void OnDestroy()
+        {
+            lifetimeCts.Cancel();
+            lifetimeCts.Dispose();
+        }
+#endif
 
         private async void PlayStreamQueue(CancellationToken cancellationToken)
         {

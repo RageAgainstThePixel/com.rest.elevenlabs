@@ -62,9 +62,7 @@ namespace ElevenLabs.Voices
         /// <param name="cancellationToken"></param>
         /// <returns><see cref="IReadOnlyList{T}"/> of <see cref="Voice"/>s.</returns>
         public Task<IReadOnlyList<Voice>> GetAllVoicesAsync(CancellationToken cancellationToken = default)
-        {
-            return GetAllVoicesAsync(true, cancellationToken);
-        }
+            => GetAllVoicesAsync(true, cancellationToken);
 
         /// <summary>
         /// Gets a list of all available voices for a user.
@@ -85,7 +83,7 @@ namespace ElevenLabs.Voices
                 foreach (var voice in voices)
                 {
                     voiceSettingsTasks.Add(LocalGetVoiceSettingsAsync());
-    
+
                     async Task LocalGetVoiceSettingsAsync()
                     {
                         await Awaiters.UnityMainThread;
@@ -143,7 +141,7 @@ namespace ElevenLabs.Voices
                 throw new ArgumentNullException(nameof(voiceId));
             }
 
-            var response = await Rest.GetAsync(GetUrl($"/{voiceId}?with_settings={withSettings}"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
+            var response = await Rest.GetAsync(GetUrl($"/{voiceId}?with_settings={withSettings.ToString().ToLower()}"), new RestParameters(client.DefaultRequestHeaders), cancellationToken);
             response.Validate(EnableDebug);
             return JsonConvert.DeserializeObject<Voice>(response.Body, ElevenLabsClient.JsonSerializationOptions);
         }
@@ -203,7 +201,11 @@ namespace ElevenLabs.Voices
                         try
                         {
                             var fileBytes = await File.ReadAllBytesAsync(sample, cancellationToken);
-                            form.AddBinaryData("files", fileBytes, Path.GetFileName(sample));
+
+                            if (fileBytes.Length > 0)
+                            {
+                                form.AddBinaryData("files", fileBytes, Path.GetFileName(sample));
+                            }
                         }
                         catch (Exception e)
                         {

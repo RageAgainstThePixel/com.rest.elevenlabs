@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace ElevenLabs.Tests
 {
-    internal class Test_Fixture_06_Models : AbstractTestFixture
+    internal class Test_Fixture_02_Models : AbstractTestFixture
     {
         [Test]
         public async Task Test_01_GetModels()

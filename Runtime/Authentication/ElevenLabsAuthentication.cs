@@ -14,6 +14,7 @@ namespace ElevenLabs
     public sealed class ElevenLabsAuthentication : AbstractAuthentication<ElevenLabsAuthentication, ElevenLabsAuthInfo, ElevenLabsConfiguration>
     {
         internal const string CONFIG_FILE = ".elevenlabs";
+        private const string ELEVENLABS_API_KEY = nameof(ELEVENLABS_API_KEY);
         private const string ELEVEN_LABS_API_KEY = nameof(ELEVEN_LABS_API_KEY);
 
         /// <summary>
@@ -85,6 +86,12 @@ namespace ElevenLabs
         public override ElevenLabsAuthentication LoadFromEnvironment()
         {
             var apiKey = Environment.GetEnvironmentVariable(ELEVEN_LABS_API_KEY);
+
+            if (string.IsNullOrWhiteSpace(apiKey))
+            {
+                apiKey = Environment.GetEnvironmentVariable(ELEVENLABS_API_KEY);
+            }
+
             return string.IsNullOrEmpty(apiKey) ? null : new ElevenLabsAuthentication(apiKey);
         }
 
@@ -136,6 +143,7 @@ namespace ElevenLabs
 
                             apiKey = part switch
                             {
+                                ELEVENLABS_API_KEY => nextPart.Trim(),
                                 ELEVEN_LABS_API_KEY => nextPart.Trim(),
                                 _ => apiKey
                             };

@@ -2,6 +2,7 @@
 
 using ElevenLabs.Voices;
 using NUnit.Framework;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -10,10 +11,10 @@ using UnityEngine;
 
 namespace ElevenLabs.Tests
 {
-    internal class Test_Fixture_02_VoicesEndpoint : AbstractTestFixture
+    internal class Test_Fixture_05_VoicesEndpoint : AbstractTestFixture
     {
         [Test]
-        public async Task Test_01_GetVoices()
+        public async Task Test_01_01_GetVoices()
         {
             Assert.NotNull(ElevenLabsClient.VoicesEndpoint);
             var results = await ElevenLabsClient.VoicesEndpoint.GetAllVoicesAsync();
@@ -23,6 +24,20 @@ namespace ElevenLabs.Tests
             foreach (var voice in results)
             {
                 Debug.Log($"{voice.Id} | {voice.Name} | similarity boost: {voice.Settings?.SimilarityBoost} | stability: {voice.Settings?.Stability}");
+            }
+        }
+
+        [Test]
+        public async Task Test_01_02_GetSharedVoices()
+        {
+            Assert.NotNull(ElevenLabsClient.SharedVoicesEndpoint);
+            var results = await ElevenLabsClient.SharedVoicesEndpoint.GetSharedVoicesAsync();
+            Assert.NotNull(results);
+            Assert.IsNotEmpty(results.Voices);
+
+            foreach (var voice in results.Voices)
+            {
+                Console.WriteLine($"{voice.OwnerId} | {voice.VoiceId} | {voice.Date} | {voice.Name}");
             }
         }
 

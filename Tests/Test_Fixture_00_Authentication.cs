@@ -146,7 +146,7 @@ namespace ElevenLabs.Tests
             var auth = new ElevenLabsAuthentication("customIssuedToken");
             var settings = new ElevenLabsSettings(domain: "api.your-custom-domain.com");
             var api = new ElevenLabsClient(auth, settings);
-            Console.WriteLine(api.Settings.BaseRequestUrlFormat);
+            Debug.Log(api.Settings.BaseRequestUrlFormat);
         }
 
         [TearDown]
