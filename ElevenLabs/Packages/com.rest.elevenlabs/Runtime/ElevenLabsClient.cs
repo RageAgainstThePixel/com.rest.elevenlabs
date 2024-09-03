@@ -42,6 +42,7 @@ namespace ElevenLabs
             HistoryEndpoint = new HistoryEndpoint(this);
             TextToSpeechEndpoint = new TextToSpeechEndpoint(this);
             VoiceGenerationEndpoint = new VoiceGenerationEndpoint(this);
+            SharedVoicesEndpoint = new SharedVoicesEndpoint(this);
             DubbingEndpoint = new DubbingEndpoint(this);
             SoundGenerationEndpoint = new SoundGenerationEndpoint(this);
         }
@@ -91,6 +92,8 @@ namespace ElevenLabs
         public HistoryEndpoint HistoryEndpoint { get; }
 
         public TextToSpeechEndpoint TextToSpeechEndpoint { get; }
+
+        public SharedVoicesEndpoint SharedVoicesEndpoint { get; }
 
         public VoiceGenerationEndpoint VoiceGenerationEndpoint { get; }
 

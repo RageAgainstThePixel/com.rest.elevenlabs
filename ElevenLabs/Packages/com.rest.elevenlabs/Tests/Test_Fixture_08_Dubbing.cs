@@ -7,6 +7,7 @@ using System.IO;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
+using Utilities.WebRequestRest;
 
 namespace ElevenLabs.Tests
 {
@@ -38,16 +39,17 @@ namespace ElevenLabs.Tests
                 Assert.IsFalse(string.IsNullOrEmpty(metadata.DubbingId));
                 Assert.IsTrue(metadata.ExpectedDurationSeconds > 0);
 
-                var dubbedClip = await ElevenLabsClient.DubbingEndpoint.GetDubbedFileAsync(metadata.DubbingId, request.TargetLanguage);
-                Assert.NotNull(dubbedClip);
-                Assert.IsTrue(File.Exists(dubbedClip));
+                var dubbedClipPath = await ElevenLabsClient.DubbingEndpoint.GetDubbedFileAsync(metadata.DubbingId, request.TargetLanguage);
+                Assert.NotNull(dubbedClipPath);
+                Assert.IsTrue(File.Exists(dubbedClipPath));
+                var dubbedClip = await Rest.DownloadAudioClipAsync($"file://{dubbedClipPath}", AudioType.MPEG);
+                Assert.IsNotNull(dubbedClip);
+                Assert.IsTrue(dubbedClip.length > 0);
 
                 var srcFile = new FileInfo(audioPath);
                 var transcriptPath = new FileInfo($"{srcFile.FullName}.dubbed.{request.TargetLanguage}.srt");
-                {
-                    var transcriptFile = await ElevenLabsClient.DubbingEndpoint.GetTranscriptForDubAsync(metadata.DubbingId, request.TargetLanguage);
-                    await File.WriteAllTextAsync(transcriptPath.FullName, transcriptFile);
-                }
+                var transcriptFile = await ElevenLabsClient.DubbingEndpoint.GetTranscriptForDubAsync(metadata.DubbingId, request.TargetLanguage);
+                await File.WriteAllTextAsync(transcriptPath.FullName, transcriptFile);
                 Assert.IsTrue(transcriptPath.Exists);
                 Assert.IsTrue(transcriptPath.Length > 0);
 
@@ -91,10 +93,8 @@ namespace ElevenLabs.Tests
                 Assert.IsTrue(File.Exists(dubbedClip));
 
                 var transcriptPath = new FileInfo(Path.Combine(assetsDir, $"online.dubbed.{request.TargetLanguage}.srt"));
-                {
-                    var transcriptFile = await ElevenLabsClient.DubbingEndpoint.GetTranscriptForDubAsync(metadata.DubbingId, request.TargetLanguage);
-                    await File.WriteAllTextAsync(transcriptPath.FullName, transcriptFile);
-                }
+                var transcriptFile = await ElevenLabsClient.DubbingEndpoint.GetTranscriptForDubAsync(metadata.DubbingId, request.TargetLanguage);
+                await File.WriteAllTextAsync(transcriptPath.FullName, transcriptFile);
                 Assert.IsTrue(transcriptPath.Exists);
                 Assert.IsTrue(transcriptPath.Length > 0);
 
@@ -134,15 +134,16 @@ namespace ElevenLabs.Tests
                 Assert.IsTrue(metadata.ExpectedDurationSeconds > 0);
 
                 var srcFile = new FileInfo(Path.GetFullPath(clipPath));
-                var dubbedClip = await ElevenLabsClient.DubbingEndpoint.GetDubbedFileAsync(metadata.DubbingId, request.TargetLanguage);
+                var dubbedClipPath = await ElevenLabsClient.DubbingEndpoint.GetDubbedFileAsync(metadata.DubbingId, request.TargetLanguage);
+                Assert.IsNotNull(dubbedClipPath);
+                Assert.IsTrue(File.Exists(dubbedClipPath));
+                var dubbedClip = await Rest.DownloadAudioClipAsync($"file://{dubbedClipPath}", AudioType.MPEG);
                 Assert.IsNotNull(dubbedClip);
-                Assert.IsTrue(File.Exists(dubbedClip));
+                Assert.IsTrue(dubbedClip.length > 0);
 
                 var transcriptPath = new FileInfo($"{srcFile.FullName}.dubbed.{request.TargetLanguage}.srt");
-                {
-                    var transcriptFile = await ElevenLabsClient.DubbingEndpoint.GetTranscriptForDubAsync(metadata.DubbingId, request.TargetLanguage);
-                    await File.WriteAllTextAsync(transcriptPath.FullName, transcriptFile);
-                }
+                var transcriptFile = await ElevenLabsClient.DubbingEndpoint.GetTranscriptForDubAsync(metadata.DubbingId, request.TargetLanguage);
+                await File.WriteAllTextAsync(transcriptPath.FullName, transcriptFile);
                 Assert.IsTrue(transcriptPath.Exists);
                 Assert.IsTrue(transcriptPath.Length > 0);
 
