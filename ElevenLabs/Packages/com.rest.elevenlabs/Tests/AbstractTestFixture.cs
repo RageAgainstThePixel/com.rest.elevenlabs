@@ -11,7 +11,7 @@ namespace ElevenLabs.Tests
             var auth = new ElevenLabsAuthentication().LoadDefaultsReversed();
             var settings = new ElevenLabsSettings();
             ElevenLabsClient = new ElevenLabsClient(auth, settings);
-            //ElevenLabsClient.EnableDebug = true;
+            ElevenLabsClient.EnableDebug = true;
         }
     }
 }

@@ -244,7 +244,6 @@ namespace ElevenLabs.TextToSpeech
                     if (!audioClip.SetData(chunk, 0))
                     {
                         Debug.LogError("Failed to set pcm data to partial clip.");
-
                         return;
                     }
 

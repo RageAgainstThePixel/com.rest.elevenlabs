@@ -48,7 +48,7 @@ The recommended installation method is though the unity package manager and [Ope
 
 ### Table of Contents
 
-- [Authentication](#authentication) :construction:
+- [Authentication](#authentication)
 - [API Proxy](#api-proxy)
 - [Editor Dashboard](#editor-dashboard)
   - [Speech Synthesis Dashboard](#speech-synthesis-dashboard)
@@ -59,6 +59,7 @@ The recommended installation method is though the unity package manager and [Ope
 - [Text to Speech](#text-to-speech)
   - [Stream Text To Speech](#stream-text-to-speech)
 - [Voices](#voices)
+  - [Get Shared Voices](#get-shared-voices) :new:
   - [Get All Voices](#get-all-voices)
   - [Get Default Voice Settings](#get-default-voice-settings)
   - [Get Voice](#get-voice)
@@ -69,6 +70,13 @@ The recommended installation method is though the unity package manager and [Ope
   - [Samples](#samples)
     - [Download Voice Sample](#download-voice-sample)
     - [Delete Voice Sample](#delete-voice-sample)
+- [Dubbing](#dubbing) :new:
+  - [Dub](#dub) :new:
+  - [Get Dubbing Metadata](#get-dubbing-metadata) :new:
+  - [Get Transcript for Dub](#get-transcript-for-dub) :new:
+  - [Get dubbed file](#get-dubbed-file) :new:
+  - [Delete Dubbing Project](#delete-dubbing-project) :new:
+- [SFX Generation](#sfx-generation) :new:
 - [History](#history)
   - [Get History](#get-history)
   - [Get History Item](#get-history-item)
@@ -176,8 +184,9 @@ In this example, we demonstrate how to set up and use `ElevenLabsProxyStartup` i
 1. Create a new [ASP.NET Core minimal web API](https://learn.microsoft.com/en-us/aspnet/core/tutorials/min-web-api?view=aspnetcore-6.0) project.
 2. Add the ElevenLabs-DotNet nuget package to your project.
     - Powershell install: `Install-Package ElevenLabs-DotNet-Proxy`
+    - Dotnet install: `dotnet add package ElevenLabs-DotNet-Proxy`
     - Manually editing .csproj: `<PackageReference Include="ElevenLabs-DotNet-Proxy" />`
-3. Create a new class that inherits from `AbstractAuthenticationFilter` and override the `ValidateAuthentication` method. This will implement the `IAuthenticationFilter` that you will use to check user session token against your internal server.
+3. Create a new class that inherits from `AbstractAuthenticationFilter` and override the `ValidateAuthenticationAsync` method. This will implement the `IAuthenticationFilter` that you will use to check user session token against your internal server.
 4. In `Program.cs`, create a new proxy web application by calling `ElevenLabsProxyStartup.CreateDefaultHost` method, passing your custom `AuthenticationFilter` as a type argument.
 5. Create `ElevenLabsAuthentication` and `ElevenLabsClientSettings` as you would normally with your API keys, org id, or Azure settings.
 
@@ -186,11 +195,13 @@ public partial class Program
 {
     private class AuthenticationFilter : AbstractAuthenticationFilter
     {
-        public override void ValidateAuthentication(IHeaderDictionary request)
+        public override async Task ValidateAuthenticationAsync(IHeaderDictionary request)
         {
+            await Task.CompletedTask; // remote resource call
+
             // You will need to implement your own class to properly test
             // custom issued tokens you've setup for your end users.
-            if (!request["xi-api-key"].ToString().Contains(userToken))
+            if (!request["xi-api-key"].ToString().Contains(TestUserToken))
             {
                 throw new AuthenticationException("User is not authorized");
             }
@@ -240,7 +251,7 @@ Additionally, you're also able to clone a voice from sample recordings.
 
 ![Voice Cloning](ElevenLabs/Packages/com.rest.elevenlabs/Documentation~/images/voice-clone-editor.png)
 
-#### History Dashboard
+#### History Editor Dashboard
 
 You also have access to the full list of all your generated samples, ready for download.
 
@@ -290,6 +301,19 @@ audioSource.clip = voiceClip.AudioClip;
 ### [Voices](https://docs.elevenlabs.io/api-reference/voices)
 
 Access to voices created either by the user or ElevenLabs.
+
+#### Get Shared Voices
+
+Gets a list of shared voices in the public voice library.
+
+```csharp
+var api = new ElevenLabsClient();
+var results = await ElevenLabsClient.SharedVoicesEndpoint.GetSharedVoicesAsync();
+foreach (var voice in results.Voices)
+{
+    Debug.Log($"{voice.OwnerId} | {voice.VoiceId} | {voice.Date} | {voice.Name}");
+}
+```
 
 #### Get All Voices
 
@@ -383,6 +407,87 @@ var voiceClip = await api.VoicesEndpoint.DownloadVoiceSampleAsync(voice, sample)
 var api = new ElevenLabsClient();
 var success = await api.VoicesEndpoint.DeleteVoiceSampleAsync(voiceId, sampleId);
 Debug.Log($"Was successful? {success}");
+```
+
+### [Dubbing](https://elevenlabs.io/docs/api-reference/create-dub)
+
+#### Dub
+
+Dubs provided audio or video file into given language.
+
+```csharp
+var api = new ElevenLabsClient();
+// from URI
+var request = new DubbingRequest(new Uri("https://youtu.be/Zo5-rhYOlNk"), "ja", "en", 1, true);
+// from file
+var request = new DubbingRequest(filePath, "es", "en", 1);
+var metadata = await api.DubbingEndpoint.DubAsync(request, progress: new Progress<DubbingProjectMetadata>(metadata =>
+{
+    switch (metadata.Status)
+    {
+        case "dubbing":
+            Debug.Log($"Dubbing for {metadata.DubbingId} in progress... Expected Duration: {metadata.ExpectedDurationSeconds:0.00} seconds");
+            break;
+        case "dubbed":
+            Debug.Log($"Dubbing for {metadata.DubbingId} complete in {metadata.TimeCompleted.TotalSeconds:0.00} seconds!");
+            break;
+        default:
+            Debug.Log($"Status: {metadata.Status}");
+            break;
+    }
+}));
+```
+
+#### Get Dubbing Metadata
+
+Returns metadata about a dubbing project, including whether it’s still in progress or not.
+
+```csharp
+var api = new ElevenLabsClient();
+var metadata = api.await GetDubbingProjectMetadataAsync("dubbing-id");
+```
+
+#### Get Dubbed File
+
+Returns downloaded dubbed file path.
+
+> [!IMPORTANT]
+> Videos will be returned in MP4 format and audio only dubs will be returned in MP3.
+
+```csharp
+var dubbedClipPath = await ElevenLabsClient.DubbingEndpoint.GetDubbedFileAsync(metadata.DubbingId, request.TargetLanguage);
+var dubbedClip = await Rest.DownloadAudioClipAsync($"file://{dubbedClipPath}", AudioType.MPEG);
+audioSource.PlayOneShot(dubbedClip);
+```
+
+#### Get Transcript for Dub
+
+Returns transcript for the dub in the desired format.
+
+```csharp
+var srcFile = new FileInfo(audioPath);
+var transcriptPath = new FileInfo($"{srcFile.FullName}.dubbed.{request.TargetLanguage}.srt");
+var transcriptFile = await ElevenLabsClient.DubbingEndpoint.GetTranscriptForDubAsync(metadata.DubbingId, request.TargetLanguage);
+await File.WriteAllTextAsync(transcriptPath.FullName, transcriptFile);
+```
+
+#### Delete Dubbing Project
+
+Deletes a dubbing project.
+
+```csharp
+var api = new ElevenLabsClient();
+await api.DubbingEndpoint.DeleteDubbingProjectAsync("dubbing-id");
+```
+
+### SFX Generation
+
+API that converts text into sounds & uses the most advanced AI audio model ever.
+
+```csharp
+var api = new ElevenLabsClient();
+var request = new SoundGenerationRequest("Star Wars Light Saber parry");
+var clip = await api.SoundGenerationEndpoint.GenerateSoundAsync(request);
 ```
 
 ### [History](https://docs.elevenlabs.io/api-reference/history)
