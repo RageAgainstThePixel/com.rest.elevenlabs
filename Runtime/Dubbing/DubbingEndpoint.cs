@@ -97,6 +97,16 @@ namespace ElevenLabs.Dubbing
                 {
                     payload.AddField("highest_resolution", request.HighestResolution.Value.ToString());
                 }
+
+                if (request.DropBackgroundAudio.HasValue)
+                {
+                    payload.AddField("drop_background_audio", request.DropBackgroundAudio.ToString().ToLower());
+                }
+
+                if (request.UseProfanityFilter.HasValue)
+                {
+                    payload.AddField("use_profanity_filter", request.UseProfanityFilter.ToString().ToLower());
+                }
             }
             finally
             {
