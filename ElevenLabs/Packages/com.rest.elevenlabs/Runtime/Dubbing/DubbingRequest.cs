@@ -21,8 +21,9 @@ namespace ElevenLabs.Dubbing
             int? endTime = null,
             bool? highestResolution = null,
             bool? dropBackgroundAudio = null,
+            bool? useProfanityFilter = null,
             string projectName = null)
-            : this(new[] { filePath }, targetLanguage, sourceLanguage, numberOfSpeakers, watermark, startTime, endTime, highestResolution, dropBackgroundAudio, projectName)
+            : this(new[] { filePath }, targetLanguage, sourceLanguage, numberOfSpeakers, watermark, startTime, endTime, highestResolution, dropBackgroundAudio, useProfanityFilter, projectName)
         {
         }
 
@@ -36,8 +37,9 @@ namespace ElevenLabs.Dubbing
             int? endTime = null,
             bool? highestResolution = null,
             bool? dropBackgroundAudio = null,
+            bool? useProfanityFilter = null,
             string projectName = null)
-            : this(targetLanguage, null, filePaths, sourceLanguage, numberOfSpeakers, watermark, startTime, endTime, highestResolution, dropBackgroundAudio, projectName)
+            : this(targetLanguage, null, filePaths, sourceLanguage, numberOfSpeakers, watermark, startTime, endTime, highestResolution, dropBackgroundAudio, useProfanityFilter, projectName)
         {
         }
 
@@ -51,17 +53,29 @@ namespace ElevenLabs.Dubbing
             int? endTime = null,
             bool? highestResolution = null,
             bool? dropBackgroundAudio = null,
+            bool? useProfanityFilter = null,
             string projectName = null)
-            : this(targetLanguage, sourceUrl, null, sourceLanguage, numberOfSpeakers, watermark, startTime, endTime, highestResolution, dropBackgroundAudio, projectName)
+            : this(targetLanguage, sourceUrl, null, sourceLanguage, numberOfSpeakers, watermark, startTime, endTime, highestResolution, dropBackgroundAudio, useProfanityFilter, projectName)
         {
         }
 
-        public DubbingRequest(AudioClip audioClip, string targetLanguage, string sourceLanguage = null, int? numberOfSpeakers = null, bool? watermark = null, int? startTime = null, int? endTime = null, bool? highestResolution = null, bool? dropBackgroundAudio = null, string projectName = null)
-            : this(new[] { audioClip }, targetLanguage, sourceLanguage, numberOfSpeakers, watermark, startTime, endTime, highestResolution, dropBackgroundAudio, projectName)
+        public DubbingRequest(AudioClip audioClip, string targetLanguage, string sourceLanguage = null, int? numberOfSpeakers = null, bool? watermark = null, int? startTime = null, int? endTime = null, bool? highestResolution = null, bool? dropBackgroundAudio = null, bool? useProfanityFilter = null, string projectName = null)
+            : this(new[] { audioClip }, targetLanguage, sourceLanguage, numberOfSpeakers, watermark, startTime, endTime, highestResolution, dropBackgroundAudio, useProfanityFilter, projectName)
         {
         }
 
-        public DubbingRequest(IEnumerable<AudioClip> audioClips, string targetLanguage, string sourceLanguage = null, int? numberOfSpeakers = null, bool? watermark = null, int? startTime = null, int? endTime = null, bool? highestResolution = null, bool? dropBackgroundAudio = null, string projectName = null)
+        public DubbingRequest(
+            IEnumerable<AudioClip> audioClips,
+            string targetLanguage,
+            string sourceLanguage = null,
+            int? numberOfSpeakers = null,
+            bool? watermark = null,
+            int? startTime = null,
+            int? endTime = null,
+            bool? highestResolution = null,
+            bool? dropBackgroundAudio = null,
+            bool? useProfanityFilter = null,
+            string projectName = null)
         {
             if (audioClips == null)
             {
@@ -88,6 +102,7 @@ namespace ElevenLabs.Dubbing
             EndTime = endTime;
             HighestResolution = highestResolution;
             DropBackgroundAudio = dropBackgroundAudio;
+            UseProfanityFilter = useProfanityFilter;
             ProjectName = projectName;
             var files = new List<(string, string, Stream)>(clips.Count);
             files.AddRange((from audioClip in clips let stream = new MemoryStream(audioClip.EncodeToWav()) select (audioClip.name, "audio/wav", stream)).Select(value => ((string, string, Stream))value));
@@ -105,6 +120,7 @@ namespace ElevenLabs.Dubbing
             int? endTime = null,
             bool? highestResolution = null,
             bool? dropBackgroundAudio = null,
+            bool? useProfanityFilter = null,
             string projectName = null)
         {
             if (string.IsNullOrWhiteSpace(targetLanguage))
@@ -167,6 +183,7 @@ namespace ElevenLabs.Dubbing
             EndTime = endTime;
             HighestResolution = highestResolution;
             DropBackgroundAudio = dropBackgroundAudio;
+            UseProfanityFilter = useProfanityFilter;
             ProjectName = projectName;
         }
 
@@ -228,6 +245,11 @@ namespace ElevenLabs.Dubbing
         /// This can improve dub quality where it's known that audio shouldn't have a background track such as for speeches or monologues.
         /// </summary>
         public bool? DropBackgroundAudio { get; }
+
+        /// <summary>
+        /// [BETA] Whether transcripts should have profanities censored with the words '[censored]'.
+        /// </summary>
+        public bool? UseProfanityFilter { get; }
 
         /// <summary>
         /// Name of the dubbing project.
