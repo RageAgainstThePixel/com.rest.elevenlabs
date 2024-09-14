@@ -13,7 +13,15 @@ namespace ElevenLabs.TextToSpeech
     public sealed class TextToSpeechRequest
     {
         [Preserve]
-        public TextToSpeechRequest(Voice voice, string text, Encoding encoding = null, VoiceSettings voiceSettings = null, OutputFormat outputFormat = OutputFormat.MP3_44100_128, int? optimizeStreamingLatency = null, Model model = null, string previousText = null)
+        public TextToSpeechRequest(
+            Voice voice,
+            string text,
+            Encoding encoding = null,
+            VoiceSettings voiceSettings = null,
+            OutputFormat outputFormat = OutputFormat.MP3_44100_128,
+            int? optimizeStreamingLatency = null,
+            Model model = null,
+            string previousText = null)
         {
             if (string.IsNullOrWhiteSpace(text))
             {
