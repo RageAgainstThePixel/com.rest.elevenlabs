@@ -13,7 +13,7 @@ namespace ElevenLabs.TextToSpeech
     public sealed class TextToSpeechRequest
     {
         [Preserve]
-        public TextToSpeechRequest(Voice voice, string text, Encoding encoding = null, VoiceSettings voiceSettings = null, OutputFormat outputFormat = OutputFormat.MP3_44100_128, int? optimizeStreamingLatency = null, Model model = null)
+        public TextToSpeechRequest(Voice voice, string text, Encoding encoding = null, VoiceSettings voiceSettings = null, OutputFormat outputFormat = OutputFormat.MP3_44100_128, int? optimizeStreamingLatency = null, Model model = null, string previousText = null)
         {
             if (string.IsNullOrWhiteSpace(text))
             {
@@ -40,6 +40,7 @@ namespace ElevenLabs.TextToSpeech
             Model = model ?? Models.Model.MultiLingualV2;
             Voice = voice;
             VoiceSettings = voiceSettings ?? voice.Settings ?? throw new ArgumentNullException(nameof(voiceSettings));
+            PreviousText = previousText;
             OutputFormat = outputFormat;
             OptimizeStreamingLatency = optimizeStreamingLatency;
         }
@@ -59,6 +60,10 @@ namespace ElevenLabs.TextToSpeech
         [Preserve]
         [JsonProperty("voice_settings")]
         public VoiceSettings VoiceSettings { get; internal set; }
+
+        [Preserve]
+        [JsonProperty("previous_text")]
+        public string PreviousText { get; }
 
         [Preserve]
         [JsonIgnore]
