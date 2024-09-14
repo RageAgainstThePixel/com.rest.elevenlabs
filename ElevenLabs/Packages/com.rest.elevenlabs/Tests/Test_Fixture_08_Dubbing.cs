@@ -68,7 +68,7 @@ namespace ElevenLabs.Tests
             {
                 Assert.NotNull(ElevenLabsClient.DubbingEndpoint);
 
-                var request = new DubbingRequest(new Uri("https://youtu.be/Zo5-rhYOlNk"), "ja", "en", 1, true);
+                var request = new DubbingRequest(new Uri("https://youtu.be/Zo5-rhYOlNk"), "ja", "en", 1, watermark: true, dropBackgroundAudio: true);
                 var metadata = await ElevenLabsClient.DubbingEndpoint.DubAsync(request, progress: new Progress<DubbingProjectMetadata>(metadata =>
                 {
                     switch (metadata.Status)
