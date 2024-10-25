@@ -20,8 +20,7 @@ namespace ElevenLabs.TextToSpeech
             VoiceSettings voiceSettings = null,
             OutputFormat outputFormat = OutputFormat.MP3_44100_128,
             int? optimizeStreamingLatency = null,
-            Model model = null,
-            string previousText = null)
+            Model model = null)
         {
             if (string.IsNullOrWhiteSpace(text))
             {
@@ -48,7 +47,6 @@ namespace ElevenLabs.TextToSpeech
             Model = model ?? Models.Model.MultiLingualV2;
             Voice = voice;
             VoiceSettings = voiceSettings ?? voice.Settings ?? throw new ArgumentNullException(nameof(voiceSettings));
-            PreviousText = previousText;
             OutputFormat = outputFormat;
             OptimizeStreamingLatency = optimizeStreamingLatency;
         }
@@ -70,15 +68,31 @@ namespace ElevenLabs.TextToSpeech
         public VoiceSettings VoiceSettings { get; internal set; }
 
         [Preserve]
-        [JsonProperty("previous_text")]
-        public string PreviousText { get; }
-
-        [Preserve]
         [JsonIgnore]
         public OutputFormat OutputFormat { get; }
 
         [Preserve]
         [JsonIgnore]
         public int? OptimizeStreamingLatency { get; }
+
+
+        [Preserve]
+        [JsonProperty("previous_text")]
+        public string PreviousText { get; set; }
+
+        [Preserve]
+        [JsonProperty("next_text")]
+        public string NextText { get; set; }
+
+        [Preserve]
+        [JsonProperty("previous_request_ids")]
+        // Note: A maximum of three next or previous history item ids can be sent
+        public string[] PreviousRequestIds { get; set; }
+
+        [Preserve]
+        [JsonProperty("next_request_ids")]
+        // Note: A maximum of three next or previous history item ids can be sent
+        public string[] NextRequestIds { get; set; }
+
     }
 }
