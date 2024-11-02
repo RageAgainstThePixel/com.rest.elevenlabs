@@ -264,5 +264,17 @@ namespace ElevenLabs.TextToSpeech
                 .CreateNewDirectory(nameof(TextToSpeech))
                 .CreateNewDirectory(voice.Id);
         }
+
+        #region WebSocket
+
+        // TODO: Implement WebSocket support for TextToSpeech
+        // Requirements: Method should be able to accept new text chunks and stream audio back to the client.
+
+        public static async Task StreamTextToSpeechAsync(IObservable<string> textInputStream, Action<AudioClip> partialClipCallback, Voice voice, VoiceSettings voiceSettings, Model model, OutputFormat outputFormat = OutputFormat.PCM_24000, int? optimizeStreamingLatency = null, CancellationToken cancellationToken = default)
+        {
+            await Task.CompletedTask;
+        }
+
+        #endregion WebSocket
     }
 }
