@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-13]
+        os: [ubuntu-latest, windows-latest, macos-15]
         unity-versions: [2021.x, 2022.x, 6000.x]
         include:
           - os: ubuntu-latest
