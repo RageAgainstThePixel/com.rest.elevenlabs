@@ -17,8 +17,6 @@ jobs:
     permissions:
       checks: write
       pull-requests: write
-    env:
-      UNITY_PROJECT_PATH: ''
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
