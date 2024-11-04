@@ -1,7 +1,8 @@
 using System;
 using UnityEngine;
 
-namespace ElevenLabs.Models {
+namespace ElevenLabs.Models
+{
 	/// <summary>
 	/// Represents timing information for a single character in the transcript
 	/// </summary>
