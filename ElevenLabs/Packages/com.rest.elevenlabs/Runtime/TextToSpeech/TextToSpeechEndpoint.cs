@@ -27,8 +27,14 @@ namespace ElevenLabs.TextToSpeech
         private const string HistoryItemId = "history-item-id";
         private const string OutputFormatParameter = "output_format";
         private const string OptimizeStreamingLatencyParameter = "optimize_streaming_latency";
+        private const string AlignmentToken = "alignment";
+        private const string CharactersToken = "characters";
+        private const string CharacterStartTimesToken = "character_start_times_seconds";
+        private const string CharacterEndTimesToken = "character_end_times_seconds";
 
-        public TextToSpeechEndpoint(ElevenLabsClient client) : base(client) { }
+        public TextToSpeechEndpoint(ElevenLabsClient client) : base(client)
+        {
+        }
 
         protected override string Root => "text-to-speech";
 
@@ -65,7 +71,9 @@ namespace ElevenLabs.TextToSpeech
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         /// <returns><see cref="VoiceClip"/>.</returns>
         public async Task<VoiceClip> TextToSpeechAsync(string text, Voice voice, VoiceSettings voiceSettings = null, Model model = null, OutputFormat outputFormat = OutputFormat.MP3_44100_128, int? optimizeStreamingLatency = null, CancellationToken cancellationToken = default)
-            => await TextToSpeechAsync(new TextToSpeechRequest(voice, text, Encoding.UTF8, voiceSettings ?? voice.Settings ?? await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken), outputFormat, optimizeStreamingLatency, model), cancellationToken);
+        {
+            return await TextToSpeechAsync(new TextToSpeechRequest(voice, text, Encoding.UTF8, voiceSettings ?? voice.Settings ?? await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken), outputFormat, optimizeStreamingLatency, model), cancellationToken);
+        }
 
         /// <summary>
         /// Converts text into speech using a voice of your choice and returns audio.
@@ -79,16 +87,17 @@ namespace ElevenLabs.TextToSpeech
             var parameters = CreateRequestParameters(request);
 
             var endpoint = $"/{request.Voice}";
-            
+
             var response = await Rest.PostAsync(GetUrl(endpoint, parameters), payload, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
             response.Validate(EnableDebug);
-            
+
             if (!response.Headers.TryGetValue(HistoryItemId, out var clipId))
             {
                 throw new ArgumentException("Failed to parse clip id!");
             }
-            
+
             var cachedPath = await SaveAudioToCache(response.Data, clipId, request.Voice, request.OutputFormat, cancellationToken);
+
             return await CreateVoiceClipFromFile(clipId, request.Text, request.Voice, cachedPath, request.OutputFormat, cancellationToken);
         }
 
@@ -132,7 +141,9 @@ namespace ElevenLabs.TextToSpeech
         /// </param>
         /// <returns>Downloaded clip path, and the loaded audio clip.</returns>
         public async Task<VoiceClip> StreamTextToSpeechAsync(string text, Voice voice, Action<AudioClip> partialClipCallback, VoiceSettings voiceSettings = null, Model model = null, OutputFormat outputFormat = OutputFormat.PCM_24000, int? optimizeStreamingLatency = null, CancellationToken cancellationToken = default)
-            => await StreamTextToSpeechAsync(new TextToSpeechRequest(voice, text, Encoding.UTF8, voiceSettings ?? voice.Settings ?? await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken), outputFormat, optimizeStreamingLatency, model), partialClipCallback, cancellationToken);
+        {
+            return await StreamTextToSpeechAsync(new TextToSpeechRequest(voice, text, Encoding.UTF8, voiceSettings ?? voice.Settings ?? await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken), outputFormat, optimizeStreamingLatency, model), partialClipCallback, cancellationToken);
+        }
 
         /// <summary>
         /// Converts text into speech using a voice of your choice and returns audio as an audio stream.
@@ -150,15 +161,15 @@ namespace ElevenLabs.TextToSpeech
         {
             ValidateStreamingFormat(request.OutputFormat);
             var frequency = GetFrequencyForPCMFormat(request.OutputFormat);
-            
+
             var payload = JsonConvert.SerializeObject(request, ElevenLabsClient.JsonSerializationOptions);
             var parameters = CreateRequestParameters(request);
-            
+
             var endpoint = $"/{request.Voice.Id}/stream";
 
             var part = 0;
-            
-            var response = await Rest.PostAsync(GetUrl(endpoint, parameters), payload, StreamCallback, eventChunkSize: 8192, new RestParameters(client.DefaultRequestHeaders), cancellationToken).ConfigureAwait(true);
+
+            var response = await Rest.PostAsync(GetUrl(endpoint, parameters), payload, StreamCallback, 8192, new RestParameters(client.DefaultRequestHeaders), cancellationToken).ConfigureAwait(true);
             response.Validate(EnableDebug);
 
             if (!response.Headers.TryGetValue(HistoryItemId, out var clipId))
@@ -170,8 +181,9 @@ namespace ElevenLabs.TextToSpeech
             var downloadDirectory = await GetCacheDirectoryAsync(request.Voice);
             var cachedPath = $"{downloadDirectory}/{clipId}.ogg";
             var oggBytes = await OggEncoder.ConvertToBytesAsync(pcmData, frequency, 1, cancellationToken: cancellationToken);
-            await File.WriteAllBytesAsync(cachedPath, oggBytes, cancellationToken: cancellationToken);
+            await File.WriteAllBytesAsync(cachedPath, oggBytes, cancellationToken);
             var fullClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", AudioType.OGGVORBIS, parameters: new RestParameters(debug: EnableDebug), compressed: false, streamingAudio: true, cancellationToken: cancellationToken);
+
             return new VoiceClip(clipId, request.Text, request.Voice, fullClip, cachedPath);
 
             void StreamCallback(Response partialResponse)
@@ -189,6 +201,7 @@ namespace ElevenLabs.TextToSpeech
                     if (!audioClip.SetData(chunk, 0))
                     {
                         Debug.LogError("Failed to set pcm data to partial clip.");
+
                         return;
                     }
 
@@ -200,9 +213,6 @@ namespace ElevenLabs.TextToSpeech
                 }
             }
         }
-
-
-
 
 
         /// <summary>
@@ -238,7 +248,9 @@ namespace ElevenLabs.TextToSpeech
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         /// <returns>A tuple containing the <see cref="VoiceClip"/> and an array of <see cref="TimestampedTranscriptCharacter"/>.</returns>
         public async Task<TranscribedVoiceClip> TextToSpeechWithTimestampsAsync(string text, Voice voice, VoiceSettings voiceSettings = null, Model model = null, OutputFormat outputFormat = OutputFormat.MP3_44100_128, int? optimizeStreamingLatency = null, CancellationToken cancellationToken = default)
-            => await TextToSpeechWithTimestampsAsync(new TextToSpeechRequest(voice, text, Encoding.UTF8, voiceSettings ?? voice.Settings ?? await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken), outputFormat, optimizeStreamingLatency, model), cancellationToken);
+        {
+            return await TextToSpeechWithTimestampsAsync(new TextToSpeechRequest(voice, text, Encoding.UTF8, voiceSettings ?? voice.Settings ?? await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken), outputFormat, optimizeStreamingLatency, model), cancellationToken);
+        }
 
         /// <summary>
         /// Converts text into speech using a voice of your choice and returns audio.
@@ -252,7 +264,7 @@ namespace ElevenLabs.TextToSpeech
             var parameters = CreateRequestParameters(request);
 
             var endpoint = $"/{request.Voice.Id}/with-timestamps";
-            
+
             var response = await Rest.PostAsync(GetUrl(endpoint, parameters), payload, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
             response.Validate(EnableDebug);
 
@@ -264,17 +276,18 @@ namespace ElevenLabs.TextToSpeech
             var responseJson = Encoding.UTF8.GetString(response.Data);
             var jsonObject = JObject.Parse(responseJson);
 
-            string audioBase64 = jsonObject["audio_base64"].ToString();
-            byte[] audioBytes = Convert.FromBase64String(audioBase64);
-            
+            var audioBase64 = jsonObject["audio_base64"].ToString();
+            var audioBytes = Convert.FromBase64String(audioBase64);
+
             var audioType = request.OutputFormat.GetAudioType();
             var cachedPath = await SaveAudioToCache(audioBytes, clipId, request.Voice, request.OutputFormat, cancellationToken);
-            
+
             await Awaiters.UnityMainThread;
             var audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", audioType, parameters: new RestParameters(debug: EnableDebug), cancellationToken: cancellationToken);
             var voiceClip = new VoiceClip(clipId, request.Text, request.Voice, audioClip, cachedPath);
 
-            TimestampedTranscriptCharacter[] timestampedTranscriptCharacters = ExtractTranscriptCharacters(jsonObject);
+            var timestampedTranscriptCharacters = ExtractTranscriptCharacters(jsonObject);
+
             return new TranscribedVoiceClip(voiceClip, timestampedTranscriptCharacters);
         }
 
@@ -318,7 +331,9 @@ namespace ElevenLabs.TextToSpeech
         /// </param>
         /// <returns>Downloaded clip path, and the loaded audio clip.</returns>
         public async Task<TranscribedVoiceClip> StreamTextToSpeechWithTimestampsAsync(string text, Voice voice, Action<PartialTranscribedAudioClip> partialClipCallback, VoiceSettings voiceSettings = null, Model model = null, OutputFormat outputFormat = OutputFormat.PCM_24000, int? optimizeStreamingLatency = null, CancellationToken cancellationToken = default)
-            => await StreamTextToSpeechWithTimestampsAsync(new TextToSpeechRequest(voice, text, Encoding.UTF8, voiceSettings ?? voice.Settings ?? await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken), outputFormat, optimizeStreamingLatency, model), partialClipCallback, cancellationToken);
+        {
+            return await StreamTextToSpeechWithTimestampsAsync(new TextToSpeechRequest(voice, text, Encoding.UTF8, voiceSettings ?? voice.Settings ?? await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken), outputFormat, optimizeStreamingLatency, model), partialClipCallback, cancellationToken);
+        }
 
         /// <summary>
         /// Converts text into speech using a voice of your choice and returns audio as an audio stream.
@@ -336,18 +351,18 @@ namespace ElevenLabs.TextToSpeech
         {
             ValidateStreamingFormat(request.OutputFormat);
             var frequency = GetFrequencyForPCMFormat(request.OutputFormat);
-            
+
             var payload = JsonConvert.SerializeObject(request, ElevenLabsClient.JsonSerializationOptions);
             var parameters = CreateRequestParameters(request);
 
             var endpoint = $"/{request.Voice.Id}/stream/with-timestamps";
-            
+
             var part = 0;
-            StringBuilder textBuffer = new StringBuilder();
-            List<float> accumulatedPCMData = new List<float>();
-            List<TimestampedTranscriptCharacter> accumulatedTranscriptData = new List<TimestampedTranscriptCharacter>();
-            
-            var response = await Rest.PostAsync(GetUrl(endpoint, parameters), payload, StreamCallback, eventChunkSize: 8192, new RestParameters(client.DefaultRequestHeaders), cancellationToken).ConfigureAwait(true);
+            var textBuffer = new StringBuilder();
+            var accumulatedPCMData = new List<float>();
+            var accumulatedTranscriptData = new List<TimestampedTranscriptCharacter>();
+
+            var response = await Rest.PostAsync(GetUrl(endpoint, parameters), payload, StreamCallback, 8192, new RestParameters(client.DefaultRequestHeaders), cancellationToken).ConfigureAwait(true);
             response.Validate(EnableDebug);
 
             if (!response.Headers.TryGetValue(HistoryItemId, out var clipId))
@@ -361,10 +376,12 @@ namespace ElevenLabs.TextToSpeech
             var downloadDirectory = await GetCacheDirectoryAsync(request.Voice);
             var cachedPath = $"{downloadDirectory}/{clipId}.ogg";
             var oggBytes = await OggEncoder.ConvertToBytesAsync(pcmData, frequency, 1, cancellationToken: cancellationToken);
-            await File.WriteAllBytesAsync(cachedPath, oggBytes, cancellationToken: cancellationToken);
+            await File.WriteAllBytesAsync(cachedPath, oggBytes, cancellationToken);
             var fullClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", AudioType.OGGVORBIS, parameters: new RestParameters(debug: EnableDebug), compressed: false, streamingAudio: true, cancellationToken: cancellationToken);
             var voiceClip = new VoiceClip(clipId, request.Text, request.Voice, fullClip, cachedPath);
+
             return new TranscribedVoiceClip(voiceClip, accumulatedTranscriptData.ToArray());
+
             void StreamCallback(Response partialResponse)
             {
                 try
@@ -374,7 +391,7 @@ namespace ElevenLabs.TextToSpeech
                         throw new ArgumentException("Failed to parse clip id!");
                     }
 
-                    string chunkText = Encoding.UTF8.GetString(partialResponse.Data);
+                    var chunkText = Encoding.UTF8.GetString(partialResponse.Data);
                     textBuffer.Append(chunkText);
                     TryFlushAccumulatedTextLines();
                 }
@@ -395,7 +412,7 @@ namespace ElevenLabs.TextToSpeech
                 textBuffer.Append(lines[^1]);
 
                 // Process all complete lines
-                for (int i = 0; i < lines.Length - 1; i++)
+                for (var i = 0; i < lines.Length - 1; i++)
                 {
                     HandleResponseJsonLine(lines[i]);
                 }
@@ -403,14 +420,18 @@ namespace ElevenLabs.TextToSpeech
                 void HandleResponseJsonLine(string line)
                 {
                     line = line.Trim();
-                    if (string.IsNullOrEmpty(line)) return;
+
+                    if (string.IsNullOrEmpty(line))
+                    {
+                        return;
+                    }
 
                     try
                     {
                         var responseJson = JObject.Parse(line);
 
-                        string audioBase64 = responseJson["audio_base64"].ToString();
-                        byte[] audioBytes = Convert.FromBase64String(audioBase64);
+                        var audioBase64 = responseJson["audio_base64"].ToString();
+                        var audioBytes = Convert.FromBase64String(audioBase64);
 
                         var pcmData = PCMEncoder.Decode(audioBytes, PCMFormatSize.SixteenBit);
                         var audioClip = AudioClip.Create($"{clipId}_{++part}", pcmData.Length, 1, frequency, false);
@@ -418,10 +439,11 @@ namespace ElevenLabs.TextToSpeech
                         if (!audioClip.SetData(pcmData, 0))
                         {
                             Debug.LogError("Failed to set PCM data to partial clip.");
+
                             return;
                         }
 
-                        TimestampedTranscriptCharacter[] timestampedTranscriptCharacters = ExtractTranscriptCharacters(responseJson);
+                        var timestampedTranscriptCharacters = ExtractTranscriptCharacters(responseJson);
 
                         partialClipCallback.Invoke(new PartialTranscribedAudioClip(audioClip, timestampedTranscriptCharacters));
 
@@ -438,13 +460,14 @@ namespace ElevenLabs.TextToSpeech
 
         private static TimestampedTranscriptCharacter[] ExtractTranscriptCharacters(JObject responseJson)
         {
-            TimestampedTranscriptCharacter[] timestampedTranscriptCharacters = Array.Empty<TimestampedTranscriptCharacter>();
-            var alignmentToken = responseJson.SelectToken("alignment");
+            var timestampedTranscriptCharacters = Array.Empty<TimestampedTranscriptCharacter>();
+            var alignmentToken = responseJson.SelectToken(AlignmentToken);
+
             if (alignmentToken != null)
             {
-                var characterArray = alignmentToken.SelectToken("characters")?.ToObject<string[]>() ?? Array.Empty<string>();
-                var startTimeArray = alignmentToken.SelectToken("character_start_times_seconds")?.ToObject<double[]>() ?? Array.Empty<double>();
-                var endTimeArray = alignmentToken.SelectToken("character_end_times_seconds")?.ToObject<double[]>() ?? Array.Empty<double>();
+                var characterArray = alignmentToken.SelectToken(CharactersToken)?.ToObject<string[]>() ?? Array.Empty<string>();
+                var startTimeArray = alignmentToken.SelectToken(CharacterStartTimesToken)?.ToObject<double[]>() ?? Array.Empty<double>();
+                var endTimeArray = alignmentToken.SelectToken(CharacterEndTimesToken)?.ToObject<double[]>() ?? Array.Empty<double>();
 
                 if (characterArray.Length != startTimeArray.Length || startTimeArray.Length != endTimeArray.Length)
                 {
@@ -452,7 +475,8 @@ namespace ElevenLabs.TextToSpeech
                 }
 
                 timestampedTranscriptCharacters = new TimestampedTranscriptCharacter[characterArray.Length];
-                for (int c = 0; c < characterArray.Length; c++)
+
+                for (var c = 0; c < characterArray.Length; c++)
                 {
                     timestampedTranscriptCharacters[c] = new TimestampedTranscriptCharacter(characterArray[c], startTimeArray[c], endTimeArray[c]);
                 }
@@ -461,12 +485,12 @@ namespace ElevenLabs.TextToSpeech
             return timestampedTranscriptCharacters;
         }
 
-        
+
         private Dictionary<string, string> CreateRequestParameters(TextToSpeechRequest request)
         {
             var parameters = new Dictionary<string, string>
             {
-                { OutputFormatParameter, request.OutputFormat.ToString().ToLower() }
+                {OutputFormatParameter, request.OutputFormat.ToString().ToLower()}
             };
 
             if (request.OptimizeStreamingLatency.HasValue)
@@ -476,11 +500,12 @@ namespace ElevenLabs.TextToSpeech
 
             return parameters;
         }
-        
-        
+
+
         private static async Task<string> GetCacheDirectoryAsync(Voice voice)
         {
             await Rest.ValidateCacheDirectoryAsync();
+
             return Rest.DownloadCacheDirectory
                 .CreateNewDirectory(nameof(ElevenLabs))
                 .CreateNewDirectory(nameof(TextToSpeech))
@@ -491,7 +516,7 @@ namespace ElevenLabs.TextToSpeech
         {
             var audioType = outputFormat.GetAudioType();
             ValidateAudioType(audioType);
-            
+
             var extension = GetFileExtension(audioType);
             var downloadDirectory = await GetCacheDirectoryAsync(voice);
             var cachedPath = $"{downloadDirectory}/{clipId}.{extension}";
@@ -502,30 +527,34 @@ namespace ElevenLabs.TextToSpeech
                 {
                     case AudioType.MPEG:
                         await File.WriteAllBytesAsync(cachedPath, audioBytes, cancellationToken).ConfigureAwait(false);
+
                         break;
                     case AudioType.OGGVORBIS:
                         var pcmData = PCMEncoder.Decode(audioBytes, PCMFormatSize.SixteenBit);
                         var frequency = GetFrequencyForPCMFormat(outputFormat);
                         var oggBytes = await OggEncoder.ConvertToBytesAsync(pcmData, frequency, 1, cancellationToken: cancellationToken).ConfigureAwait(false);
                         await File.WriteAllBytesAsync(cachedPath, oggBytes, cancellationToken).ConfigureAwait(false);
+
                         break;
                 }
             }
 
             return cachedPath;
         }
-        
+
         private async Task<VoiceClip> CreateVoiceClipFromFile(string clipId, string text, Voice voice, string cachedPath, OutputFormat outputFormat, CancellationToken cancellationToken)
         {
             await Awaiters.UnityMainThread;
+
             var audioClip = await Rest.DownloadAudioClipAsync(
                 $"file://{cachedPath}",
                 outputFormat.GetAudioType(),
                 parameters: new RestParameters(debug: EnableDebug),
                 cancellationToken: cancellationToken);
+
             return new VoiceClip(clipId, text, voice, audioClip, cachedPath);
         }
-        
+
 
         private void ValidateAudioType(AudioType audioType)
         {
@@ -534,30 +563,44 @@ namespace ElevenLabs.TextToSpeech
                 throw new ArgumentOutOfRangeException($"Unsupported {nameof(AudioType)}: {audioType}");
             }
         }
-        
+
         private void ValidateStreamingFormat(OutputFormat format)
         {
-            if (format is OutputFormat.MP3_44100_64 or OutputFormat.MP3_44100_96
-                or OutputFormat.MP3_44100_128 or OutputFormat.MP3_44100_192)
+            var isInvalidFormat = format switch
+            {
+                OutputFormat.MP3_44100_64 => true,
+                OutputFormat.MP3_44100_96 => true,
+                OutputFormat.MP3_44100_128 => true,
+                OutputFormat.MP3_44100_192 => true,
+                _ => false
+            };
+
+            if (isInvalidFormat)
             {
                 throw new InvalidOperationException($"{nameof(format)} must be a PCM format for streaming!");
             }
         }
 
-        private string GetFileExtension(AudioType audioType) => audioType switch
+        private string GetFileExtension(AudioType audioType)
         {
-            AudioType.MPEG => "mp3",
-            AudioType.OGGVORBIS => "ogg",
-            _ => throw new ArgumentOutOfRangeException($"Unsupported {nameof(AudioType)}: {audioType}")
-        };
+            return audioType switch
+            {
+                AudioType.MPEG => "mp3",
+                AudioType.OGGVORBIS => "ogg",
+                _ => throw new ArgumentOutOfRangeException($"Unsupported {nameof(AudioType)}: {audioType}")
+            };
+        }
 
-        private int GetFrequencyForPCMFormat(OutputFormat format) => format switch
+        private int GetFrequencyForPCMFormat(OutputFormat format)
         {
-            OutputFormat.PCM_16000 => 16000,
-            OutputFormat.PCM_22050 => 22050,
-            OutputFormat.PCM_24000 => 24000,
-            OutputFormat.PCM_44100 => 44100,
-            _ => throw new ArgumentException($"{nameof(GetFrequencyForPCMFormat)} requires a PCM format!", nameof(format), null)
-        };
+            return format switch
+            {
+                OutputFormat.PCM_16000 => 16000,
+                OutputFormat.PCM_22050 => 22050,
+                OutputFormat.PCM_24000 => 24000,
+                OutputFormat.PCM_44100 => 44100,
+                _ => throw new ArgumentException($"{nameof(GetFrequencyForPCMFormat)} requires a PCM format!", nameof(format), null)
+            };
+        }
     }
 }
