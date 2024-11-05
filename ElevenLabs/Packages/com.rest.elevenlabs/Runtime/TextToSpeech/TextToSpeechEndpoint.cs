@@ -530,7 +530,7 @@ namespace ElevenLabs.TextToSpeech
                 OutputFormat.PCM_22050 => 22050,
                 OutputFormat.PCM_24000 => 24000,
                 OutputFormat.PCM_44100 => 44100,
-                _ => throw new ArgumentException($"{nameof(GetFrequencyForPCMFormat)} requires a PCM format!", nameof(format), null)
+                _ => throw new ArgumentException($"{nameof(GetFrequencyForPCMFormat)} invalid PCM format!", nameof(format), null)
             };
         }
 
