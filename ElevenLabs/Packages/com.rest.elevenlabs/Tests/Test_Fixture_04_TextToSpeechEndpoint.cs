@@ -1,5 +1,6 @@
-// Licensed under the MIT License. See LICENSE in the project root for license information.
+﻿// Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using ElevenLabs.TextToSpeech;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -93,6 +94,27 @@ namespace ElevenLabs.Tests
             Assert.IsNotNull(voiceClip.AudioClip);
             Debug.Log(voiceClip.Id);
             Assert.AreEqual(characters.ToArray(), voiceClip.TimestampedTranscriptCharacters);
+        }
+
+
+        [Test]
+        public async Task Test_05_LanguageEnforced_TextToSpeech()
+        {
+            Assert.NotNull(ElevenLabsClient.TextToSpeechEndpoint);
+            var voice = Voices.Voice.Adam;
+            Assert.NotNull(voice);
+            var defaultVoiceSettings = await ElevenLabsClient.VoicesEndpoint.GetDefaultVoiceSettingsAsync();
+            var request = new TextToSpeechRequest(
+                voice: voice,
+                text: "Příliš žluťoučký kůň úpěl ďábelské ódy",
+                voiceSettings: defaultVoiceSettings,
+                model: Models.Model.TurboV2_5,
+                outputFormat: OutputFormat.MP3_44100_192,
+                languageCode: "cs");
+            var voiceClip = await ElevenLabsClient.TextToSpeechEndpoint.TextToSpeechAsync(request);
+            Assert.NotNull(voiceClip);
+            Assert.NotNull(voiceClip.AudioClip);
+            Debug.Log(voiceClip.Id);
         }
     }
 }

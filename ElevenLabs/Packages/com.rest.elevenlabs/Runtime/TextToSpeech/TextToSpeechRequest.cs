@@ -24,7 +24,8 @@ namespace ElevenLabs.TextToSpeech
             string previousText = null,
             string nextText = null,
             string[] previousRequestIds = null,
-            string[] nextRequestIds = null)
+            string[] nextRequestIds = null,
+            string languageCode = null)
         {
             if (string.IsNullOrWhiteSpace(text))
             {
@@ -55,8 +56,17 @@ namespace ElevenLabs.TextToSpeech
             OptimizeStreamingLatency = optimizeStreamingLatency;
             PreviousText = previousText;
             NextText = nextText;
+            if (previousRequestIds?.Length > 3)
+            {
+                previousRequestIds = previousRequestIds[..3];
+            }
             PreviousRequestIds = previousRequestIds;
+            if (nextRequestIds?.Length > 3)
+            {
+                nextRequestIds = nextRequestIds[..3];
+            }
             NextRequestIds = nextRequestIds;
+            LanguageCode = languageCode;
         }
 
         [Preserve]
@@ -91,14 +101,22 @@ namespace ElevenLabs.TextToSpeech
         [JsonProperty("next_text")]
         public string NextText { get; }
 
+        /// <remarks>
+        /// A maximum of three next or previous history item ids can be sent
+        /// </remarks>
         [Preserve]
         [JsonProperty("previous_request_ids")]
-        // Note: A maximum of three next or previous history item ids can be sent
         public string[] PreviousRequestIds { get; }
 
+        /// <remarks>
+        /// A maximum of three next or previous history item ids can be sent
+        /// </remarks>
         [Preserve]
         [JsonProperty("next_request_ids")]
-        // Note: A maximum of three next or previous history item ids can be sent
         public string[] NextRequestIds { get; }
+
+        [Preserve]
+        [JsonProperty("language_code")]
+        public string LanguageCode { get; }
     }
 }
