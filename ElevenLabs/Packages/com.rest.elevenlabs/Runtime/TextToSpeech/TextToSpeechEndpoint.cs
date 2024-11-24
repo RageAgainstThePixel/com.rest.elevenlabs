@@ -431,7 +431,7 @@ namespace ElevenLabs.TextToSpeech
                         return;
                     }
 
-                    var timestampedTranscriptCharacters = (TimestampedTranscriptCharacter[])partialResponse.Alignment;
+                    var timestampedTranscriptCharacters = (TimestampedTranscriptCharacter[])partialResponse.Alignment ?? Array.Empty<TimestampedTranscriptCharacter>();
                     partialClipCallback.Invoke(Tuple.Create(audioClip, timestampedTranscriptCharacters));
                     accumulatedPCMData.AddRange(partialClipData);
                     accumulatedTranscriptData.AddRange(timestampedTranscriptCharacters);

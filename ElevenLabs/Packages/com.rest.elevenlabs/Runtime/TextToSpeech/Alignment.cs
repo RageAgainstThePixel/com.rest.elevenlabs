@@ -35,6 +35,7 @@ namespace ElevenLabs.TextToSpeech
         [Preserve]
         public static implicit operator TimestampedTranscriptCharacter[](Alignment alignment)
         {
+            if (alignment == null) { return null; }
             var characters = alignment.Characters;
             var startTimes = alignment.StartTimes;
             var endTimes = alignment.EndTimes;
