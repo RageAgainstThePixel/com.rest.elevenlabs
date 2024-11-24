@@ -9,7 +9,7 @@ namespace ElevenLabs
 {
     [Preserve]
     [Serializable]
-    public class VoiceClip : GeneratedClip
+    public sealed class VoiceClip : GeneratedClip
     {
         [Preserve]
         internal VoiceClip(string id, string text, Voice voice, AudioClip audioClip, string cachedPath)
@@ -23,5 +23,8 @@ namespace ElevenLabs
 
         [Preserve]
         public Voice Voice => voice;
+
+        [Preserve]
+        public TimestampedTranscriptCharacter[] TimestampedTranscriptCharacters { get; internal set; }
     }
 }

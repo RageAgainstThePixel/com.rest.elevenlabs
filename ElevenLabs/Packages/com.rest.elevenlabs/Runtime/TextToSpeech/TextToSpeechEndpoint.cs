@@ -250,7 +250,7 @@ namespace ElevenLabs.TextToSpeech
         /// </param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         /// <returns>A tuple containing the <see cref="VoiceClip"/> and an array of <see cref="TimestampedTranscriptCharacter"/>.</returns>
-        public async Task<TranscribedVoiceClip> TextToSpeechWithTimestampsAsync(string text, Voice voice, VoiceSettings voiceSettings = null, Model model = null, OutputFormat outputFormat = OutputFormat.MP3_44100_128, int? optimizeStreamingLatency = null, CancellationToken cancellationToken = default)
+        public async Task<VoiceClip> TextToSpeechWithTimestampsAsync(string text, Voice voice, VoiceSettings voiceSettings = null, Model model = null, OutputFormat outputFormat = OutputFormat.MP3_44100_128, int? optimizeStreamingLatency = null, CancellationToken cancellationToken = default)
             => await TextToSpeechWithTimestampsAsync(
                 new TextToSpeechRequest(
                     voice,
@@ -268,7 +268,7 @@ namespace ElevenLabs.TextToSpeech
         /// <param name="request"><see cref="TextToSpeechRequest"/>.</param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         /// <returns>A tuple containing the <see cref="VoiceClip"/> and an array of <see cref="TimestampedTranscriptCharacter"/>.</returns>
-        public async Task<TranscribedVoiceClip> TextToSpeechWithTimestampsAsync(TextToSpeechRequest request, CancellationToken cancellationToken = default)
+        public async Task<VoiceClip> TextToSpeechWithTimestampsAsync(TextToSpeechRequest request, CancellationToken cancellationToken = default)
         {
             var payload = JsonConvert.SerializeObject(request, ElevenLabsClient.JsonSerializationOptions);
             var parameters = CreateRequestParameters(request);
@@ -286,7 +286,10 @@ namespace ElevenLabs.TextToSpeech
             var audioType = request.OutputFormat.GetAudioType();
             var cachedPath = await SaveAudioToCache(audioBytes, clipId, request.Voice, request.OutputFormat, cancellationToken).ConfigureAwait(true);
             var audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", audioType, parameters: new RestParameters(debug: EnableDebug), cancellationToken: cancellationToken);
-            return new TranscribedVoiceClip(transcriptResponse.Alignment, clipId, request.Text, request.Voice, audioClip, cachedPath);
+            return new VoiceClip(clipId, request.Text, request.Voice, audioClip, cachedPath)
+            {
+                TimestampedTranscriptCharacters = transcriptResponse.Alignment
+            };
         }
 
         /// <summary>
@@ -328,7 +331,7 @@ namespace ElevenLabs.TextToSpeech
         /// Optional, <see cref="CancellationToken"/>.
         /// </param>
         /// <returns>Downloaded clip path, and the loaded audio clip.</returns>
-        public async Task<TranscribedVoiceClip> StreamTextToSpeechWithTimestampsAsync(string text, Voice voice, Action<Tuple<AudioClip, TimestampedTranscriptCharacter[]>> partialClipCallback, VoiceSettings voiceSettings = null, Model model = null, OutputFormat outputFormat = OutputFormat.PCM_24000, int? optimizeStreamingLatency = null, CancellationToken cancellationToken = default)
+        public async Task<VoiceClip> StreamTextToSpeechWithTimestampsAsync(string text, Voice voice, Action<Tuple<AudioClip, TimestampedTranscriptCharacter[]>> partialClipCallback, VoiceSettings voiceSettings = null, Model model = null, OutputFormat outputFormat = OutputFormat.PCM_24000, int? optimizeStreamingLatency = null, CancellationToken cancellationToken = default)
             => await StreamTextToSpeechWithTimestampsAsync(
                 new TextToSpeechRequest(
                     voice,
@@ -353,7 +356,7 @@ namespace ElevenLabs.TextToSpeech
         /// Optional, <see cref="CancellationToken"/>.
         /// </param>
         /// <returns>Downloaded clip path, and the loaded audio clip.</returns>
-        public async Task<TranscribedVoiceClip> StreamTextToSpeechWithTimestampsAsync(TextToSpeechRequest request, Action<Tuple<AudioClip, TimestampedTranscriptCharacter[]>> partialClipCallback, CancellationToken cancellationToken = default)
+        public async Task<VoiceClip> StreamTextToSpeechWithTimestampsAsync(TextToSpeechRequest request, Action<Tuple<AudioClip, TimestampedTranscriptCharacter[]>> partialClipCallback, CancellationToken cancellationToken = default)
         {
             ValidateStreamingFormat(request.OutputFormat);
             var frequency = GetFrequencyForPCMFormat(request.OutputFormat);
@@ -380,7 +383,11 @@ namespace ElevenLabs.TextToSpeech
             var oggBytes = await OggEncoder.ConvertToBytesAsync(pcmData, frequency, 1, cancellationToken: cancellationToken);
             await File.WriteAllBytesAsync(cachedPath, oggBytes, cancellationToken);
             var fullClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", AudioType.OGGVORBIS, parameters: new RestParameters(debug: EnableDebug), compressed: false, streamingAudio: true, cancellationToken: cancellationToken);
-            return new TranscribedVoiceClip(accumulatedTranscriptData.ToArray(), clipId, request.Text, request.Voice, fullClip, cachedPath);
+
+            return new VoiceClip(clipId, request.Text, request.Voice, fullClip, cachedPath)
+            {
+                TimestampedTranscriptCharacters = accumulatedTranscriptData.ToArray()
+            };
 
             void StreamCallback(Response partialResponse)
             {
