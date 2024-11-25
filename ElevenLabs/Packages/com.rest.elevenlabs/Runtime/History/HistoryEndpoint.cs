@@ -11,8 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using Utilities.Async;
-using Utilities.Audio;
-using Utilities.Encoding.OggVorbis;
+using Utilities.Encoding.Wav;
 using Utilities.WebRequestRest;
 
 namespace ElevenLabs.History
@@ -82,11 +81,11 @@ namespace ElevenLabs.History
                 .CreateNewDirectory(nameof(History))
                 .CreateNewDirectory(historyItem.VoiceId);
             var voice = await client.VoicesEndpoint.GetVoiceAsync(historyItem.VoiceId, cancellationToken: cancellationToken);
-            var audioType = historyItem.ContentType.Contains("mpeg") ? AudioType.MPEG : AudioType.OGGVORBIS;
+            var audioType = historyItem.ContentType.Contains("mpeg") ? AudioType.MPEG : AudioType.WAV;
             var extension = audioType switch
             {
                 AudioType.MPEG => "mp3",
-                AudioType.OGGVORBIS => "ogg",
+                AudioType.WAV => "wav",
                 _ => throw new ArgumentOutOfRangeException($"Unsupported {nameof(AudioType)}: {audioType}")
             };
             var cachedPath = Path.Combine(voiceDirectory, $"{historyItem.Id}.{extension}");
@@ -101,11 +100,9 @@ namespace ElevenLabs.History
                     case AudioType.MPEG:
                         await File.WriteAllBytesAsync(cachedPath, response.Data, cancellationToken).ConfigureAwait(false);
                         break;
-                    case AudioType.OGGVORBIS:
-                        var pcmData = PCMEncoder.Decode(response.Data, PCMFormatSize.SixteenBit);
-                        var sampleRate = 44100; // TODO unknown sample rate.
-                        var oggBytes = await OggEncoder.ConvertToBytesAsync(pcmData, sampleRate, 1, cancellationToken: cancellationToken).ConfigureAwait(false);
-                        await File.WriteAllBytesAsync(cachedPath, oggBytes, cancellationToken: cancellationToken).ConfigureAwait(false);
+                    case AudioType.WAV:
+                        var sampleRate = 44100; // TODO unknown sample rate. how do we figure it out?
+                        await WavEncoder.WriteToFileAsync(cachedPath, response.Data, 1, sampleRate, cancellationToken: cancellationToken);
                         break;
                     default:
                         throw new ArgumentOutOfRangeException($"Unsupported {nameof(AudioType)}: {audioType}");
@@ -113,7 +110,7 @@ namespace ElevenLabs.History
             }
 
             await Awaiters.UnityMainThread;
-            var audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", AudioType.UNKNOWN, parameters: new RestParameters(debug: EnableDebug), cancellationToken: cancellationToken);
+            var audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", audioType, parameters: new RestParameters(debug: EnableDebug), cancellationToken: cancellationToken);
             return new VoiceClip(historyItem.Id, historyItem.Text, voice, audioClip, cachedPath);
         }
 

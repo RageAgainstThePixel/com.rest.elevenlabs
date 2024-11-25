@@ -2,7 +2,6 @@
 
 using ElevenLabs.History;
 using ElevenLabs.Models;
-using ElevenLabs.TextToSpeech;
 using ElevenLabs.User;
 using ElevenLabs.VoiceGeneration;
 using ElevenLabs.Voices;
