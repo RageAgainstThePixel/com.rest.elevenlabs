@@ -94,7 +94,7 @@ namespace ElevenLabs.Voices
         public VoiceSettings Settings { get; internal set; }
 
         [Preserve]
-        public static implicit operator string(Voice voice) => voice.ToString();
+        public static implicit operator string(Voice voice) => voice?.ToString();
 
         [Preserve]
         public override string ToString() => Id;

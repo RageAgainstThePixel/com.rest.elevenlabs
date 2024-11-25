@@ -55,5 +55,7 @@ namespace ElevenLabs
         public void OnBeforeSerialize() => textHash = TextHash.ToString();
 
         public void OnAfterDeserialize() => TextHash = Guid.Parse(textHash);
+
+        public static implicit operator AudioClip(GeneratedClip clip) => clip?.audioClip;
     }
 }

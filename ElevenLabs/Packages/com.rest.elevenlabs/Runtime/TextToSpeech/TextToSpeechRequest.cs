@@ -25,7 +25,9 @@ namespace ElevenLabs.TextToSpeech
             string nextText = null,
             string[] previousRequestIds = null,
             string[] nextRequestIds = null,
-            string languageCode = null)
+            string languageCode = null,
+            CacheFormat cacheFormat = CacheFormat.Ogg,
+            bool withTimestamps = false)
         {
             if (string.IsNullOrWhiteSpace(text))
             {
@@ -49,8 +51,8 @@ namespace ElevenLabs.TextToSpeech
             }
 
             Text = text;
-            Model = model ?? Models.Model.MultiLingualV2;
-            Voice = voice;
+            Model = model ?? Models.Model.TurboV2_5;
+            Voice = string.IsNullOrWhiteSpace(voice) ? Voice.Adam : voice;
             VoiceSettings = voiceSettings ?? voice.Settings ?? throw new ArgumentNullException(nameof(voiceSettings));
             OutputFormat = outputFormat;
             OptimizeStreamingLatency = optimizeStreamingLatency;
@@ -67,6 +69,8 @@ namespace ElevenLabs.TextToSpeech
             }
             NextRequestIds = nextRequestIds;
             LanguageCode = languageCode;
+            CacheFormat = cacheFormat;
+            WithTimestamps = withTimestamps;
         }
 
         [Preserve]
@@ -87,7 +91,11 @@ namespace ElevenLabs.TextToSpeech
 
         [Preserve]
         [JsonIgnore]
-        public OutputFormat OutputFormat { get; }
+        public OutputFormat OutputFormat { get; internal set; }
+
+        [Preserve]
+        [JsonIgnore]
+        public CacheFormat CacheFormat { get; internal set; }
 
         [Preserve]
         [JsonIgnore]
@@ -118,5 +126,9 @@ namespace ElevenLabs.TextToSpeech
         [Preserve]
         [JsonProperty("language_code")]
         public string LanguageCode { get; }
+
+        [Preserve]
+        [JsonIgnore]
+        public bool WithTimestamps { get; }
     }
 }
