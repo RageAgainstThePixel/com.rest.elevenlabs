@@ -26,7 +26,7 @@ namespace ElevenLabs.TextToSpeech
             string[] previousRequestIds = null,
             string[] nextRequestIds = null,
             string languageCode = null,
-            CacheFormat cacheFormat = CacheFormat.Ogg,
+            CacheFormat cacheFormat = CacheFormat.Wav,
             bool withTimestamps = false)
         {
             if (string.IsNullOrWhiteSpace(text))
@@ -53,7 +53,7 @@ namespace ElevenLabs.TextToSpeech
             Text = text;
             Model = model ?? Models.Model.TurboV2_5;
             Voice = string.IsNullOrWhiteSpace(voice) ? Voice.Adam : voice;
-            VoiceSettings = voiceSettings ?? voice.Settings ?? throw new ArgumentNullException(nameof(voiceSettings));
+            VoiceSettings = voiceSettings ?? voice.Settings;
             OutputFormat = outputFormat;
             OptimizeStreamingLatency = optimizeStreamingLatency;
             PreviousText = previousText;

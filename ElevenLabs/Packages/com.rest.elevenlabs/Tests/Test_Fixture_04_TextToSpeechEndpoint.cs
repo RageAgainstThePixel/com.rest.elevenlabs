@@ -31,13 +31,14 @@ namespace ElevenLabs.Tests
             var voice = (await ElevenLabsClient.VoicesEndpoint.GetAllVoicesAsync()).FirstOrDefault();
             Assert.NotNull(voice);
             var partialClips = new Queue<AudioClip>();
-            var request = new TextToSpeechRequest(voice, "The quick brown fox jumps over the lazy dog.");
+            var request = new TextToSpeechRequest(voice, "The quick brown fox jumps over the lazy dog.", outputFormat: OutputFormat.PCM_24000);
             var voiceClip = await ElevenLabsClient.TextToSpeechEndpoint.TextToSpeechAsync(request, voiceClip => partialClips.Enqueue(voiceClip));
             Assert.NotNull(partialClips);
             Assert.IsNotEmpty(partialClips);
             Assert.NotNull(voiceClip);
             Assert.IsNotNull(voiceClip.AudioClip);
             Debug.Log(voiceClip.Id);
+            Debug.Log(voiceClip.CachedPath);
         }
 
         [Test]
@@ -51,6 +52,7 @@ namespace ElevenLabs.Tests
             Assert.NotNull(voiceClip);
             Assert.NotNull(voiceClip.AudioClip);
             Debug.Log(voiceClip.Id);
+            Debug.Log(voiceClip.CachedPath);
             Assert.NotNull(voiceClip.TimestampedTranscriptCharacters);
             Assert.IsNotEmpty(voiceClip.TimestampedTranscriptCharacters);
             Debug.Log("| Character | Start Time | End Time |");
@@ -72,7 +74,7 @@ namespace ElevenLabs.Tests
             var characters = new Queue<TimestampedTranscriptCharacter>();
             Debug.Log("| Character | Start Time | End Time |");
             Debug.Log("| --------- | ---------- | -------- |");
-            var request = new TextToSpeechRequest(voice, "The quick brown fox jumps over the lazy dog.", withTimestamps: true);
+            var request = new TextToSpeechRequest(voice, "The quick brown fox jumps over the lazy dog.", outputFormat: OutputFormat.PCM_24000, withTimestamps: true);
             var voiceClip = await ElevenLabsClient.TextToSpeechEndpoint.TextToSpeechAsync(request, voiceClip =>
             {
                 partialClips.Enqueue(voiceClip.AudioClip);
@@ -88,6 +90,7 @@ namespace ElevenLabs.Tests
             Assert.NotNull(voiceClip);
             Assert.IsNotNull(voiceClip.AudioClip);
             Debug.Log(voiceClip.Id);
+            Debug.Log(voiceClip.CachedPath);
             Assert.AreEqual(characters.ToArray(), voiceClip.TimestampedTranscriptCharacters);
         }
 
@@ -109,7 +112,9 @@ namespace ElevenLabs.Tests
             var voiceClip = await ElevenLabsClient.TextToSpeechEndpoint.TextToSpeechAsync(request);
             Assert.NotNull(voiceClip);
             Assert.NotNull(voiceClip.AudioClip);
+            Assert.IsTrue(string.IsNullOrWhiteSpace(voiceClip.CachedPath));
             Debug.Log(voiceClip.Id);
+            Debug.Log(voiceClip.CachedPath);
         }
     }
 }

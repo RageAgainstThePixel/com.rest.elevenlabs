@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using UnityEngine;
 using Utilities.Async;
 
@@ -65,14 +66,15 @@ namespace ElevenLabs.Demo
 
                 streamClipQueue.Clear();
                 var streamQueueCts = CancellationTokenSource.CreateLinkedTokenSource(destroyCancellationToken);
-                PlayStreamQueue(streamQueueCts.Token);
-                var request = new TextToSpeechRequest(voice, message, model: Model.EnglishTurboV2);
+                var streamTask = PlayStreamQueueAsync(streamQueueCts.Token);
+                var request = new TextToSpeechRequest(voice, message, model: Model.EnglishTurboV2, outputFormat: OutputFormat.PCM_24000);
                 var voiceClip = await api.TextToSpeechEndpoint.TextToSpeechAsync(request, partialClip =>
                 {
                     streamClipQueue.Enqueue(partialClip);
                 }, cancellationToken: destroyCancellationToken);
                 audioSource.clip = voiceClip.AudioClip;
-                await new WaitUntil(() => streamClipQueue.Count == 0 && !audioSource.isPlaying);
+                await streamTask.ConfigureAwait(true);
+                destroyCancellationToken.ThrowIfCancellationRequested();
                 streamQueueCts.Cancel();
 
                 if (debug)
@@ -82,7 +84,15 @@ namespace ElevenLabs.Demo
             }
             catch (Exception e)
             {
-                Debug.LogError(e);
+                switch (e)
+                {
+                    case TaskCanceledException:
+                    case OperationCanceledException:
+                        break;
+                    default:
+                        Debug.LogException(e);
+                        break;
+                }
             }
         }
 
@@ -90,32 +100,45 @@ namespace ElevenLabs.Demo
         private void OnDestroy()
         {
             lifetimeCts.Cancel();
-            lifetimeCts.Dispose();
         }
 #endif
 
-        private async void PlayStreamQueue(CancellationToken cancellationToken)
+        private async Task PlayStreamQueueAsync(CancellationToken cancellationToken)
         {
             try
             {
-                await new WaitUntil(() => streamClipQueue.Count > 0);
-                var endOfFrame = new WaitForEndOfFrame();
+                await new WaitUntil(() => streamClipQueue.Count > 0 || cancellationToken.IsCancellationRequested);
+                cancellationToken.ThrowIfCancellationRequested();
 
                 do
                 {
                     if (!audioSource.isPlaying &&
                         streamClipQueue.TryDequeue(out var clip))
                     {
-                        Debug.Log($"playing partial clip: {clip.name}");
-                        audioSource.PlayOneShot(clip);
+                        if (debug)
+                        {
+                            Debug.Log($"playing partial clip: {clip.name}");
+                        }
+
+                        audioSource.clip = clip;
+                        audioSource.Play();
+                        await Task.Delay(TimeSpan.FromSeconds(clip.length), cancellationToken).ConfigureAwait(true);
                     }
 
-                    await endOfFrame;
+                    await Task.Yield();
                 } while (!cancellationToken.IsCancellationRequested);
             }
             catch (Exception e)
             {
-                Debug.LogError(e);
+                switch (e)
+                {
+                    case TaskCanceledException:
+                    case OperationCanceledException:
+                        break;
+                    default:
+                        Debug.LogException(e);
+                        break;
+                }
             }
         }
     }

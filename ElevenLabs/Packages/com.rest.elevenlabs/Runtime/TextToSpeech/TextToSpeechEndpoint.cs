@@ -33,6 +33,7 @@ namespace ElevenLabs.TextToSpeech
 
         public async Task<VoiceClip> TextToSpeechAsync(TextToSpeechRequest request, CancellationToken cancellationToken = default)
         {
+            request.VoiceSettings ??= await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken);
             var payload = JsonConvert.SerializeObject(request, ElevenLabsClient.JsonSerializationOptions);
             var parameters = CreateRequestParameters(request);
             var endpoint = $"/{request.Voice}";
@@ -75,7 +76,7 @@ namespace ElevenLabs.TextToSpeech
             }
             else
             {
-                audioClip = AudioClip.Create(clipId, audioData.Length, 1, GetFrequencyForFormat(request.OutputFormat), false);
+                audioClip = AudioClip.Create(clipId, audioData.Length, 1, GetSampleRate(request.OutputFormat), false);
             }
 
             return new VoiceClip(clipId, request.Text, request.Voice, audioClip, cachedPath)
@@ -125,7 +126,9 @@ namespace ElevenLabs.TextToSpeech
                 request.OutputFormat = OutputFormat.PCM_24000;
             }
 
-            var frequency = GetFrequencyForFormat(request.OutputFormat);
+            request.VoiceSettings ??= await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken);
+
+            var frequency = GetSampleRate(request.OutputFormat);
             var payload = JsonConvert.SerializeObject(request, ElevenLabsClient.JsonSerializationOptions);
             var parameters = CreateRequestParameters(request);
             var endpoint = $"/{request.Voice.Id}/stream";
@@ -169,7 +172,7 @@ namespace ElevenLabs.TextToSpeech
             }
             else
             {
-                audioClip = AudioClip.Create(clipId, audioData.Length, 1, GetFrequencyForFormat(request.OutputFormat), false);
+                audioClip = AudioClip.Create(clipId, audioData.Length, 1, GetSampleRate(request.OutputFormat), false);
             }
 
             return new VoiceClip(clipId, request.Text, request.Voice, audioClip, cachedPath)
@@ -187,16 +190,16 @@ namespace ElevenLabs.TextToSpeech
                     }
 
                     var samples = PCMEncoder.Decode(partialResponse.Data);
-                    var audioClip = AudioClip.Create($"{clipId}_{++part}", samples.Length, 1, frequency, false);
+                    var partialClip = AudioClip.Create($"{clipId}_{++part}", samples.Length, 1, frequency, false);
 
-                    if (!audioClip.SetData(samples, 0))
+                    if (!partialClip.SetData(samples, 0))
                     {
                         Debug.LogError("Failed to set pcm data to partial clip.");
 
                         return;
                     }
 
-                    partialClipCallback.Invoke(new VoiceClip(clipId, request.Text, request.Voice, audioClip, null));
+                    partialClipCallback.Invoke(new VoiceClip(clipId, request.Text, request.Voice, partialClip, null));
                 }
                 catch (Exception e)
                 {
@@ -289,14 +292,14 @@ namespace ElevenLabs.TextToSpeech
             return parameters;
         }
 
-        private static async Task<(string, AudioType)> SaveAudioToCache(byte[] audioBytes, string clipId, Voice voice, OutputFormat outputFormat, CacheFormat cacheFormat, CancellationToken cancellationToken)
+        private static async Task<(string, AudioType)> SaveAudioToCache(byte[] audioData, string clipId, Voice voice, OutputFormat outputFormat, CacheFormat cacheFormat, CancellationToken cancellationToken)
         {
             string extension;
             AudioType audioType;
 
             if (outputFormat is OutputFormat.MP3_44100_64 or OutputFormat.MP3_44100_96 or OutputFormat.MP3_44100_128 or OutputFormat.MP3_44100_128)
             {
-                extension = ".mp3";
+                extension = "mp3";
                 audioType = AudioType.MPEG;
             }
             else
@@ -304,11 +307,11 @@ namespace ElevenLabs.TextToSpeech
                 switch (cacheFormat)
                 {
                     case CacheFormat.Wav:
-                        extension = ".wav";
+                        extension = "wav";
                         audioType = AudioType.WAV;
                         break;
                     case CacheFormat.Ogg:
-                        extension = ".ogg";
+                        extension = "ogg";
                         audioType = AudioType.OGGVORBIS;
                         break;
                     case CacheFormat.None:
@@ -329,14 +332,14 @@ namespace ElevenLabs.TextToSpeech
                 switch (audioType)
                 {
                     case AudioType.MPEG:
-                        await File.WriteAllBytesAsync(cachedPath, audioBytes, cancellationToken).ConfigureAwait(false);
+                        await File.WriteAllBytesAsync(cachedPath, audioData, cancellationToken).ConfigureAwait(false);
                         break;
                     case AudioType.OGGVORBIS:
-                        var oggBytes = await OggEncoder.ConvertToBytesAsync(PCMEncoder.Decode(audioBytes), GetFrequencyForFormat(outputFormat), 1, cancellationToken: cancellationToken).ConfigureAwait(false);
+                        var oggBytes = await OggEncoder.ConvertToBytesAsync(PCMEncoder.Decode(audioData), sampleRate: GetSampleRate(outputFormat), channels: 1, cancellationToken: cancellationToken).ConfigureAwait(false);
                         await File.WriteAllBytesAsync(cachedPath, oggBytes, cancellationToken).ConfigureAwait(false);
                         break;
                     case AudioType.WAV:
-                        // TODO update wav encoder package to write to disk async
+                        await WavEncoder.WriteToFileAsync(cachedPath, audioData, sampleRate: GetSampleRate(outputFormat), channels: 1, cancellationToken: cancellationToken).ConfigureAwait(false);
                         break;
                 }
             }
@@ -344,7 +347,7 @@ namespace ElevenLabs.TextToSpeech
             return (cachedPath, audioType);
         }
 
-        private static int GetFrequencyForFormat(OutputFormat format) => format switch
+        private static int GetSampleRate(OutputFormat format) => format switch
         {
             OutputFormat.PCM_16000 => 16000,
             OutputFormat.PCM_22050 => 22050,

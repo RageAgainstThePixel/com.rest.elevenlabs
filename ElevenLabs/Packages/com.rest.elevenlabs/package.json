@@ -19,7 +19,7 @@
   "dependencies": {
     "com.utilities.rest": "3.3.0",
     "com.utilities.encoder.ogg": "4.0.1",
-    "com.utilities.encoder.wav": "2.0.1"
+    "com.utilities.encoder.wav": "2.0.2"
   },
   "samples": [
     {
