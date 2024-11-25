@@ -4,7 +4,7 @@ using ElevenLabs.Models;
 using ElevenLabs.TextToSpeech;
 using ElevenLabs.Voices;
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -33,7 +33,7 @@ namespace ElevenLabs.Demo
         [SerializeField]
         private AudioSource audioSource;
 
-        private readonly Queue<float> sampleQueue = new();
+        private readonly ConcurrentQueue<float> sampleQueue = new();
 
 #if !UNITY_2022_3_OR_NEWER
         private readonly CancellationTokenSource lifetimeCts = new();
@@ -78,9 +78,9 @@ namespace ElevenLabs.Demo
                         sampleQueue.Enqueue(sample);
                     }
                 }, cancellationToken: destroyCancellationToken);
-                audioSource.clip = voiceClip.AudioClip;
-                await new WaitUntil(() => sampleQueue.Count == 0 || destroyCancellationToken.IsCancellationRequested);
+                await new WaitUntil(() => sampleQueue.IsEmpty || destroyCancellationToken.IsCancellationRequested);
                 destroyCancellationToken.ThrowIfCancellationRequested();
+                audioSource.clip = voiceClip.AudioClip;
 
                 if (debug)
                 {
@@ -103,15 +103,16 @@ namespace ElevenLabs.Demo
 
         private void OnAudioFilterRead(float[] data, int channels)
         {
-            if (sampleQueue.Count <= 0) { return; }
+            if (sampleQueue.IsEmpty) { return; }
 
             for (var i = 0; i < data.Length; i += channels)
             {
-                var sample = sampleQueue.Dequeue();
-
-                for (var j = 0; j < channels; j++)
+                if (sampleQueue.TryDequeue(out var sample))
                 {
-                    data[i + j] = sample;
+                    for (var j = 0; j < channels; j++)
+                    {
+                        data[i + j] = sample;
+                    }
                 }
             }
         }
