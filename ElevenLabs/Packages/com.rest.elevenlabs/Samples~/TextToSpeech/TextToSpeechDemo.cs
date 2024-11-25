@@ -1,6 +1,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using ElevenLabs.Models;
+using ElevenLabs.TextToSpeech;
 using ElevenLabs.Voices;
 using System;
 using System.Collections.Generic;
@@ -34,6 +35,7 @@ namespace ElevenLabs.Demo
 
 #if !UNITY_2022_3_OR_NEWER
         private readonly CancellationTokenSource lifetimeCts = new();
+        // ReSharper disable once InconsistentNaming
         private CancellationToken destroyCancellationToken => lifetimeCts.Token;
 #endif
 
@@ -64,10 +66,11 @@ namespace ElevenLabs.Demo
                 streamClipQueue.Clear();
                 var streamQueueCts = CancellationTokenSource.CreateLinkedTokenSource(destroyCancellationToken);
                 PlayStreamQueue(streamQueueCts.Token);
-                var voiceClip = await api.TextToSpeechEndpoint.StreamTextToSpeechAsync(message, voice, partialClip =>
+                var request = new TextToSpeechRequest(voice, message, model: Model.EnglishTurboV2);
+                var voiceClip = await api.TextToSpeechEndpoint.TextToSpeechAsync(request, partialClip =>
                 {
                     streamClipQueue.Enqueue(partialClip);
-                }, model: Model.EnglishTurboV2, cancellationToken: destroyCancellationToken);
+                }, cancellationToken: destroyCancellationToken);
                 audioSource.clip = voiceClip.AudioClip;
                 await new WaitUntil(() => streamClipQueue.Count == 0 && !audioSource.isPlaying);
                 streamQueueCts.Cancel();
