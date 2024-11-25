@@ -40,6 +40,7 @@ The recommended installation method is though the unity package manager and [Ope
   - [com.utilities.extensions](https://github.com/RageAgainstThePixel/com.utilities.extensions)
   - [com.utilities.audio](https://github.com/RageAgainstThePixel/com.utilities.audio)
   - [com.utilities.encoder.ogg](https://github.com/RageAgainstThePixel/com.utilities.encoder.ogg)
+  - [com.utilities.encoder.wav](https://github.com/RageAgainstThePixel/com.utilities.encoder.wav)
   - [com.utilities.rest](https://github.com/RageAgainstThePixel/com.utilities.rest)
 
 ---
@@ -265,8 +266,8 @@ Convert text to speech.
 var api = new ElevenLabsClient();
 var text = "The quick brown fox jumps over the lazy dog.";
 var voice = (await api.VoicesEndpoint.GetAllVoicesAsync()).FirstOrDefault();
-var defaultVoiceSettings = await api.VoicesEndpoint.GetDefaultVoiceSettingsAsync();
-var voiceClip = await api.TextToSpeechEndpoint.TextToSpeechAsync(text, voice, defaultVoiceSettings);
+var request = new TextToSpeechRequest(voice, text);
+var voiceClip = await api.TextToSpeechEndpoint.TextToSpeechAsync(request);
 audioSource.PlayOneShot(voiceClip.AudioClip);
 ```
 
@@ -284,18 +285,14 @@ Stream text to speech.
 var api = new ElevenLabsClient();
 var text = "The quick brown fox jumps over the lazy dog.";
 var voice = (await api.VoicesEndpoint.GetAllVoicesAsync()).FirstOrDefault();
-var partialClips = new Queue<AudioClip>();
-var voiceClip = await api.TextToSpeechEndpoint.StreamTextToSpeechAsync(
-    text,
-    voice,
-    partialClip =>
-    {
-        // Note: Best to queue them and play them in update loop!
-        // See TextToSpeech sample demo for details
-        partialClips.Enqueue(partialClip);
-    });
-// The full completed clip:
-audioSource.clip = voiceClip.AudioClip;
+var partialClips = new Queue<VoiceClip>();
+var request = new TextToSpeechRequest(voice, message, model: Model.EnglishTurboV2, outputFormat: OutputFormat.PCM_44100);
+var voiceClip = await api.TextToSpeechEndpoint.StreamTextToSpeechAsync(request, partialClip =>
+{
+    // Note: check demo scene for best practices
+    // on how to handle playback with OnAudioFilterRead
+    partialClips.Enqueue(partialClip);
+});
 ```
 
 ### [Voices](https://docs.elevenlabs.io/api-reference/voices)

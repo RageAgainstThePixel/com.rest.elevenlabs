@@ -65,12 +65,13 @@ namespace ElevenLabs.Demo
                     voice = (await api.VoicesEndpoint.GetAllVoicesAsync(destroyCancellationToken)).FirstOrDefault();
                 }
 
-                const int sampleRate = 44100; // default unity audio clip sample rate
 
                 sampleQueue.Clear();
                 var request = new TextToSpeechRequest(voice, message, model: Model.EnglishTurboV2, outputFormat: OutputFormat.PCM_24000);
                 var voiceClip = await api.TextToSpeechEndpoint.TextToSpeechAsync(request, partialClip =>
                 {
+                    const int sampleRate = 44100; // default unity audio clip sample rate
+                    // we have to resample the partial clip to the unity audio clip sample rate. Ideally use PCM_44100
                     var resampled = PCMEncoder.Resample(partialClip.ClipSamples, partialClip.SampleRate, sampleRate);
                     foreach (var sample in resampled)
                     {
