@@ -11,8 +11,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Scripting;
 using Utilities.Async;
-using Utilities.Audio;
-using Utilities.Encoding.OggVorbis;
+using Utilities.Encoding.Wav;
 using Utilities.WebRequestRest;
 
 namespace ElevenLabs.Voices
@@ -329,11 +328,11 @@ namespace ElevenLabs.Voices
                 .CreateNewDirectory(voice.Id)
                 .CreateNewDirectory("Samples");
             // TODO possibly handle other types?
-            var audioType = sample.MimeType.Contains("mpeg") ? AudioType.MPEG : AudioType.OGGVORBIS;
+            var audioType = sample.MimeType.Contains("mpeg") ? AudioType.MPEG : AudioType.WAV;
             var extension = audioType switch
             {
                 AudioType.MPEG => "mp3",
-                AudioType.OGGVORBIS => "ogg",
+                AudioType.WAV => "wav",
                 _ => throw new ArgumentOutOfRangeException($"Unsupported {nameof(AudioType)}: {audioType}")
             };
             var cachedPath = Path.Combine(downloadDirectory, $"{sample.Id}.{extension}");
@@ -348,11 +347,9 @@ namespace ElevenLabs.Voices
                     case AudioType.MPEG:
                         await File.WriteAllBytesAsync(cachedPath, response.Data, cancellationToken).ConfigureAwait(false);
                         break;
-                    case AudioType.OGGVORBIS:
-                        var pcmData = PCMEncoder.Decode(response.Data, PCMFormatSize.SixteenBit);
+                    case AudioType.WAV:
                         var sampleRate = 44100; // TODO unknown sample rate.
-                        var oggBytes = await OggEncoder.ConvertToBytesAsync(pcmData, sampleRate, 1, cancellationToken: cancellationToken).ConfigureAwait(false);
-                        await File.WriteAllBytesAsync(cachedPath, oggBytes, cancellationToken: cancellationToken).ConfigureAwait(false);
+                        await WavEncoder.WriteToFileAsync(cachedPath, response.Data, 1, sampleRate, cancellationToken: cancellationToken).ConfigureAwait(false);
                         break;
                     default:
                         throw new ArgumentOutOfRangeException($"Unsupported {nameof(AudioType)}: {audioType}");

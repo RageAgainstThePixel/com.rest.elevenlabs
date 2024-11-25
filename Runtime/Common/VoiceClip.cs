@@ -12,8 +12,15 @@ namespace ElevenLabs
     public sealed class VoiceClip : GeneratedClip
     {
         [Preserve]
-        internal VoiceClip(string id, string text, Voice voice, AudioClip audioClip, string cachedPath)
+        internal VoiceClip(string id, string text, Voice voice, AudioClip audioClip, string cachedPath = null)
             : base(id, text, audioClip, cachedPath)
+        {
+            this.voice = voice;
+        }
+
+        [Preserve]
+        internal VoiceClip(string id, string text, Voice voice, ReadOnlyMemory<byte> clipData, int sampleRate, string cachedPath = null)
+            : base(id, text, clipData, sampleRate, cachedPath)
         {
             this.voice = voice;
         }
@@ -23,5 +30,8 @@ namespace ElevenLabs
 
         [Preserve]
         public Voice Voice => voice;
+
+        [Preserve]
+        public TimestampedTranscriptCharacter[] TimestampedTranscriptCharacters { get; internal set; }
     }
 }
