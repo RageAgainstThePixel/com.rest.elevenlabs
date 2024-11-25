@@ -60,7 +60,7 @@ The recommended installation method is though the unity package manager and [Ope
 - [Text to Speech](#text-to-speech)
   - [Stream Text To Speech](#stream-text-to-speech)
 - [Voices](#voices)
-  - [Get Shared Voices](#get-shared-voices) :new:
+  - [Get Shared Voices](#get-shared-voices)
   - [Get All Voices](#get-all-voices)
   - [Get Default Voice Settings](#get-default-voice-settings)
   - [Get Voice](#get-voice)
@@ -71,13 +71,13 @@ The recommended installation method is though the unity package manager and [Ope
   - [Samples](#samples)
     - [Download Voice Sample](#download-voice-sample)
     - [Delete Voice Sample](#delete-voice-sample)
-- [Dubbing](#dubbing) :new:
-  - [Dub](#dub) :new:
-  - [Get Dubbing Metadata](#get-dubbing-metadata) :new:
-  - [Get Transcript for Dub](#get-transcript-for-dub) :new:
-  - [Get dubbed file](#get-dubbed-file) :new:
-  - [Delete Dubbing Project](#delete-dubbing-project) :new:
-- [SFX Generation](#sfx-generation) :new:
+- [Dubbing](#dubbing)
+  - [Dub](#dub)
+  - [Get Dubbing Metadata](#get-dubbing-metadata)
+  - [Get Transcript for Dub](#get-transcript-for-dub)
+  - [Get dubbed file](#get-dubbed-file)
+  - [Delete Dubbing Project](#delete-dubbing-project)
+- [SFX Generation](#sfx-generation)
 - [History](#history)
   - [Get History](#get-history)
   - [Get History Item](#get-history-item)
