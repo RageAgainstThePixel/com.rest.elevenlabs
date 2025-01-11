@@ -7,6 +7,7 @@ namespace ElevenLabs
 {
     public sealed class ElevenLabsSettingsInfo : ISettingsInfo
     {
+        internal const string Http = "http://";
         internal const string Https = "https://";
         internal const string ElevenLabsDomain = "api.elevenlabs.io";
         internal const string DefaultApiVersion = "v1";
@@ -45,7 +46,20 @@ namespace ElevenLabs
                 apiVersion = DefaultApiVersion;
             }
 
-            Domain = domain.Contains("http") ? domain : $"{Https}{domain}";
+            var protocol = Https;
+
+            if (domain.StartsWith(Http))
+            {
+                protocol = Http;
+                domain = domain.Replace(Http, string.Empty);
+            }
+            else if (domain.StartsWith(Https))
+            {
+                protocol = Https;
+                domain = domain.Replace(Https, string.Empty);
+            }
+
+            Domain = $"{protocol}{domain}";
             ApiVersion = apiVersion;
             BaseRequest = $"/{ApiVersion}/";
             BaseRequestUrlFormat = $"{Domain}{BaseRequest}{{0}}";
