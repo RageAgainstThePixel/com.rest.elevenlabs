@@ -45,7 +45,11 @@ The recommended installation method is though the unity package manager and [Ope
 
 ---
 
-## Documentation
+## [Documentation](https://rageagainstthepixel.github.io/ElevenLabs-DotNet)
+
+> Check out our new api docs!
+
+<https://rageagainstthepixel.github.io/ElevenLabs-DotNet>
 
 ### Table of Contents
 
