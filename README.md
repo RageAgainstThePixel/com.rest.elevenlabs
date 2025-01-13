@@ -40,11 +40,16 @@ The recommended installation method is though the unity package manager and [Ope
   - [com.utilities.extensions](https://github.com/RageAgainstThePixel/com.utilities.extensions)
   - [com.utilities.audio](https://github.com/RageAgainstThePixel/com.utilities.audio)
   - [com.utilities.encoder.ogg](https://github.com/RageAgainstThePixel/com.utilities.encoder.ogg)
+  - [com.utilities.encoder.wav](https://github.com/RageAgainstThePixel/com.utilities.encoder.wav)
   - [com.utilities.rest](https://github.com/RageAgainstThePixel/com.utilities.rest)
 
 ---
 
-## Documentation
+## [Documentation](https://rageagainstthepixel.github.io/ElevenLabs-DotNet)
+
+> Check out our new api docs!
+
+<https://rageagainstthepixel.github.io/ElevenLabs-DotNet>
 
 ### Table of Contents
 
@@ -59,7 +64,7 @@ The recommended installation method is though the unity package manager and [Ope
 - [Text to Speech](#text-to-speech)
   - [Stream Text To Speech](#stream-text-to-speech)
 - [Voices](#voices)
-  - [Get Shared Voices](#get-shared-voices) :new:
+  - [Get Shared Voices](#get-shared-voices)
   - [Get All Voices](#get-all-voices)
   - [Get Default Voice Settings](#get-default-voice-settings)
   - [Get Voice](#get-voice)
@@ -70,13 +75,13 @@ The recommended installation method is though the unity package manager and [Ope
   - [Samples](#samples)
     - [Download Voice Sample](#download-voice-sample)
     - [Delete Voice Sample](#delete-voice-sample)
-- [Dubbing](#dubbing) :new:
-  - [Dub](#dub) :new:
-  - [Get Dubbing Metadata](#get-dubbing-metadata) :new:
-  - [Get Transcript for Dub](#get-transcript-for-dub) :new:
-  - [Get dubbed file](#get-dubbed-file) :new:
-  - [Delete Dubbing Project](#delete-dubbing-project) :new:
-- [SFX Generation](#sfx-generation) :new:
+- [Dubbing](#dubbing)
+  - [Dub](#dub)
+  - [Get Dubbing Metadata](#get-dubbing-metadata)
+  - [Get Transcript for Dub](#get-transcript-for-dub)
+  - [Get dubbed file](#get-dubbed-file)
+  - [Delete Dubbing Project](#delete-dubbing-project)
+- [SFX Generation](#sfx-generation)
 - [History](#history)
   - [Get History](#get-history)
   - [Get History Item](#get-history-item)
@@ -265,8 +270,8 @@ Convert text to speech.
 var api = new ElevenLabsClient();
 var text = "The quick brown fox jumps over the lazy dog.";
 var voice = (await api.VoicesEndpoint.GetAllVoicesAsync()).FirstOrDefault();
-var defaultVoiceSettings = await api.VoicesEndpoint.GetDefaultVoiceSettingsAsync();
-var voiceClip = await api.TextToSpeechEndpoint.TextToSpeechAsync(text, voice, defaultVoiceSettings);
+var request = new TextToSpeechRequest(voice, text);
+var voiceClip = await api.TextToSpeechEndpoint.TextToSpeechAsync(request);
 audioSource.PlayOneShot(voiceClip.AudioClip);
 ```
 
@@ -284,18 +289,14 @@ Stream text to speech.
 var api = new ElevenLabsClient();
 var text = "The quick brown fox jumps over the lazy dog.";
 var voice = (await api.VoicesEndpoint.GetAllVoicesAsync()).FirstOrDefault();
-var partialClips = new Queue<AudioClip>();
-var voiceClip = await api.TextToSpeechEndpoint.StreamTextToSpeechAsync(
-    text,
-    voice,
-    partialClip =>
-    {
-        // Note: Best to queue them and play them in update loop!
-        // See TextToSpeech sample demo for details
-        partialClips.Enqueue(partialClip);
-    });
-// The full completed clip:
-audioSource.clip = voiceClip.AudioClip;
+var partialClips = new Queue<VoiceClip>();
+var request = new TextToSpeechRequest(voice, message, model: Model.EnglishTurboV2, outputFormat: OutputFormat.PCM_44100);
+var voiceClip = await api.TextToSpeechEndpoint.StreamTextToSpeechAsync(request, partialClip =>
+{
+    // Note: check demo scene for best practices
+    // on how to handle playback with OnAudioFilterRead
+    partialClips.Enqueue(partialClip);
+});
 ```
 
 ### [Voices](https://docs.elevenlabs.io/api-reference/voices)
@@ -308,7 +309,7 @@ Gets a list of shared voices in the public voice library.
 
 ```csharp
 var api = new ElevenLabsClient();
-var results = await ElevenLabsClient.SharedVoicesEndpoint.GetSharedVoicesAsync();
+var results = await api.SharedVoicesEndpoint.GetSharedVoicesAsync();
 foreach (var voice in results.Voices)
 {
     Debug.Log($"{voice.OwnerId} | {voice.VoiceId} | {voice.Date} | {voice.Name}");
@@ -455,7 +456,7 @@ Returns downloaded dubbed file path.
 > Videos will be returned in MP4 format and audio only dubs will be returned in MP3.
 
 ```csharp
-var dubbedClipPath = await ElevenLabsClient.DubbingEndpoint.GetDubbedFileAsync(metadata.DubbingId, request.TargetLanguage);
+var dubbedClipPath = await api.DubbingEndpoint.GetDubbedFileAsync(metadata.DubbingId, request.TargetLanguage);
 var dubbedClip = await Rest.DownloadAudioClipAsync($"file://{dubbedClipPath}", AudioType.MPEG);
 audioSource.PlayOneShot(dubbedClip);
 ```
@@ -467,7 +468,7 @@ Returns transcript for the dub in the desired format.
 ```csharp
 var srcFile = new FileInfo(audioPath);
 var transcriptPath = new FileInfo($"{srcFile.FullName}.dubbed.{request.TargetLanguage}.srt");
-var transcriptFile = await ElevenLabsClient.DubbingEndpoint.GetTranscriptForDubAsync(metadata.DubbingId, request.TargetLanguage);
+var transcriptFile = await api.DubbingEndpoint.GetTranscriptForDubAsync(metadata.DubbingId, request.TargetLanguage);
 await File.WriteAllTextAsync(transcriptPath.FullName, transcriptFile);
 ```
 

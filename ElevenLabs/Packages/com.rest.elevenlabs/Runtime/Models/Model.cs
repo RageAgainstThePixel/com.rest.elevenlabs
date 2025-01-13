@@ -78,6 +78,20 @@ namespace ElevenLabs.Models
 
         #region Predefined Models
 
+        /// <summary>
+        /// Our latest, ultra-low-latency model, generating speech in under 75ms.  Best for developer use cases requiring speed and multiple languages.
+        /// </summary>
+        [Preserve]
+        [JsonIgnore]
+        public static Model FlashV2 { get; } = new("eleven_flash_v2");
+
+        /// <summary>
+        /// Our latest, ultra-low-latency English only model, generating speech in under 75ms.  Best for developer use cases requiring speed.
+        /// </summary>
+        [Preserve]
+        [JsonIgnore]
+        public static Model FlashV2_5 { get; } = new("eleven_flash_v2_5");
+
         [Preserve]
         [JsonIgnore]
         [Obsolete("Use EnglishV1")]
