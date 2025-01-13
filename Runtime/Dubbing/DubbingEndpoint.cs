@@ -43,11 +43,11 @@ namespace ElevenLabs.Dubbing
             {
                 if (request.Files != null)
                 {
-                    foreach (var (fileName, mediaType, stream) in request.Files)
+                    foreach (var dub in request.Files)
                     {
                         using var audioData = new MemoryStream();
-                        await stream.CopyToAsync(audioData, cancellationToken);
-                        payload.AddBinaryData("file", audioData.ToArray(), fileName, mediaType);
+                        await dub.Stream.CopyToAsync(audioData, cancellationToken);
+                        payload.AddBinaryData("file", audioData.ToArray(), dub.Name, dub.MediaType);
                     }
                 }
 
