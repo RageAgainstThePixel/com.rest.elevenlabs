@@ -45,7 +45,11 @@ The recommended installation method is though the unity package manager and [Ope
 
 ---
 
-## Documentation
+## [Documentation](https://rageagainstthepixel.github.io/ElevenLabs-DotNet)
+
+> Check out our new api docs!
+
+<https://rageagainstthepixel.github.io/ElevenLabs-DotNet>
 
 ### Table of Contents
 
@@ -305,7 +309,7 @@ Gets a list of shared voices in the public voice library.
 
 ```csharp
 var api = new ElevenLabsClient();
-var results = await ElevenLabsClient.SharedVoicesEndpoint.GetSharedVoicesAsync();
+var results = await api.SharedVoicesEndpoint.GetSharedVoicesAsync();
 foreach (var voice in results.Voices)
 {
     Debug.Log($"{voice.OwnerId} | {voice.VoiceId} | {voice.Date} | {voice.Name}");
@@ -452,7 +456,7 @@ Returns downloaded dubbed file path.
 > Videos will be returned in MP4 format and audio only dubs will be returned in MP3.
 
 ```csharp
-var dubbedClipPath = await ElevenLabsClient.DubbingEndpoint.GetDubbedFileAsync(metadata.DubbingId, request.TargetLanguage);
+var dubbedClipPath = await api.DubbingEndpoint.GetDubbedFileAsync(metadata.DubbingId, request.TargetLanguage);
 var dubbedClip = await Rest.DownloadAudioClipAsync($"file://{dubbedClipPath}", AudioType.MPEG);
 audioSource.PlayOneShot(dubbedClip);
 ```
@@ -464,7 +468,7 @@ Returns transcript for the dub in the desired format.
 ```csharp
 var srcFile = new FileInfo(audioPath);
 var transcriptPath = new FileInfo($"{srcFile.FullName}.dubbed.{request.TargetLanguage}.srt");
-var transcriptFile = await ElevenLabsClient.DubbingEndpoint.GetTranscriptForDubAsync(metadata.DubbingId, request.TargetLanguage);
+var transcriptFile = await api.DubbingEndpoint.GetTranscriptForDubAsync(metadata.DubbingId, request.TargetLanguage);
 await File.WriteAllTextAsync(transcriptPath.FullName, transcriptFile);
 ```
 
