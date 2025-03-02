@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "com.utilities.rest": "3.3.0",
+    "com.utilities.audio": "2.2.1",
     "com.utilities.encoder.ogg": "4.2.0",
     "com.utilities.encoder.wav": "2.2.0"
   },
