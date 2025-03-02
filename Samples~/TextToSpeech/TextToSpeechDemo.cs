@@ -4,7 +4,6 @@ using ElevenLabs.Models;
 using ElevenLabs.TextToSpeech;
 using ElevenLabs.Voices;
 using System;
-using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,7 +13,7 @@ using Utilities.Audio;
 
 namespace ElevenLabs.Demo
 {
-    [RequireComponent(typeof(AudioSource))]
+    [RequireComponent(typeof(StreamAudioSource))]
     public class TextToSpeechDemo : MonoBehaviour
     {
         [SerializeField]
@@ -31,9 +30,7 @@ namespace ElevenLabs.Demo
         private string message;
 
         [SerializeField]
-        private AudioSource audioSource;
-
-        private readonly ConcurrentQueue<float> sampleQueue = new();
+        private StreamAudioSource streamAudioSource;
 
 #if !UNITY_2022_3_OR_NEWER
         private readonly CancellationTokenSource lifetimeCts = new();
@@ -43,9 +40,9 @@ namespace ElevenLabs.Demo
 
         private void OnValidate()
         {
-            if (audioSource == null)
+            if (streamAudioSource == null)
             {
-                audioSource = GetComponent<AudioSource>();
+                streamAudioSource = GetComponent<StreamAudioSource>();
             }
         }
 
@@ -65,22 +62,14 @@ namespace ElevenLabs.Demo
                     voice = (await api.VoicesEndpoint.GetAllVoicesAsync(destroyCancellationToken)).FirstOrDefault();
                 }
 
-
-                sampleQueue.Clear();
-                var request = new TextToSpeechRequest(voice, message, model: Model.EnglishTurboV2, outputFormat: OutputFormat.PCM_24000);
-                var voiceClip = await api.TextToSpeechEndpoint.TextToSpeechAsync(request, partialClip =>
+                var request = new TextToSpeechRequest(voice, message, model: Model.FlashV2_5, outputFormat: OutputFormat.PCM_24000);
+                var voiceClip = await api.TextToSpeechEndpoint.TextToSpeechAsync(request, async partialClip =>
                 {
-                    const int sampleRate = 44100; // default unity audio clip sample rate
-                    // we have to resample the partial clip to the unity audio clip sample rate. Ideally use PCM_44100
-                    var resampled = PCMEncoder.Resample(partialClip.ClipSamples, partialClip.SampleRate, sampleRate);
-                    foreach (var sample in resampled)
-                    {
-                        sampleQueue.Enqueue(sample);
-                    }
+                    await streamAudioSource.BufferCallbackAsync(partialClip.ClipSamples);
                 }, cancellationToken: destroyCancellationToken);
-                await new WaitUntil(() => sampleQueue.IsEmpty || destroyCancellationToken.IsCancellationRequested);
+                await new WaitUntil(() => streamAudioSource.IsEmpty || destroyCancellationToken.IsCancellationRequested);
                 destroyCancellationToken.ThrowIfCancellationRequested();
-                audioSource.clip = voiceClip.AudioClip;
+                ((AudioSource)streamAudioSource).clip = voiceClip.AudioClip;
 
                 if (debug)
                 {
@@ -97,22 +86,6 @@ namespace ElevenLabs.Demo
                     default:
                         Debug.LogException(e);
                         break;
-                }
-            }
-        }
-
-        private void OnAudioFilterRead(float[] data, int channels)
-        {
-            if (sampleQueue.IsEmpty) { return; }
-
-            for (var i = 0; i < data.Length; i += channels)
-            {
-                if (sampleQueue.TryDequeue(out var sample))
-                {
-                    for (var j = 0; j < channels; j++)
-                    {
-                        data[i + j] = sample;
-                    }
                 }
             }
         }

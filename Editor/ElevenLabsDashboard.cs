@@ -1011,7 +1011,7 @@ namespace ElevenLabs.Editor
 
                 if (EditorGUI.EndChangeCheck())
                 {
-                    currentVoiceSettings = new VoiceSettings(voiceSettingsSliderValues.x, voiceSettingsSliderValues.y, useSpeakerBoost, voiceSettingsSliderValues.z);
+                    currentVoiceSettings = new VoiceSettings(voiceSettingsSliderValues.x, voiceSettingsSliderValues.y, voiceSettingsSliderValues.z, useSpeakerBoost);
                 }
 
                 EditorGUILayout.EndHorizontal();

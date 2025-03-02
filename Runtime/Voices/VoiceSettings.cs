@@ -11,18 +11,30 @@ namespace ElevenLabs.Voices
     [Serializable]
     public sealed class VoiceSettings
     {
+        [Obsolete("use new .ctr overload")]
+        public VoiceSettings(
+            float stability,
+            float similarityBoost,
+            bool speakerBoost,
+            float style)
+            : this(stability, similarityBoost, style, speakerBoost)
+        {
+        }
+
         [Preserve]
         [JsonConstructor]
         public VoiceSettings(
-            [JsonProperty("stability")] float stability = .75f,
-            [JsonProperty("similarity_boost")] float similarityBoost = .75f,
-            [JsonProperty("speaker_boost")] bool speakerBoost = true,
-            [JsonProperty("style")] float style = 0.45f)
+            [JsonProperty("stability")] float stability = 0.75f,
+            [JsonProperty("similarity_boost")] float similarityBoost = 0.75f,
+            [JsonProperty("style")] float style = 0.45f,
+            [JsonProperty("use_speaker_boost")] bool speakerBoost = true,
+            [JsonProperty("speed")] float speed = 1f)
         {
             Stability = stability;
             SimilarityBoost = similarityBoost;
             Style = style;
             SpeakerBoost = speakerBoost;
+            Speed = speed;
         }
 
         [Range(0f, 1f)]
@@ -70,6 +82,17 @@ namespace ElevenLabs.Voices
         {
             get => speakerBoost;
             set => speakerBoost = value;
+        }
+
+        [SerializeField]
+        private float speed = 1f;
+
+        [Preserve]
+        [JsonProperty("speed", DefaultValueHandling = DefaultValueHandling.Include)]
+        public float Speed
+        {
+            get => speed;
+            set => speed = value;
         }
     }
 }
