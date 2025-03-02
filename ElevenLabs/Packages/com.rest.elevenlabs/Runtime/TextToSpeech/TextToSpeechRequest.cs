@@ -222,7 +222,7 @@ namespace ElevenLabs.TextToSpeech
         public int? Seed { get; }
 
         [Preserve]
-        [JsonProperty("apply_text_normalization")]
+        [JsonProperty("apply_text_normalization", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public string ApplyTextNormalization { get; }
     }
 }

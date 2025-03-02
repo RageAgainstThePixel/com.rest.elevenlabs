@@ -11,6 +11,16 @@ namespace ElevenLabs.Voices
     [Serializable]
     public sealed class VoiceSettings
     {
+        [Obsolete("use new .ctr overload")]
+        public VoiceSettings(
+            float stability,
+            float similarityBoost,
+            bool speakerBoost,
+            float style)
+            : this(stability, similarityBoost, style, speakerBoost)
+        {
+        }
+
         [Preserve]
         [JsonConstructor]
         public VoiceSettings(
@@ -25,16 +35,6 @@ namespace ElevenLabs.Voices
             Style = style;
             SpeakerBoost = speakerBoost;
             Speed = speed;
-        }
-
-        [Obsolete("use new .ctr overload")]
-        public VoiceSettings(
-            [JsonProperty("stability")] float stability,
-            [JsonProperty("similarity_boost")] float similarityBoost,
-            [JsonProperty("speaker_boost")] bool speakerBoost,
-            [JsonProperty("style")] float style)
-          : this(stability, similarityBoost, style, speakerBoost)
-        {
         }
 
         [Range(0f, 1f)]
