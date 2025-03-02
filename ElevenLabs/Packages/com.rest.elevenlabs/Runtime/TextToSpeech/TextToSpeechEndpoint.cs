@@ -104,12 +104,7 @@ namespace ElevenLabs.TextToSpeech
                 audioData = response.Data;
             }
 
-            string cachedPath = null;
-
-            if (request.CacheFormat != CacheFormat.None)
-            {
-                cachedPath = await SaveAudioToCache(audioData, clipId, request.Voice, request.OutputFormat, request.CacheFormat, cancellationToken).ConfigureAwait(true);
-            }
+            var cachedPath = await SaveAudioToCache(audioData, clipId, request.Voice, request.OutputFormat, request.CacheFormat, cancellationToken).ConfigureAwait(true);
 
             return new VoiceClip(clipId, request.Text, request.Voice, new ReadOnlyMemory<byte>(audioData), request.OutputFormat.GetSampleRate(), cachedPath)
             {
@@ -183,12 +178,7 @@ namespace ElevenLabs.TextToSpeech
             }
 
             var audioData = request.WithTimestamps ? accumulatedPCMData!.ToArray() : response.Data;
-            string cachedPath = null;
-
-            if (request.CacheFormat != CacheFormat.None)
-            {
-                cachedPath = await SaveAudioToCache(audioData, clipId, request.Voice, request.OutputFormat, request.CacheFormat, cancellationToken).ConfigureAwait(true);
-            }
+            var cachedPath = await SaveAudioToCache(audioData, clipId, request.Voice, request.OutputFormat, request.CacheFormat, cancellationToken).ConfigureAwait(true);
 
             return new VoiceClip(clipId, request.Text, request.Voice, new ReadOnlyMemory<byte>(audioData), request.OutputFormat.GetSampleRate(), cachedPath)
             {
@@ -292,6 +282,11 @@ namespace ElevenLabs.TextToSpeech
 
         private static async Task<string> SaveAudioToCache(byte[] audioData, string clipId, Voice voice, OutputFormat outputFormat, CacheFormat cacheFormat, CancellationToken cancellationToken)
         {
+#if PLATFORM_WEBGL
+            return null;
+#else
+            if (cacheFormat == CacheFormat.None) { return null; }
+
             string extension;
             AudioType audioType;
 
@@ -312,7 +307,6 @@ namespace ElevenLabs.TextToSpeech
                         extension = "ogg";
                         audioType = AudioType.OGGVORBIS;
                         break;
-                    case CacheFormat.None:
                     default:
                         throw new ArgumentOutOfRangeException(nameof(cacheFormat), cacheFormat, null);
                 }
@@ -343,6 +337,7 @@ namespace ElevenLabs.TextToSpeech
             }
 
             return cachedPath;
+#endif // PLATFORM_WEBGL
         }
 
     }
