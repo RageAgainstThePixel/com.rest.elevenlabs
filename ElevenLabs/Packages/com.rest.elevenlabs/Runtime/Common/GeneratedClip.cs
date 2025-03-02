@@ -38,8 +38,6 @@ namespace ElevenLabs
             SampleRate = sampleRate;
         }
 
-        private readonly ReadOnlyMemory<byte> audioData;
-
         [SerializeField]
         private string id;
 
@@ -66,11 +64,15 @@ namespace ElevenLabs
         {
             get
             {
-                if (audioClip == null && !audioData.IsEmpty)
+                if (audioClip == null && !ClipData.IsEmpty)
                 {
-                    var pcmData = PCMEncoder.Decode(audioData.ToArray());
-                    audioClip = AudioClip.Create(Id, pcmData.Length, 1, SampleRate, false);
-                    audioClip.SetData(pcmData, 0);
+                    var samples = ClipSamples;
+
+                    if (samples is { Length: > 0 })
+                    {
+                        audioClip = AudioClip.Create(Id, samples.Length, 1, SampleRate, false);
+                        audioClip.SetData(samples, 0);
+                    }
                 }
 
                 if (audioClip == null)
@@ -98,7 +100,7 @@ namespace ElevenLabs
             {
                 if (!ClipData.IsEmpty)
                 {
-                    clipSamples ??= PCMEncoder.Decode(ClipData.ToArray());
+                    clipSamples ??= PCMEncoder.Decode(ClipData.ToArray(), PCMFormatSize.SixteenBit, SampleRate, AudioSettings.outputSampleRate);
                 }
                 else if (audioClip != null)
                 {
