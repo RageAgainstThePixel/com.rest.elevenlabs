@@ -283,6 +283,7 @@ namespace ElevenLabs.TextToSpeech
         private static async Task<string> SaveAudioToCache(byte[] audioData, string clipId, Voice voice, OutputFormat outputFormat, CacheFormat cacheFormat, CancellationToken cancellationToken)
         {
 #if PLATFORM_WEBGL
+            await Task.Yield();
             return null;
 #else
             if (cacheFormat == CacheFormat.None) { return null; }
