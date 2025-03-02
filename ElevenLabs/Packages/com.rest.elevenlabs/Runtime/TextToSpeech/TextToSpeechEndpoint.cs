@@ -126,6 +126,22 @@ namespace ElevenLabs.TextToSpeech
         /// <returns><see cref="VoiceClip"/>.</returns>
         public async Task<VoiceClip> TextToSpeechAsync(TextToSpeechRequest request, Action<VoiceClip> partialClipCallback, CancellationToken cancellationToken = default)
         {
+            return await TextToSpeechAsync(request, async voiceClip =>
+            {
+                partialClipCallback.Invoke(voiceClip);
+                await Task.Yield();
+            }, cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Converts text to synthesized speech.
+        /// </summary>
+        /// <param name="request"><see cref="TextToSpeechRequest"/>.</param>
+        /// <param name="partialClipCallback">Partial <see cref="VoiceClip"/> callback with streaming data.</param>
+        /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
+        /// <returns><see cref="VoiceClip"/>.</returns>
+        public async Task<VoiceClip> TextToSpeechAsync(TextToSpeechRequest request, Func<VoiceClip, Task> partialClipCallback, CancellationToken cancellationToken = default)
+        {
             if (request.OutputFormat is not OutputFormat.PCM_16000 and not OutputFormat.PCM_22050 and not OutputFormat.PCM_24000 and not OutputFormat.PCM_44100)
             {
                 Debug.LogWarning($"{nameof(request.OutputFormat)} must be a PCM format! defaulting to 24000");
@@ -179,7 +195,7 @@ namespace ElevenLabs.TextToSpeech
                 TimestampedTranscriptCharacters = accumulatedTranscriptData?.ToArray() ?? Array.Empty<TimestampedTranscriptCharacter>()
             };
 
-            void StreamCallback(Response partialResponse)
+            async void StreamCallback(Response partialResponse)
             {
                 try
                 {
@@ -188,7 +204,7 @@ namespace ElevenLabs.TextToSpeech
                         throw new ArgumentException("Failed to parse clip id!");
                     }
 
-                    partialClipCallback.Invoke(new VoiceClip($"{clipId}_{++part}", request.Text, request.Voice, new ReadOnlyMemory<byte>(partialResponse.Data), frequency));
+                    await partialClipCallback.Invoke(new VoiceClip($"{clipId}_{++part}", request.Text, request.Voice, new ReadOnlyMemory<byte>(partialResponse.Data), frequency));
                 }
                 catch (Exception e)
                 {
@@ -264,10 +280,12 @@ namespace ElevenLabs.TextToSpeech
                 { OutputFormatParameter, request.OutputFormat.ToString().ToLower() }
             };
 
+#pragma warning disable CS0618 // Type or member is obsolete
             if (request.OptimizeStreamingLatency.HasValue)
             {
                 parameters.Add(OptimizeStreamingLatencyParameter, request.OptimizeStreamingLatency.Value.ToString());
             }
+#pragma warning restore CS0618 // Type or member is obsolete
 
             return parameters;
         }

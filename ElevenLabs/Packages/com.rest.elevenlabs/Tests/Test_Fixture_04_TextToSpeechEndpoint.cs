@@ -105,7 +105,7 @@ namespace ElevenLabs.Tests
                 voice: voice,
                 text: "Příliš žluťoučký kůň úpěl ďábelské ódy",
                 voiceSettings: defaultVoiceSettings,
-                model: Models.Model.TurboV2_5,
+                model: Models.Model.FlashV2_5,
                 outputFormat: OutputFormat.MP3_44100_192,
                 cacheFormat: CacheFormat.None,
                 languageCode: "cs");
