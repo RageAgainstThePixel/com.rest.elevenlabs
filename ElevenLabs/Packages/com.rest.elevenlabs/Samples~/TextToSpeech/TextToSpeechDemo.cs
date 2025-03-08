@@ -80,15 +80,14 @@ namespace ElevenLabs.Demo
                     Debug.Log($"playback time: {playbackTime:F} seconds");
                 }
 
-                await Awaiters.DelayAsync(TimeSpan.FromSeconds(playbackTime + 0.1f), destroyCancellationToken);
-                ((AudioSource)streamAudioSource).clip = voiceClip.AudioClip;
+                await Awaiters.DelayAsync(TimeSpan.FromSeconds(playbackTime + 1f), destroyCancellationToken);
 
                 if (debug)
                 {
                     Debug.Log($"Full clip: {voiceClip.Id}");
                 }
 
-                ((AudioSource)streamAudioSource).Play();
+                ((AudioSource)streamAudioSource).PlayOneShot(voiceClip);
             }
             catch (Exception e)
             {
