@@ -180,7 +180,7 @@ namespace ElevenLabs.TextToSpeech
             var audioData = request.WithTimestamps ? accumulatedPCMData!.ToArray() : response.Data;
             var cachedPath = await SaveAudioToCache(audioData, clipId, request.Voice, request.OutputFormat, request.CacheFormat, cancellationToken).ConfigureAwait(true);
 
-            return new VoiceClip(clipId, request.Text, request.Voice, new ReadOnlyMemory<byte>(audioData), request.OutputFormat.GetSampleRate(), cachedPath)
+            return new VoiceClip(clipId, request.Text, request.Voice, new ReadOnlyMemory<byte>(audioData), frequency, cachedPath)
             {
                 TimestampedTranscriptCharacters = accumulatedTranscriptData?.ToArray() ?? Array.Empty<TimestampedTranscriptCharacter>()
             };

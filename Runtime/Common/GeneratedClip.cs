@@ -57,6 +57,37 @@ namespace ElevenLabs
         public Guid TextHash { get; private set; }
 
         [SerializeField]
+        private string cachedPath;
+
+        [Preserve]
+        public string CachedPath => cachedPath;
+
+        public ReadOnlyMemory<byte> ClipData { get; }
+
+        public float[] ClipSamples
+        {
+            get
+            {
+                if (clipSamples != null)
+                {
+                    return clipSamples;
+                }
+
+                if (ClipData.IsEmpty)
+                {
+                    return Array.Empty<float>();
+                }
+
+                clipSamples ??= PCMEncoder.Decode(ClipData.ToArray(), inputSampleRate: SampleRate, outputSampleRate: AudioSettings.outputSampleRate);
+                return clipSamples;
+
+            }
+        }
+        private float[] clipSamples;
+
+        public int SampleRate { get; }
+
+        [SerializeField]
         private AudioClip audioClip;
 
         [Preserve]
@@ -64,15 +95,11 @@ namespace ElevenLabs
         {
             get
             {
-                if (audioClip == null && !ClipData.IsEmpty)
+                if (audioClip == null &&
+                    ClipSamples is { Length: > 0 })
                 {
-                    var samples = ClipSamples;
-
-                    if (samples is { Length: > 0 })
-                    {
-                        audioClip = AudioClip.Create(Id, samples.Length, 1, SampleRate, false);
-                        audioClip.SetData(samples, 0);
-                    }
+                    audioClip = AudioClip.Create(Id, ClipSamples.Length, 1, AudioSettings.outputSampleRate, false);
+                    audioClip.SetData(ClipSamples, 0);
                 }
 
                 if (audioClip == null)
@@ -84,35 +111,7 @@ namespace ElevenLabs
             }
         }
 
-        [SerializeField]
-        private string cachedPath;
-
-        [Preserve]
-        public string CachedPath => cachedPath;
-
-        public ReadOnlyMemory<byte> ClipData { get; }
-
-        private float[] clipSamples;
-
-        public float[] ClipSamples
-        {
-            get
-            {
-                if (!ClipData.IsEmpty)
-                {
-                    clipSamples ??= PCMEncoder.Decode(ClipData.ToArray(), PCMFormatSize.SixteenBit, SampleRate, AudioSettings.outputSampleRate);
-                }
-                else if (audioClip != null)
-                {
-                    clipSamples = new float[audioClip.samples];
-                    audioClip.GetData(clipSamples, 0);
-                }
-
-                return clipSamples;
-            }
-        }
-
-        public int SampleRate { get; }
+        public float Length => ClipSamples.Length / (float)AudioSettings.outputSampleRate;
 
         public void OnBeforeSerialize() => textHash = TextHash.ToString();
 
@@ -129,6 +128,12 @@ namespace ElevenLabs
                 var path when path.EndsWith(".mp3") => AudioType.MPEG,
                 _ => AudioType.UNKNOWN
             };
+
+            if (audioType == AudioType.UNKNOWN)
+            {
+                Debug.LogWarning($"Unable to load cached audio clip at {cachedPath}");
+                return null;
+            }
 
             return await Rest.DownloadAudioClipAsync($"file://{cachedPath}", audioType, cancellationToken: cancellationToken);
         }
