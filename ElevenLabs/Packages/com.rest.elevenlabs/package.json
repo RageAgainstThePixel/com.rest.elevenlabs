@@ -3,7 +3,7 @@
   "displayName": "ElevenLabs",
   "description": "A non-official Eleven Labs voice synthesis RESTful client.",
   "keywords": [],
-  "version": "3.5.0",
+  "version": "3.5.1",
   "unity": "2021.3",
   "documentationUrl": "https://github.com/RageAgainstThePixel/com.rest.elevenlabs#documentation",
   "changelogUrl": "https://github.com/RageAgainstThePixel/com.rest.elevenlabs/releases",
@@ -17,10 +17,9 @@
     "url": "https://github.com/StephenHodgson"
   },
   "dependencies": {
-    "com.utilities.rest": "3.3.1",
-    "com.utilities.audio": "2.2.1",
-    "com.utilities.encoder.ogg": "4.2.0",
-    "com.utilities.encoder.wav": "2.2.0"
+    "com.utilities.rest": "3.3.2",
+    "com.utilities.encoder.ogg": "4.2.1",
+    "com.utilities.encoder.wav": "2.2.1"
   },
   "samples": [
     {

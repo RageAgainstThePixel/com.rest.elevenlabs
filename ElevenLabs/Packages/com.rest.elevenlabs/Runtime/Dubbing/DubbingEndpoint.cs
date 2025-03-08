@@ -10,6 +10,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using Utilities.Async;
 using Utilities.WebRequestRest;
 using Debug = UnityEngine.Debug;
 
@@ -148,7 +149,7 @@ namespace ElevenLabs.Dubbing
                         Debug.Log($"Dubbing for {dubbingResponse.DubbingId} in progress... Will check status again in {pollingInterval.TotalSeconds} seconds.");
                     }
 
-                    await Task.Delay(pollingInterval, cancellationToken).ConfigureAwait(false);
+                    await Awaiters.DelayAsync(pollingInterval, cancellationToken).ConfigureAwait(true);
                 }
                 else
                 {
