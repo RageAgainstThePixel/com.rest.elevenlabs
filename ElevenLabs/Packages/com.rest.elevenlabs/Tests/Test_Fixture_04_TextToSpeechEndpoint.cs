@@ -21,6 +21,7 @@ namespace ElevenLabs.Tests
             var voiceClip = await ElevenLabsClient.TextToSpeechEndpoint.TextToSpeechAsync(request);
             Assert.NotNull(voiceClip);
             Assert.NotNull(voiceClip.AudioClip);
+            Assert.AreEqual(voiceClip.AudioClip.length, voiceClip.Length, 0.01);
             Debug.Log(voiceClip.Id);
         }
 
@@ -36,9 +37,10 @@ namespace ElevenLabs.Tests
             Assert.NotNull(partialClips);
             Assert.IsNotEmpty(partialClips);
             Assert.NotNull(voiceClip);
-            Assert.IsNotNull(voiceClip.AudioClip);
             Debug.Log(voiceClip.Id);
             Debug.Log(voiceClip.CachedPath);
+            Assert.IsNotNull(voiceClip.AudioClip);
+            Assert.AreEqual(voiceClip.AudioClip.length, voiceClip.Length, 0.01);
         }
 
         [Test]
@@ -50,9 +52,10 @@ namespace ElevenLabs.Tests
             var request = new TextToSpeechRequest(voice, "The quick brown fox jumps over the lazy dog.", withTimestamps: true);
             var voiceClip = await ElevenLabsClient.TextToSpeechEndpoint.TextToSpeechAsync(request);
             Assert.NotNull(voiceClip);
-            Assert.NotNull(voiceClip.AudioClip);
             Debug.Log(voiceClip.Id);
             Debug.Log(voiceClip.CachedPath);
+            Assert.NotNull(voiceClip.AudioClip);
+            Assert.AreEqual(voiceClip.AudioClip.length, voiceClip.Length, 0.01);
             Assert.NotNull(voiceClip.TimestampedTranscriptCharacters);
             Assert.IsNotEmpty(voiceClip.TimestampedTranscriptCharacters);
             Debug.Log("| Character | Start Time | End Time |");
@@ -88,9 +91,10 @@ namespace ElevenLabs.Tests
             Assert.NotNull(partialClips);
             Assert.IsNotEmpty(partialClips);
             Assert.NotNull(voiceClip);
-            Assert.IsNotNull(voiceClip.AudioClip);
             Debug.Log(voiceClip.Id);
             Debug.Log(voiceClip.CachedPath);
+            Assert.IsNotNull(voiceClip.AudioClip);
+            Assert.AreEqual(voiceClip.AudioClip.length, voiceClip.Length, 0.01);
             Assert.AreEqual(characters.ToArray(), voiceClip.TimestampedTranscriptCharacters);
         }
 
@@ -105,16 +109,17 @@ namespace ElevenLabs.Tests
                 voice: voice,
                 text: "Příliš žluťoučký kůň úpěl ďábelské ódy",
                 voiceSettings: defaultVoiceSettings,
-                model: Models.Model.TurboV2_5,
+                model: Models.Model.FlashV2_5,
                 outputFormat: OutputFormat.MP3_44100_192,
                 cacheFormat: CacheFormat.None,
                 languageCode: "cs");
             var voiceClip = await ElevenLabsClient.TextToSpeechEndpoint.TextToSpeechAsync(request);
             Assert.NotNull(voiceClip);
-            Assert.NotNull(voiceClip.AudioClip);
-            Assert.IsTrue(string.IsNullOrWhiteSpace(voiceClip.CachedPath));
             Debug.Log(voiceClip.Id);
             Debug.Log(voiceClip.CachedPath);
+            Assert.NotNull(voiceClip.AudioClip);
+            Assert.AreEqual(voiceClip.AudioClip.length, voiceClip.Length, 0.01);
+            Assert.IsTrue(string.IsNullOrWhiteSpace(voiceClip.CachedPath));
         }
     }
 }

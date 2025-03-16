@@ -226,6 +226,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1232673084}
   - component: {fileID: 1232673086}
+  - component: {fileID: 1232673087}
   - component: {fileID: 1232673085}
   m_Layer: 0
   m_Name: Demo
@@ -264,8 +265,8 @@ MonoBehaviour:
   configuration: {fileID: 0}
   debug: 1
   voice:
-    name: Bella
-    id: EXAVITQu4vr4xnSDxMaL
+    name: Aria
+    id: 9BWtsMINqrJLrRacOk9x
   message: What is Lorem Ipsum? Lorem Ipsum is simply dummy text of the printing
     and typesetting industry. Lorem Ipsum has been the industry's standard dummy
     text ever since the 1500s, when an unknown printer took a galley of type and
@@ -274,7 +275,7 @@ MonoBehaviour:
     It was popularised in the 1960s with the release of Letraset sheets containing
     Lorem Ipsum passages, and more recently with desktop publishing software like
     Aldus PageMaker including versions of Lorem Ipsum.
-  audioSource: {fileID: 1232673086}
+  streamAudioSource: {fileID: 1232673087}
 --- !u!82 &1232673086
 AudioSource:
   m_ObjectHideFlags: 0
@@ -371,6 +372,19 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &1232673087
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1232673082}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8b2317b29e6eb934f9f1cd50d682e019, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  audioSource: {fileID: 1232673086}
 --- !u!1 &1655310072
 GameObject:
   m_ObjectHideFlags: 0

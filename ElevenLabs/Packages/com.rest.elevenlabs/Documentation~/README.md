@@ -18,6 +18,14 @@ The recommended installation method is though the unity package manager and [Ope
 
 ### Via Unity Package Manager and OpenUPM
 
+#### Terminal
+
+```bash
+openupm add com.rest.elevenlabs
+```
+
+#### Manual
+
 - Open your Unity project settings
 - Select the `Package Manager`
 ![scoped-registries](images/package-manager-scopes.png)
@@ -33,9 +41,11 @@ The recommended installation method is though the unity package manager and [Ope
 
 ### Via Unity Package Manager and Git url
 
+> [!WARNING]
+> This repo has dependencies on other repositories! You are responsible for adding these on your own.
+
 - Open your Unity Package Manager
 - Add package from git url: `https://github.com/RageAgainstThePixel/com.rest.elevenlabs.git#upm`
-  > Note: this repo has dependencies on other repositories! You are responsible for adding these on your own.
   - [com.utilities.async](https://github.com/RageAgainstThePixel/com.utilities.async)
   - [com.utilities.extensions](https://github.com/RageAgainstThePixel/com.utilities.extensions)
   - [com.utilities.audio](https://github.com/RageAgainstThePixel/com.utilities.audio)
@@ -45,7 +55,11 @@ The recommended installation method is though the unity package manager and [Ope
 
 ---
 
-## Documentation
+## [Documentation](https://rageagainstthepixel.github.io/ElevenLabs-DotNet)
+
+> Check out our new api docs!
+
+<https://rageagainstthepixel.github.io/ElevenLabs-DotNet>
 
 ### Table of Contents
 
@@ -290,7 +304,7 @@ var request = new TextToSpeechRequest(voice, message, model: Model.EnglishTurboV
 var voiceClip = await api.TextToSpeechEndpoint.StreamTextToSpeechAsync(request, partialClip =>
 {
     // Note: check demo scene for best practices
-    // on how to handle playback with OnAudioFilterRead
+    // on how to handle playback with StreamAudioSource.cs
     partialClips.Enqueue(partialClip);
 });
 ```

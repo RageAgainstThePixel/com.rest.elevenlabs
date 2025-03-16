@@ -104,12 +104,7 @@ namespace ElevenLabs.TextToSpeech
                 audioData = response.Data;
             }
 
-            string cachedPath = null;
-
-            if (request.CacheFormat != CacheFormat.None)
-            {
-                cachedPath = await SaveAudioToCache(audioData, clipId, request.Voice, request.OutputFormat, request.CacheFormat, cancellationToken).ConfigureAwait(true);
-            }
+            var cachedPath = await SaveAudioToCache(audioData, clipId, request.Voice, request.OutputFormat, request.CacheFormat, cancellationToken).ConfigureAwait(true);
 
             return new VoiceClip(clipId, request.Text, request.Voice, new ReadOnlyMemory<byte>(audioData), request.OutputFormat.GetSampleRate(), cachedPath)
             {
@@ -125,6 +120,22 @@ namespace ElevenLabs.TextToSpeech
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         /// <returns><see cref="VoiceClip"/>.</returns>
         public async Task<VoiceClip> TextToSpeechAsync(TextToSpeechRequest request, Action<VoiceClip> partialClipCallback, CancellationToken cancellationToken = default)
+        {
+            return await TextToSpeechAsync(request, async voiceClip =>
+            {
+                partialClipCallback.Invoke(voiceClip);
+                await Task.Yield();
+            }, cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Converts text to synthesized speech.
+        /// </summary>
+        /// <param name="request"><see cref="TextToSpeechRequest"/>.</param>
+        /// <param name="partialClipCallback">Partial <see cref="VoiceClip"/> callback with streaming data.</param>
+        /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
+        /// <returns><see cref="VoiceClip"/>.</returns>
+        public async Task<VoiceClip> TextToSpeechAsync(TextToSpeechRequest request, Func<VoiceClip, Task> partialClipCallback, CancellationToken cancellationToken = default)
         {
             if (request.OutputFormat is not OutputFormat.PCM_16000 and not OutputFormat.PCM_22050 and not OutputFormat.PCM_24000 and not OutputFormat.PCM_44100)
             {
@@ -167,19 +178,14 @@ namespace ElevenLabs.TextToSpeech
             }
 
             var audioData = request.WithTimestamps ? accumulatedPCMData!.ToArray() : response.Data;
-            string cachedPath = null;
+            var cachedPath = await SaveAudioToCache(audioData, clipId, request.Voice, request.OutputFormat, request.CacheFormat, cancellationToken).ConfigureAwait(true);
 
-            if (request.CacheFormat != CacheFormat.None)
-            {
-                cachedPath = await SaveAudioToCache(audioData, clipId, request.Voice, request.OutputFormat, request.CacheFormat, cancellationToken).ConfigureAwait(true);
-            }
-
-            return new VoiceClip(clipId, request.Text, request.Voice, new ReadOnlyMemory<byte>(audioData), request.OutputFormat.GetSampleRate(), cachedPath)
+            return new VoiceClip(clipId, request.Text, request.Voice, new ReadOnlyMemory<byte>(audioData), frequency, cachedPath)
             {
                 TimestampedTranscriptCharacters = accumulatedTranscriptData?.ToArray() ?? Array.Empty<TimestampedTranscriptCharacter>()
             };
 
-            void StreamCallback(Response partialResponse)
+            async void StreamCallback(Response partialResponse)
             {
                 try
                 {
@@ -188,7 +194,7 @@ namespace ElevenLabs.TextToSpeech
                         throw new ArgumentException("Failed to parse clip id!");
                     }
 
-                    partialClipCallback.Invoke(new VoiceClip($"{clipId}_{++part}", request.Text, request.Voice, new ReadOnlyMemory<byte>(partialResponse.Data), frequency));
+                    await partialClipCallback.Invoke(new VoiceClip($"{clipId}_{++part}", request.Text, request.Voice, new ReadOnlyMemory<byte>(partialResponse.Data), frequency));
                 }
                 catch (Exception e)
                 {
@@ -264,16 +270,24 @@ namespace ElevenLabs.TextToSpeech
                 { OutputFormatParameter, request.OutputFormat.ToString().ToLower() }
             };
 
+#pragma warning disable CS0618 // Type or member is obsolete
             if (request.OptimizeStreamingLatency.HasValue)
             {
                 parameters.Add(OptimizeStreamingLatencyParameter, request.OptimizeStreamingLatency.Value.ToString());
             }
+#pragma warning restore CS0618 // Type or member is obsolete
 
             return parameters;
         }
 
         private static async Task<string> SaveAudioToCache(byte[] audioData, string clipId, Voice voice, OutputFormat outputFormat, CacheFormat cacheFormat, CancellationToken cancellationToken)
         {
+#if PLATFORM_WEBGL
+            await Task.Yield();
+            return null;
+#else
+            if (cacheFormat == CacheFormat.None) { return null; }
+
             string extension;
             AudioType audioType;
 
@@ -294,7 +308,6 @@ namespace ElevenLabs.TextToSpeech
                         extension = "ogg";
                         audioType = AudioType.OGGVORBIS;
                         break;
-                    case CacheFormat.None:
                     default:
                         throw new ArgumentOutOfRangeException(nameof(cacheFormat), cacheFormat, null);
                 }
@@ -325,6 +338,7 @@ namespace ElevenLabs.TextToSpeech
             }
 
             return cachedPath;
+#endif // PLATFORM_WEBGL
         }
 
         #region WebSocket
