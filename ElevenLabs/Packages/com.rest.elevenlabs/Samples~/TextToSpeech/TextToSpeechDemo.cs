@@ -4,14 +4,12 @@ using ElevenLabs.Models;
 using ElevenLabs.TextToSpeech;
 using ElevenLabs.Voices;
 using System;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using Utilities.Async;
 using Utilities.Audio;
-using Debug = UnityEngine.Debug;
 
 namespace ElevenLabs.Demo
 {
@@ -65,7 +63,7 @@ namespace ElevenLabs.Demo
                 }
 
                 var request = new TextToSpeechRequest(voice, message, model: Model.FlashV2_5, outputFormat: OutputFormat.PCM_24000);
-                var stopwatch = Stopwatch.StartNew();
+                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
                 var voiceClip = await api.TextToSpeechEndpoint.TextToSpeechAsync(request, async partialClip =>
                 {
                     await streamAudioSource.BufferCallbackAsync(partialClip.ClipSamples);
