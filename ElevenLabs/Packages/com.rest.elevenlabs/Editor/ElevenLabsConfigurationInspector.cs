@@ -16,7 +16,6 @@ namespace ElevenLabs.Editor
 
         private SerializedProperty apiKey;
         private SerializedProperty proxyDomain;
-        private SerializedProperty apiVersion;
         private SerializedProperty globalVoice;
 
         #region Project Settings Window
@@ -37,7 +36,6 @@ namespace ElevenLabs.Editor
             {
                 apiKey = serializedObject.FindProperty(nameof(apiKey));
                 proxyDomain = serializedObject.FindProperty(nameof(proxyDomain));
-                apiVersion = serializedObject.FindProperty(nameof(apiVersion));
                 globalVoice = serializedObject.FindProperty(nameof(globalVoice));
             }
             catch (Exception)
@@ -62,17 +60,6 @@ namespace ElevenLabs.Editor
             EditorGUI.BeginChangeCheck();
             EditorGUILayout.PropertyField(apiKey);
             EditorGUILayout.PropertyField(proxyDomain);
-
-            GUI.enabled = false;
-
-            if (string.IsNullOrWhiteSpace(apiVersion.stringValue) ||
-                apiVersion.stringValue != ElevenLabsSettingsInfo.DefaultApiVersion)
-            {
-                apiVersion.stringValue = ElevenLabsSettingsInfo.DefaultApiVersion;
-            }
-
-            EditorGUILayout.PropertyField(apiVersion);
-            GUI.enabled = true;
 
             if (EditorGUI.EndChangeCheck())
             {

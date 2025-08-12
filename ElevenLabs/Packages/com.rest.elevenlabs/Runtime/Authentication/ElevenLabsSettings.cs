@@ -29,16 +29,10 @@ namespace ElevenLabs
                 configuration = Resources.LoadAll<ElevenLabsConfiguration>(string.Empty).FirstOrDefault(asset => asset != null);
             }
 
-            if (configuration != null)
-            {
-                Info = new ElevenLabsSettingsInfo(configuration.ProxyDomain, configuration.ApiVersion);
-                cachedDefault = new ElevenLabsSettings(Info);
-            }
-            else
-            {
-                Info = new ElevenLabsSettingsInfo();
-                cachedDefault = new ElevenLabsSettings(Info);
-            }
+            Info = configuration != null
+                ? new ElevenLabsSettingsInfo(configuration.ProxyDomain)
+                : new ElevenLabsSettingsInfo();
+            cachedDefault = new ElevenLabsSettings(Info);
         }
 
         /// <summary>
@@ -55,10 +49,9 @@ namespace ElevenLabs
         /// Creates a new instance of <see cref="ElevenLabsSettings"/>.
         /// </summary>
         /// <param name="domain">Base api domain.</param>
-        /// <param name="apiVersion">The version of the ElevenLabs api you want to use.</param>
-        public ElevenLabsSettings(string domain, string apiVersion = ElevenLabsSettingsInfo.DefaultApiVersion)
+        public ElevenLabsSettings(string domain)
         {
-            Info = new ElevenLabsSettingsInfo(domain, apiVersion);
+            Info = new ElevenLabsSettingsInfo(domain);
             cachedDefault = this;
         }
 
