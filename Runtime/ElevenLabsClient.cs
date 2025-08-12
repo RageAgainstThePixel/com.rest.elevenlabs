@@ -38,6 +38,7 @@ namespace ElevenLabs
         {
             UserEndpoint = new UserEndpoint(this);
             VoicesEndpoint = new VoicesEndpoint(this);
+            VoicesV2Endpoint = new VoicesV2Endpoint(this);
             ModelsEndpoint = new ModelsEndpoint(this);
             HistoryEndpoint = new HistoryEndpoint(this);
             TextToSpeechEndpoint = new TextToSpeechEndpoint(this);
@@ -86,6 +87,8 @@ namespace ElevenLabs
         public UserEndpoint UserEndpoint { get; }
 
         public VoicesEndpoint VoicesEndpoint { get; }
+
+        public VoicesV2Endpoint VoicesV2Endpoint { get; }
 
         public ModelsEndpoint ModelsEndpoint { get; }
 

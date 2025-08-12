@@ -37,7 +37,7 @@ namespace ElevenLabs.Tests
 
             foreach (var voice in results.Voices)
             {
-                Console.WriteLine($"{voice.OwnerId} | {voice.VoiceId} | {voice.Date} | {voice.Name}");
+                Debug.Log($"{voice.OwnerId} | {voice.VoiceId} | {voice.Date} | {voice.Name}");
             }
         }
 
@@ -172,6 +172,43 @@ namespace ElevenLabs.Tests
                 var result = await ElevenLabsClient.VoicesEndpoint.DeleteVoiceAsync(voice);
                 Assert.NotNull(result);
                 Assert.IsTrue(result);
+            }
+        }
+
+        [Test]
+        public async Task Test_10_IterateDefaultVoices()
+        {
+            Assert.NotNull(ElevenLabsClient.VoicesV2Endpoint);
+            var voices = new List<Voice>();
+            var query = new VoiceQuery(voiceType: VoiceTypes.Default, pageSize: 10);
+            int? previousTotalCount = null;
+
+            do
+            {
+                var page = await ElevenLabsClient.VoicesV2Endpoint.GetVoicesAsync(query);
+
+                if (page.HasMore)
+                {
+                    Assert.AreEqual(query.PageSize, page.Voices.Count);
+                }
+
+                if (previousTotalCount != null)
+                {
+                    Assert.AreEqual(previousTotalCount, page.TotalCount);
+                }
+
+                previousTotalCount = page.TotalCount;
+                voices.AddRange(page.Voices);
+                query = query.WithNextPageToken(page.NextPageToken);
+            } while (!string.IsNullOrWhiteSpace(query.NextPageToken));
+
+            Assert.NotNull(voices);
+            Assert.IsNotEmpty(voices);
+            Assert.AreEqual(previousTotalCount, voices.Count);
+
+            foreach (var voice in voices)
+            {
+                Debug.Log($"{voice.Id} | {voice.Name}");
             }
         }
     }

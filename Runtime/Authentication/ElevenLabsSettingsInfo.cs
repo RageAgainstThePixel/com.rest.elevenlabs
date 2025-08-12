@@ -10,7 +10,6 @@ namespace ElevenLabs
         internal const string Http = "http://";
         internal const string Https = "https://";
         internal const string ElevenLabsDomain = "api.elevenlabs.io";
-        internal const string DefaultApiVersion = "v1";
 
         /// <summary>
         /// Creates a new instance of <see cref="ElevenLabsSettingsInfo"/> for use with ElevenLabs.
@@ -18,17 +17,14 @@ namespace ElevenLabs
         public ElevenLabsSettingsInfo()
         {
             Domain = ElevenLabsDomain;
-            ApiVersion = DefaultApiVersion;
-            BaseRequest = $"/{ApiVersion}/";
-            BaseRequestUrlFormat = $"{Https}{Domain}{BaseRequest}{{0}}";
+            BaseRequestUrlFormat = $"{Https}{Domain}/{{0}}/{{1}}";
         }
 
         /// <summary>
         /// Creates a new instance of <see cref="ElevenLabsSettingsInfo"/> for use with ElevenLabs.
         /// </summary>
         /// <param name="domain">Base api domain.</param>
-        /// <param name="apiVersion">The version of the ElevenLabs api you want to use.</param>
-        public ElevenLabsSettingsInfo(string domain, string apiVersion = DefaultApiVersion)
+        public ElevenLabsSettingsInfo(string domain)
         {
             if (string.IsNullOrWhiteSpace(domain))
             {
@@ -39,11 +35,6 @@ namespace ElevenLabs
                 !domain.Contains(':'))
             {
                 throw new ArgumentException($"Invalid parameter \"{nameof(domain)}\".");
-            }
-
-            if (string.IsNullOrWhiteSpace(apiVersion))
-            {
-                apiVersion = DefaultApiVersion;
             }
 
             var protocol = Https;
@@ -60,16 +51,10 @@ namespace ElevenLabs
             }
 
             Domain = $"{protocol}{domain}";
-            ApiVersion = apiVersion;
-            BaseRequest = $"/{ApiVersion}/";
-            BaseRequestUrlFormat = $"{Domain}{BaseRequest}{{0}}";
+            BaseRequestUrlFormat = $"{Domain}/{{0}}/{{1}}";
         }
 
         public string Domain { get; }
-
-        public string ApiVersion { get; }
-
-        public string BaseRequest { get; }
 
         public string BaseRequestUrlFormat { get; }
     }
