@@ -26,12 +26,6 @@ namespace ElevenLabs
         public string ProxyDomain => proxyDomain;
 
         [SerializeField]
-        [Tooltip("The api version, Defaults to v1")]
-        private string apiVersion = ElevenLabsSettingsInfo.DefaultApiVersion;
-
-        public string ApiVersion => apiVersion;
-
-        [SerializeField]
         private Voice globalVoice;
 
         public Voice GlobalVoice => globalVoice;
