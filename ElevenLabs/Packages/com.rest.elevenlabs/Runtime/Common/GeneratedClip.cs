@@ -131,7 +131,7 @@ namespace ElevenLabs
 
         public static implicit operator AudioClip(GeneratedClip clip) => clip?.AudioClip;
 
-        public async Task<AudioClip> LoadCachedAudioClipAsync(CancellationToken cancellationToken = default)
+        public Task<AudioClip> LoadCachedAudioClipAsync(bool debug = false, CancellationToken cancellationToken = default)
         {
             var audioType = cachedPath switch
             {
@@ -147,7 +147,11 @@ namespace ElevenLabs
                 return null;
             }
 
-            return await Rest.DownloadAudioClipAsync($"file://{cachedPath}", audioType, cancellationToken: cancellationToken);
+            return Rest.DownloadAudioClipAsync(
+                url: $"file://{cachedPath}",
+                audioType: audioType,
+                parameters: new RestParameters(debug: debug),
+                cancellationToken: cancellationToken);
         }
 
         public void Dispose()
