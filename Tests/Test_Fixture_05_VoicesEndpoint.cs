@@ -1,5 +1,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using ElevenLabs.VoiceGeneration;
 using ElevenLabs.Voices;
 using NUnit.Framework;
 using System;
@@ -31,13 +32,17 @@ namespace ElevenLabs.Tests
         public async Task Test_01_02_GetSharedVoices()
         {
             Assert.NotNull(ElevenLabsClient.SharedVoicesEndpoint);
-            var results = await ElevenLabsClient.SharedVoicesEndpoint.GetSharedVoicesAsync();
+            var query = new SharedVoiceQuery { Accent = "american" };
+            var results = await ElevenLabsClient.SharedVoicesEndpoint.GetSharedVoicesAsync(query);
             Assert.NotNull(results);
             Assert.IsNotEmpty(results.Voices);
 
+            Debug.Log($"{results.Voices.Count} | has more? {results.HasMore} | {results.LastId}");
+
             foreach (var voice in results.Voices)
             {
-                Debug.Log($"{voice.OwnerId} | {voice.VoiceId} | {voice.Date} | {voice.Name}");
+                Debug.Log($"{voice.VoiceId} | {voice.Date} | {voice.Name} | {voice.Accent}");
+                Assert.AreEqual("american", voice.Accent);
             }
         }
 

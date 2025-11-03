@@ -18,12 +18,11 @@ namespace ElevenLabs.TextToSpeech
             Alignment = alignment;
         }
 
+        [Preserve]
         [JsonProperty("audio_base64")]
         public string AudioBase64 { get; }
 
-        [JsonIgnore]
-        public byte[] AudioBytes => System.Convert.FromBase64String(AudioBase64);
-
+        [Preserve]
         [JsonProperty("alignment")]
         public Alignment Alignment { get; }
     }

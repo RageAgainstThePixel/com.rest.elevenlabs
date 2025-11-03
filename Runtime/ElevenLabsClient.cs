@@ -9,6 +9,7 @@ using ElevenLabs.User;
 using ElevenLabs.VoiceGeneration;
 using ElevenLabs.Voices;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using System.Collections.Generic;
 using System.Security.Authentication;
 using Utilities.WebRequestRest;
@@ -81,7 +82,11 @@ namespace ElevenLabs
         /// </summary>
         internal static JsonSerializerSettings JsonSerializationOptions { get; } = new()
         {
-            DefaultValueHandling = DefaultValueHandling.Ignore
+            DefaultValueHandling = DefaultValueHandling.Ignore,
+            Converters = new List<JsonConverter>
+            {
+                new StringEnumConverter()
+            }
         };
 
         public UserEndpoint UserEndpoint { get; }

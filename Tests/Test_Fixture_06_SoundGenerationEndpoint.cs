@@ -2,7 +2,9 @@
 
 using ElevenLabs.SoundGeneration;
 using NUnit.Framework;
+using System;
 using System.Threading.Tasks;
+using UnityEngine;
 
 namespace ElevenLabs.Tests
 {
@@ -11,13 +13,22 @@ namespace ElevenLabs.Tests
         [Test]
         public async Task Test_01_GenerateSound()
         {
-            Assert.NotNull(ElevenLabsClient.SoundGenerationEndpoint);
-            var request = new SoundGenerationRequest("Star Wars Light Saber parry");
-            var clip = await ElevenLabsClient.SoundGenerationEndpoint.GenerateSoundAsync(request);
-            Assert.NotNull(clip);
-            Assert.IsTrue(clip.AudioClip != null);
-            Assert.IsTrue(clip.AudioClip.length > 0);
-            Assert.IsFalse(string.IsNullOrWhiteSpace(clip.Text));
+            try
+            {
+
+                Assert.NotNull(ElevenLabsClient.SoundGenerationEndpoint);
+                var request = new SoundGenerationRequest("Star Wars Light Saber parry");
+                using var clip = await ElevenLabsClient.SoundGenerationEndpoint.GenerateSoundAsync(request);
+                Assert.NotNull(clip);
+                Assert.IsTrue(clip.AudioClip != null);
+                Assert.IsTrue(clip.AudioClip.length > 0);
+                Assert.IsFalse(string.IsNullOrWhiteSpace(clip.Text));
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+                throw;
+            }
         }
     }
 }

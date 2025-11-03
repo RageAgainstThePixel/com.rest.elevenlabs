@@ -27,7 +27,14 @@ namespace ElevenLabs.SoundGeneration
         {
             var payload = JsonConvert.SerializeObject(request, ElevenLabsClient.JsonSerializationOptions);
             var clipId = Guid.NewGuid().ToString();
-            var audioClip = await Rest.DownloadAudioClipAsync(GetUrl(), AudioType.MPEG, UnityWebRequest.kHttpVerbPOST, clipId, payload, parameters: new RestParameters(client.DefaultRequestHeaders), cancellationToken: cancellationToken);
+            var audioClip = await Rest.DownloadAudioClipAsync(
+                url: GetUrl(),
+                audioType: AudioType.MPEG,
+                httpMethod: UnityWebRequest.kHttpVerbPOST,
+                fileName: clipId,
+                jsonData: payload,
+                parameters: new RestParameters(client.DefaultRequestHeaders, debug: EnableDebug),
+                cancellationToken: cancellationToken);
             Rest.TryGetDownloadCacheItem(clipId, out var cachedPath);
             return new GeneratedClip(clipId, request.Text, audioClip, cachedPath);
         }

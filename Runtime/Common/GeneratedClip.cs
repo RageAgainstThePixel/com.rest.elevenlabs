@@ -4,6 +4,7 @@ using ElevenLabs.Extensions;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Scripting;
 using Utilities.Audio;
@@ -13,7 +14,7 @@ namespace ElevenLabs
 {
     [Preserve]
     [Serializable]
-    public class GeneratedClip : ISerializationCallbackReceiver
+    public class GeneratedClip : ISerializationCallbackReceiver, IDisposable
     {
         [Preserve]
         internal GeneratedClip(string id, string text, AudioClip audioClip, string cachedPath = null)
@@ -24,19 +25,23 @@ namespace ElevenLabs
             textHash = TextHash.ToString();
             this.cachedPath = cachedPath;
             SampleRate = audioClip.frequency;
+            this.audioClip = audioClip;
         }
 
         [Preserve]
-        internal GeneratedClip(string id, string text, ReadOnlyMemory<byte> clipData, int sampleRate, string cachedPath = null)
+        internal GeneratedClip(string id, string text, NativeArray<byte> clipData, int sampleRate, string cachedPath = null)
         {
             this.id = id;
             this.text = text;
             TextHash = $"{id}{text}".GenerateGuid();
             textHash = TextHash.ToString();
             this.cachedPath = cachedPath;
-            ClipData = clipData;
+            this.clipData = clipData;
             SampleRate = sampleRate;
         }
+
+        ~GeneratedClip()
+            => Dispose();
 
         [SerializeField]
         private string id;
@@ -62,28 +67,31 @@ namespace ElevenLabs
         [Preserve]
         public string CachedPath => cachedPath;
 
-        public ReadOnlyMemory<byte> ClipData { get; }
+        [Preserve]
+        public NativeArray<byte> ClipData => clipData ??= new NativeArray<byte>(0, Allocator.Persistent);
+        private NativeArray<byte>? clipData;
 
-        public float[] ClipSamples
+        [Preserve]
+        public NativeArray<float> ClipSamples
         {
             get
             {
                 if (clipSamples != null)
                 {
-                    return clipSamples;
+                    return clipSamples.Value;
                 }
 
-                if (ClipData.IsEmpty)
+                if (ClipData.Length == 0)
                 {
-                    return Array.Empty<float>();
+                    return new NativeArray<float>(0, Allocator.Persistent);
                 }
 
-                clipSamples ??= PCMEncoder.Decode(ClipData.ToArray(), inputSampleRate: SampleRate, outputSampleRate: AudioSettings.outputSampleRate);
-                return clipSamples;
+                clipSamples ??= PCMEncoder.Decode(pcmData: ClipData, inputSampleRate: SampleRate, outputSampleRate: AudioSettings.outputSampleRate, allocator: Allocator.Persistent);
+                return clipSamples.Value;
 
             }
         }
-        private float[] clipSamples;
+        private NativeArray<float>? clipSamples;
 
         public int SampleRate { get; }
 
@@ -99,12 +107,16 @@ namespace ElevenLabs
                     ClipSamples is { Length: > 0 })
                 {
                     audioClip = AudioClip.Create(Id, ClipSamples.Length, 1, AudioSettings.outputSampleRate, false);
+#if UNITY_6000_0_OR_NEWER
                     audioClip.SetData(ClipSamples, 0);
+#else
+                    audioClip.SetData(ClipSamples.ToArray(), 0);
+#endif
                 }
 
                 if (audioClip == null)
                 {
-                    Debug.LogError($"{nameof(audioClip)} is null, try loading it with LoadCachedAudioClipAsync");
+                    Debug.LogError($"{nameof(audioClip)} is null, try loading it with {nameof(LoadCachedAudioClipAsync)}");
                 }
 
                 return audioClip;
@@ -119,7 +131,7 @@ namespace ElevenLabs
 
         public static implicit operator AudioClip(GeneratedClip clip) => clip?.AudioClip;
 
-        public async Task<AudioClip> LoadCachedAudioClipAsync(CancellationToken cancellationToken = default)
+        public Task<AudioClip> LoadCachedAudioClipAsync(bool debug = false, CancellationToken cancellationToken = default)
         {
             var audioType = cachedPath switch
             {
@@ -135,7 +147,17 @@ namespace ElevenLabs
                 return null;
             }
 
-            return await Rest.DownloadAudioClipAsync($"file://{cachedPath}", audioType, cancellationToken: cancellationToken);
+            return Rest.DownloadAudioClipAsync(
+                url: $"file://{cachedPath}",
+                audioType: audioType,
+                parameters: new RestParameters(debug: debug),
+                cancellationToken: cancellationToken);
+        }
+
+        public void Dispose()
+        {
+            clipData?.Dispose();
+            clipSamples?.Dispose();
         }
     }
 }
