@@ -20,7 +20,7 @@ namespace ElevenLabs.Tests
             {
                 Assert.NotNull(ElevenLabsClient.DubbingEndpoint);
                 var audioPath = Path.GetFullPath(AssetDatabase.GUIDToAssetPath("96e9fdf73bc7a944f93886694973b90e"));
-                var request = new DubbingRequest(audioPath, "es", "en", 1);
+                var request = new DubbingRequest(audioPath, "es", "en", 1, watermark: false);
                 var metadata = await ElevenLabsClient.DubbingEndpoint.DubAsync(request, progress: new Progress<DubbingProjectMetadata>(metadata =>
                 {
                     switch (metadata.Status)
@@ -57,7 +57,8 @@ namespace ElevenLabs.Tests
             }
             catch (Exception e)
             {
-                Debug.LogError(e);
+                Debug.LogException(e);
+                throw;
             }
         }
 
@@ -68,7 +69,7 @@ namespace ElevenLabs.Tests
             {
                 Assert.NotNull(ElevenLabsClient.DubbingEndpoint);
 
-                var request = new DubbingRequest(new Uri("https://youtu.be/Zo5-rhYOlNk"), "ja", "en", 1, watermark: true, dropBackgroundAudio: true);
+                var request = new DubbingRequest(new Uri("https://youtu.be/Zo5-rhYOlNk?si=xetqANRnve7P6UmX"), "ja", "en", 1, watermark: true, dropBackgroundAudio: true);
                 var metadata = await ElevenLabsClient.DubbingEndpoint.DubAsync(request, progress: new Progress<DubbingProjectMetadata>(metadata =>
                 {
                     switch (metadata.Status)
@@ -102,7 +103,8 @@ namespace ElevenLabs.Tests
             }
             catch (Exception e)
             {
-                Debug.LogError(e);
+                Debug.LogException(e);
+                throw;
             }
         }
 
@@ -114,7 +116,7 @@ namespace ElevenLabs.Tests
                 Assert.NotNull(ElevenLabsClient.DubbingEndpoint);
                 var clipPath = AssetDatabase.GUIDToAssetPath("96e9fdf73bc7a944f93886694973b90e");
                 var audioClip = AssetDatabase.LoadAssetAtPath<AudioClip>(clipPath);
-                var request = new DubbingRequest(audioClip, "es", "en", 1);
+                var request = new DubbingRequest(audioClip, "es", "en", 1, watermark: false);
                 var metadata = await ElevenLabsClient.DubbingEndpoint.DubAsync(request, progress: new Progress<DubbingProjectMetadata>(metadata =>
                 {
                     switch (metadata.Status)
@@ -151,7 +153,8 @@ namespace ElevenLabs.Tests
             }
             catch (Exception e)
             {
-                Debug.LogError(e);
+                Debug.LogException(e);
+                throw;
             }
         }
     }

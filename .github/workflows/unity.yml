@@ -18,15 +18,15 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           sparse-checkout: .github/
       - uses: RageAgainstThePixel/job-builder@v1
         id: setup-jobs
         with:
           build-options: ./.github/workflows/build-options.json
-          group-by: 'unity-version'
-          job-name-prefix: 'Build'
+          group-by: unity-version
+          job-name-prefix: Build
     outputs:
       jobs: ${{ steps.setup-jobs.outputs.jobs }}
   validate:
@@ -39,6 +39,7 @@ jobs:
     strategy:
       matrix: ${{ fromJSON(needs.setup.outputs.jobs) }}
       fail-fast: false
+      max-parallel: 1
     secrets: inherit
     uses: RageAgainstThePixel/workflows/.github/workflows/build-unity-package.yml@main
     with:

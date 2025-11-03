@@ -68,7 +68,7 @@ namespace ElevenLabs.Demo
                 var stopwatch = Stopwatch.StartNew();
                 var voiceClip = await api.TextToSpeechEndpoint.TextToSpeechAsync(request, async partialClip =>
                 {
-                    await streamAudioSource.BufferCallbackAsync(partialClip.ClipSamples);
+                    await streamAudioSource.SampleCallbackAsync(partialClip.ClipSamples);
                 }, cancellationToken: destroyCancellationToken);
                 var elapsedTime = (float)stopwatch.Elapsed.TotalSeconds;
                 var playbackTime = voiceClip.Length - elapsedTime;

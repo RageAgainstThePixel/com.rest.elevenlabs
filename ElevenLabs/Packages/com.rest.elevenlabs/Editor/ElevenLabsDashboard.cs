@@ -1118,6 +1118,7 @@ namespace ElevenLabs.Editor
                 isSynthesisRunning = false;
                 FetchUserInfo();
                 FetchHistory(voiceClip?.Id);
+                voiceClip?.Dispose();
             }
         }
 

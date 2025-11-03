@@ -2,6 +2,7 @@
 
 using ElevenLabs.Voices;
 using System;
+using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -19,7 +20,7 @@ namespace ElevenLabs
         }
 
         [Preserve]
-        internal VoiceClip(string id, string text, Voice voice, ReadOnlyMemory<byte> clipData, int sampleRate, string cachedPath = null)
+        internal VoiceClip(string id, string text, Voice voice, NativeArray<byte> clipData, int sampleRate, string cachedPath = null)
             : base(id, text, clipData, sampleRate, cachedPath)
         {
             this.voice = voice;
