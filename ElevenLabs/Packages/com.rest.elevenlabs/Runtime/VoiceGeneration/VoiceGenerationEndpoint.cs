@@ -47,7 +47,7 @@ namespace ElevenLabs.VoiceGeneration
             var cacheDirectory = Rest.DownloadCacheDirectory
                 .CreateNewDirectory(nameof(ElevenLabs))
                 .CreateNewDirectory(nameof(VoiceGeneration));
-            var cachedPath = Path.Combine(cacheDirectory, $"{generatedVoiceId}.mp3");
+            var cachedPath = Path.Combine(cacheDirectory, $"{generatedVoiceId}.wav");
 
             if (File.Exists(cachedPath))
             {
@@ -55,7 +55,7 @@ namespace ElevenLabs.VoiceGeneration
             }
 
             await File.WriteAllBytesAsync(cachedPath, response.Data, cancellationToken).ConfigureAwait(true);
-            var audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", AudioType.MPEG, parameters: new RestParameters(debug: EnableDebug), cancellationToken: cancellationToken);
+            var audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", AudioType.WAV, parameters: new RestParameters(debug: EnableDebug), cancellationToken: cancellationToken);
             return new Tuple<string, AudioClip>(generatedVoiceId, audioClip);
         }
 

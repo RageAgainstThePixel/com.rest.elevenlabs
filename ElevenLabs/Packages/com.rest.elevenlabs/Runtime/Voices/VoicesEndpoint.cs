@@ -342,6 +342,7 @@ namespace ElevenLabs.Voices
             }
 
             var audioClip = await Rest.DownloadAudioClipAsync($"file://{cachedPath}", audioType, parameters: new RestParameters(debug: EnableDebug), cancellationToken: cancellationToken);
+            await Awaiters.UnityMainThread;
             return new VoiceClip(sample.Id, string.Empty, voice, audioClip, cachedPath);
         }
 
