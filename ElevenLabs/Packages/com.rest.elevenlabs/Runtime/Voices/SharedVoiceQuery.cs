@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace ElevenLabs.Voices
 {
-    public sealed class SharedVoiceQuery
+    public sealed record SharedVoiceQuery
     {
         public int? PageSize { get; set; } = null;
 
@@ -85,12 +85,12 @@ namespace ElevenLabs.Voices
 
             if (Featured.HasValue)
             {
-                parameters.Add("featured", Featured.Value.ToString());
+                parameters.Add("featured", Featured.Value.ToString().ToLower());
             }
 
             if (ReaderAppEnabled.HasValue)
             {
-                parameters.Add("reader_app_enabled", ReaderAppEnabled.Value.ToString());
+                parameters.Add("reader_app_enabled", ReaderAppEnabled.Value.ToString().ToLower());
             }
 
             if (!string.IsNullOrWhiteSpace(OwnerId))
