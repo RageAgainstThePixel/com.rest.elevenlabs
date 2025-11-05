@@ -12,27 +12,6 @@ namespace ElevenLabs.TextToSpeech
     [Preserve]
     public sealed class TextToSpeechRequest
     {
-        [Obsolete("use new .ctr overload")]
-        public TextToSpeechRequest(
-            Voice voice,
-            string text,
-            Encoding encoding,
-            VoiceSettings voiceSettings,
-            OutputFormat outputFormat,
-            int? optimizeStreamingLatency,
-            Model model = null,
-            string previousText = null,
-            string nextText = null,
-            string[] previousRequestIds = null,
-            string[] nextRequestIds = null,
-            string languageCode = null,
-            CacheFormat cacheFormat = CacheFormat.Wav,
-            bool withTimestamps = false)
-          : this(voice, text, encoding, voiceSettings, outputFormat, model, cacheFormat, previousText, nextText, previousRequestIds, nextRequestIds, languageCode, withTimestamps)
-        {
-            OptimizeStreamingLatency = optimizeStreamingLatency;
-        }
-
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -187,11 +166,6 @@ namespace ElevenLabs.TextToSpeech
         [Preserve]
         [JsonIgnore]
         public CacheFormat CacheFormat { get; internal set; }
-
-        [Preserve]
-        [JsonIgnore]
-        [Obsolete("Deprecated")]
-        public int? OptimizeStreamingLatency { get; }
 
         [Preserve]
         [JsonProperty("previous_text")]

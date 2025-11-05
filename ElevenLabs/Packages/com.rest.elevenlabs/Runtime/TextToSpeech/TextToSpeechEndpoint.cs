@@ -1,7 +1,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using ElevenLabs.Extensions;
-using ElevenLabs.Models;
 using ElevenLabs.Voices;
 using Newtonsoft.Json;
 using System;
@@ -15,7 +14,6 @@ using UnityEngine;
 using Utilities.Audio;
 using Utilities.Encoding.OggVorbis;
 using Utilities.Encoding.Wav;
-using Utilities.Extensions;
 using Utilities.WebRequestRest;
 
 namespace ElevenLabs.TextToSpeech
@@ -33,160 +31,115 @@ namespace ElevenLabs.TextToSpeech
 
         protected override string Root => "text-to-speech";
 
-        [Obsolete("use overload with TextToSpeechRequest")]
-        public async Task<VoiceClip> TextToSpeechAsync(string text, Voice voice, VoiceSettings voiceSettings = null, Model model = null, OutputFormat outputFormat = OutputFormat.MP3_44100_128, int? optimizeStreamingLatency = null, CancellationToken cancellationToken = default)
-            => await TextToSpeechAsync(
-                new TextToSpeechRequest(
-                    voice,
-                    text,
-                    Encoding.UTF8,
-                    voiceSettings ?? voice.Settings ?? await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken),
-                    outputFormat,
-                    optimizeStreamingLatency,
-                    model),
-                cancellationToken);
-
-        [Obsolete("use TextToSpeechAsync with VoiceClip partialClipCallback")]
-        public async Task<VoiceClip> StreamTextToSpeechAsync(string text, Voice voice, Action<AudioClip> partialClipCallback, VoiceSettings voiceSettings = null, Model model = null, OutputFormat outputFormat = OutputFormat.PCM_24000, int? optimizeStreamingLatency = null, CancellationToken cancellationToken = default)
-            => await StreamTextToSpeechAsync(
-                new TextToSpeechRequest(
-                    voice,
-                    text,
-                    Encoding.UTF8,
-                    voiceSettings ?? voice.Settings ?? await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken),
-                    outputFormat,
-                    optimizeStreamingLatency,
-                    model),
-                partialClipCallback, cancellationToken);
-
-        [Obsolete("use TextToSpeechAsync with VoiceClip partialClipCallback")]
-        public async Task<VoiceClip> StreamTextToSpeechAsync(TextToSpeechRequest request, Action<AudioClip> partialClipCallback, CancellationToken cancellationToken = default)
-            => await TextToSpeechAsync(request, voiceClip =>
-            {
-                partialClipCallback.Invoke(voiceClip.AudioClip);
-            }, cancellationToken);
-
         /// <summary>
         /// Converts text to synthesized speech.
         /// </summary>
         /// <param name="request"><see cref="TextToSpeechRequest"/>.</param>
+        /// <param name="partialClipCallback">Partial <see cref="VoiceClip"/> callback with streaming data.</param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         /// <returns><see cref="VoiceClip"/>.</returns>
-        public async Task<VoiceClip> TextToSpeechAsync(TextToSpeechRequest request, CancellationToken cancellationToken = default)
+        public async Task<VoiceClip> TextToSpeechAsync(TextToSpeechRequest request, Func<VoiceClip, Task> partialClipCallback = null, CancellationToken cancellationToken = default)
         {
             request.VoiceSettings ??= await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken);
             var payload = JsonConvert.SerializeObject(request, ElevenLabsClient.JsonSerializationOptions);
-            var parameters = CreateRequestParameters(request);
-            var endpoint = $"/{request.Voice}";
-
-            if (request.WithTimestamps)
+            var parameters = new Dictionary<string, string>
             {
-                endpoint += "/with-timestamps";
-            }
-
-            var response = await Rest.PostAsync(GetUrl(endpoint, parameters), payload, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.Validate(EnableDebug);
-
-            if (!response.Headers.TryGetValue(HistoryItemId, out var clipId))
-            {
-                throw new ArgumentException("Failed to parse clip id!");
-            }
-
-            NativeArray<byte> audioData;
-            TimestampedTranscriptCharacter[] transcriptionCharacters = null;
-
-            if (request.WithTimestamps)
-            {
-                var transcriptResponse = JsonConvert.DeserializeObject<TranscriptionResponse>(response.Body, ElevenLabsClient.JsonSerializationOptions);
-                audioData = NativeArrayExtensions.FromBase64String(transcriptResponse.AudioBase64, Allocator.Persistent);
-                transcriptionCharacters = transcriptResponse.Alignment;
-            }
-            else
-            {
-                audioData = new NativeArray<byte>(response.Data, Allocator.Persistent);
-            }
-
-            var cachedPath = await SaveAudioToCache(audioData, clipId, request.Voice, request.OutputFormat, request.CacheFormat, cancellationToken).ConfigureAwait(true);
-
-            return new VoiceClip(clipId, request.Text, request.Voice, audioData, request.OutputFormat.GetSampleRate(), cachedPath)
-            {
-                TimestampedTranscriptCharacters = transcriptionCharacters
+                { OutputFormatParameter, request.OutputFormat.ToString().ToLower() }
             };
-        }
 
-        /// <summary>
-        /// Converts text to synthesized speech.
-        /// </summary>
-        /// <param name="request"><see cref="TextToSpeechRequest"/>.</param>
-        /// <param name="partialClipCallback">Partial <see cref="VoiceClip"/> callback with streaming data.</param>
-        /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
-        /// <returns><see cref="VoiceClip"/>.</returns>
-        [Obsolete("use overload with Func<VoiceClip, Task> partialClipCallback")]
-        public async Task<VoiceClip> TextToSpeechAsync(TextToSpeechRequest request, Action<VoiceClip> partialClipCallback, CancellationToken cancellationToken = default)
-        {
-            return await TextToSpeechAsync(request, async voiceClip =>
-            {
-                partialClipCallback.Invoke(voiceClip);
-                await Task.Yield();
-            }, cancellationToken).ConfigureAwait(false);
-        }
+            var endpoint = $"/{request.Voice.Id}";
 
-        /// <summary>
-        /// Converts text to synthesized speech.
-        /// </summary>
-        /// <param name="request"><see cref="TextToSpeechRequest"/>.</param>
-        /// <param name="partialClipCallback">Partial <see cref="VoiceClip"/> callback with streaming data.</param>
-        /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
-        /// <returns><see cref="VoiceClip"/>.</returns>
-        public async Task<VoiceClip> TextToSpeechAsync(TextToSpeechRequest request, Func<VoiceClip, Task> partialClipCallback, CancellationToken cancellationToken = default)
-        {
-            if (request.OutputFormat is not OutputFormat.PCM_16000 and not OutputFormat.PCM_22050 and not OutputFormat.PCM_24000 and not OutputFormat.PCM_44100)
+            if (partialClipCallback != null)
             {
-                Debug.LogWarning($"{nameof(request.OutputFormat)} must be a PCM format! defaulting to 24000");
-                request.OutputFormat = OutputFormat.PCM_24000;
+                if (request.OutputFormat is not OutputFormat.PCM_16000 and not OutputFormat.PCM_22050 and not OutputFormat.PCM_24000 and not OutputFormat.PCM_44100)
+                {
+                    Debug.LogWarning($"{nameof(request.OutputFormat)} must be a PCM format! Was {request.OutputFormat}, defaulting to 24000");
+                    request.OutputFormat = OutputFormat.PCM_24000;
+                }
+
+                endpoint += "/stream";
             }
-
-            request.VoiceSettings ??= await client.VoicesEndpoint.GetDefaultVoiceSettingsAsync(cancellationToken);
 
             var frequency = request.OutputFormat.GetSampleRate();
-            var payload = JsonConvert.SerializeObject(request, ElevenLabsClient.JsonSerializationOptions);
-            var parameters = CreateRequestParameters(request);
-            var endpoint = $"/{request.Voice.Id}/stream";
 
             var part = 0;
+            string clipId;
             StringBuilder textBuffer;
-            List<byte> accumulatedPCMData = null;
-            List<TimestampedTranscriptCharacter> accumulatedTranscriptData = null;
-            Action<Response> streamCallback;
+            NativeQueue<byte>? accumulatedPCMData = null;
+            List<TimestampedTranscriptCharacter> transcriptionCharacters = null;
+            Action<Response> streamCallback = null;
 
             if (request.WithTimestamps)
             {
                 endpoint += "/with-timestamps";
-                textBuffer = new StringBuilder();
-                accumulatedPCMData = new List<byte>();
-                accumulatedTranscriptData = new List<TimestampedTranscriptCharacter>();
-                streamCallback = TranscriptionStreamCallback;
+
+                if (partialClipCallback != null)
+                {
+                    textBuffer = new StringBuilder();
+                    accumulatedPCMData = new NativeQueue<byte>(Allocator.Persistent);
+                    transcriptionCharacters = new List<TimestampedTranscriptCharacter>();
+                    streamCallback = TranscriptionStreamCallback;
+                }
             }
             else
             {
-                streamCallback = StreamCallback;
+                if (partialClipCallback != null)
+                {
+                    streamCallback = StreamCallback;
+                }
             }
 
-            var response = await Rest.PostAsync(GetUrl(endpoint, parameters), payload, streamCallback, 8192, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
-            response.Validate(EnableDebug);
-
-            if (!response.Headers.TryGetValue(HistoryItemId, out var clipId))
+            try
             {
-                throw new ArgumentException("Failed to parse clip id!");
+                Response response;
+
+                if (partialClipCallback != null)
+                {
+                    response = await Rest.PostAsync(GetUrl(endpoint, parameters), payload, streamCallback, 8192, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
+                }
+                else
+                {
+                    response = await Rest.PostAsync(GetUrl(endpoint, parameters), payload, new RestParameters(client.DefaultRequestHeaders), cancellationToken);
+                }
+
+                response.Validate(EnableDebug);
+
+                if (!response.Headers.TryGetValue(HistoryItemId, out clipId))
+                {
+                    throw new ArgumentException("Failed to parse clip id!");
+                }
+
+                NativeArray<byte> audioData;
+
+                if (request.WithTimestamps)
+                {
+                    if (accumulatedPCMData.HasValue)
+                    {
+                        audioData = accumulatedPCMData.Value.ToArray(Allocator.Persistent);
+                    }
+                    else
+                    {
+                        var transcriptResponse = JsonConvert.DeserializeObject<TranscriptionResponse>(response.Body, ElevenLabsClient.JsonSerializationOptions);
+                        audioData = Utilities.Extensions.NativeArrayExtensions.FromBase64String(transcriptResponse.AudioBase64, Allocator.Persistent);
+                        transcriptionCharacters = transcriptResponse.Alignment;
+                    }
+                }
+                else
+                {
+                    audioData = new NativeArray<byte>(response.Data, Allocator.Persistent);
+                }
+
+                var cachedPath = await SaveAudioToCache(audioData, clipId, request.Voice, request.OutputFormat, request.CacheFormat, cancellationToken).ConfigureAwait(true);
+
+                return new VoiceClip(clipId, request.Text, request.Voice, audioData, frequency, cachedPath)
+                {
+                    TimestampedTranscriptCharacters = transcriptionCharacters?.ToArray() ?? Array.Empty<TimestampedTranscriptCharacter>()
+                };
             }
-
-            var audioData = request.WithTimestamps ? accumulatedPCMData!.ToArray() : response.Data;
-            var cachedPath = await SaveAudioToCache(new NativeArray<byte>(audioData, Allocator.Persistent), clipId, request.Voice, request.OutputFormat, request.CacheFormat, cancellationToken).ConfigureAwait(true);
-
-            return new VoiceClip(clipId, request.Text, request.Voice, new NativeArray<byte>(audioData, Allocator.Persistent), frequency, cachedPath)
+            finally
             {
-                TimestampedTranscriptCharacters = accumulatedTranscriptData?.ToArray() ?? Array.Empty<TimestampedTranscriptCharacter>()
-            };
+                accumulatedPCMData?.Dispose();
+            }
 
             async void StreamCallback(Response partialResponse)
             {
@@ -214,7 +167,7 @@ namespace ElevenLabs.TextToSpeech
                 }
             }
 
-            void TranscriptionStreamCallback(Response partialResponse)
+            async void TranscriptionStreamCallback(Response partialResponse)
             {
                 try
                 {
@@ -237,7 +190,7 @@ namespace ElevenLabs.TextToSpeech
                     // Process all complete lines
                     for (var i = 0; i < lines.Length - 1; i++)
                     {
-                        ProcessTranscribedVoiceClip(lines[i].Trim());
+                        await ProcessTranscribedVoiceClip(lines[i].Trim());
                     }
                 }
                 catch (Exception e)
@@ -246,14 +199,14 @@ namespace ElevenLabs.TextToSpeech
                 }
             }
 
-            void ProcessTranscribedVoiceClip(string line)
+            async Task ProcessTranscribedVoiceClip(string line)
             {
                 if (string.IsNullOrEmpty(line)) { return; }
 
                 try
                 {
                     var partialTranscription = JsonConvert.DeserializeObject<TranscriptionResponse>(line, ElevenLabsClient.JsonSerializationOptions);
-                    var partialData = NativeArrayExtensions.FromBase64String(partialTranscription.AudioBase64, Allocator.Persistent);
+                    var partialData = Utilities.Extensions.NativeArrayExtensions.FromBase64String(partialTranscription.AudioBase64, Allocator.Persistent);
                     var timestampedTranscriptCharacters = (TimestampedTranscriptCharacter[])partialTranscription.Alignment ?? Array.Empty<TimestampedTranscriptCharacter>();
                     var partialClip = new VoiceClip(
                         id: $"{clipId}_{++part}",
@@ -264,14 +217,23 @@ namespace ElevenLabs.TextToSpeech
                     {
                         TimestampedTranscriptCharacters = timestampedTranscriptCharacters
                     };
+
                     try
                     {
-                        partialClipCallback.Invoke(partialClip);
+                        await partialClipCallback.Invoke(partialClip).ConfigureAwait(false);
                     }
                     finally
                     {
-                        accumulatedTranscriptData.AddRange(timestampedTranscriptCharacters);
-                        accumulatedPCMData.AddRange(partialData.ToArray());
+                        // ReSharper disable once AccessToModifiedClosure
+                        transcriptionCharacters?.AddRange(timestampedTranscriptCharacters);
+                        var length = partialData.Length;
+
+                        for (var i = 0; i < length; i++)
+                        {
+                            // ReSharper disable once AccessToDisposedClosure
+                            accumulatedPCMData.Value.Enqueue(partialData[i]);
+                        }
+
                         // partialData is disposed by its partialClip owner
                         partialClip.Dispose();
                     }
@@ -281,23 +243,6 @@ namespace ElevenLabs.TextToSpeech
                     Debug.LogWarning($"Failed to parse line as JSON: {e.Message}");
                 }
             }
-        }
-
-        private static Dictionary<string, string> CreateRequestParameters(TextToSpeechRequest request)
-        {
-            var parameters = new Dictionary<string, string>
-            {
-                { OutputFormatParameter, request.OutputFormat.ToString().ToLower() }
-            };
-
-#pragma warning disable CS0618 // Type or member is obsolete
-            if (request.OptimizeStreamingLatency.HasValue)
-            {
-                parameters.Add(OptimizeStreamingLatencyParameter, request.OptimizeStreamingLatency.Value.ToString());
-            }
-#pragma warning restore CS0618 // Type or member is obsolete
-
-            return parameters;
         }
 
         private static async Task<string> SaveAudioToCache(NativeArray<byte> audioData, string clipId, Voice voice, OutputFormat outputFormat, CacheFormat cacheFormat, CancellationToken cancellationToken)
@@ -378,6 +323,5 @@ namespace ElevenLabs.TextToSpeech
             return cachedPath;
 #endif // PLATFORM_WEBGL
         }
-
     }
 }

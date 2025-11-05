@@ -2,6 +2,7 @@
 
 using ElevenLabs.History;
 using ElevenLabs.Models;
+using ElevenLabs.TextToSpeech;
 using ElevenLabs.User;
 using ElevenLabs.VoiceGeneration;
 using ElevenLabs.Voices;
@@ -1106,7 +1107,7 @@ namespace ElevenLabs.Editor
                     Directory.CreateDirectory(downloadDir);
                 }
 
-                voiceClip = await api.TextToSpeechEndpoint.TextToSpeechAsync(new(currentVoiceOption, speechSynthesisTextInput, voiceSettings: currentVoiceSettings, model: currentModelOption));
+                voiceClip = await api.TextToSpeechEndpoint.TextToSpeechAsync(new TextToSpeechRequest(currentVoiceOption, speechSynthesisTextInput, voiceSettings: currentVoiceSettings, model: currentModelOption));
                 voiceClip.CopyIntoProject(editorDownloadDirectory);
             }
             catch (Exception e)

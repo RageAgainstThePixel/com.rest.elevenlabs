@@ -1,6 +1,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using Newtonsoft.Json;
+using System.Collections.Generic;
 using UnityEngine.Scripting;
 
 namespace ElevenLabs.TextToSpeech
@@ -44,6 +45,23 @@ namespace ElevenLabs.TextToSpeech
             for (var i = 0; i < characters.Length; i++)
             {
                 timestampedTranscriptCharacters[i] = new TimestampedTranscriptCharacter(characters[i], startTimes[i], endTimes[i]);
+            }
+
+            return timestampedTranscriptCharacters;
+        }
+
+        [Preserve]
+        public static implicit operator List<TimestampedTranscriptCharacter>(Alignment alignment)
+        {
+            if (alignment == null) { return null; }
+            var characters = alignment.Characters;
+            var startTimes = alignment.StartTimes;
+            var endTimes = alignment.EndTimes;
+            var timestampedTranscriptCharacters = new List<TimestampedTranscriptCharacter>(characters.Length);
+
+            for (var i = 0; i < characters.Length; i++)
+            {
+                timestampedTranscriptCharacters.Add(new TimestampedTranscriptCharacter(characters[i], startTimes[i], endTimes[i]));
             }
 
             return timestampedTranscriptCharacters;

@@ -7,6 +7,7 @@ namespace ElevenLabs
 {
     public sealed class ElevenLabsSettingsInfo : ISettingsInfo
     {
+        internal const string WSS = "wss://";
         internal const string Http = "http://";
         internal const string Https = "https://";
         internal const string ElevenLabsDomain = "api.elevenlabs.io";
@@ -16,8 +17,8 @@ namespace ElevenLabs
         /// </summary>
         public ElevenLabsSettingsInfo()
         {
-            Domain = ElevenLabsDomain;
-            BaseRequestUrlFormat = $"{Https}{Domain}/{{0}}/{{1}}";
+            BaseRequestUrlFormat = $"{Https}{ElevenLabsDomain}/{{0}}/{{1}}";
+            BaseWebsocketUrlFormat = $"{WSS}{ElevenLabsDomain}/{{0}}/{{1}}";
         }
 
         /// <summary>
@@ -52,10 +53,13 @@ namespace ElevenLabs
 
             Domain = $"{protocol}{domain}";
             BaseRequestUrlFormat = $"{Domain}/{{0}}/{{1}}";
+            BaseWebsocketUrlFormat = $"{WSS}{ElevenLabsDomain}/{{0}}/{{1}}";
         }
 
         public string Domain { get; }
 
         public string BaseRequestUrlFormat { get; }
+
+        public string BaseWebsocketUrlFormat { get; }
     }
 }
