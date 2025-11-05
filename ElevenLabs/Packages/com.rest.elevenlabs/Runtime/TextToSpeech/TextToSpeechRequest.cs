@@ -4,6 +4,7 @@ using ElevenLabs.Models;
 using ElevenLabs.Voices;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Text;
 using UnityEngine.Scripting;
 
@@ -51,9 +52,8 @@ namespace ElevenLabs.TextToSpeech
         /// <param name="nextRequestIds">
         /// A list of request_id of the samples that come after this generation.
         /// next_request_ids is especially useful for maintaining the speech’s continuity when regenerating a sample that has had some audio quality issues.
-        /// For example, if you have generated 3 speech clips, and you want to improve clip 2,
-        /// passing the request id of clip 3 as a next_request_id (and that of clip 1 as a previous_request_id)
-        /// will help maintain natural flow in the combined speech.
+        /// For example, if you have generated 3 speech clips, and you want to improve clip 2, passing the request id of clip 3 as a next_request_id
+        /// (and that of clip 1 as a previous_request_id) will help maintain natural flow in the combined speech.
         /// The results will be best when the same model is used across the generations.
         /// In case both next_text and next_request_ids is send, next_text will be ignored.
         /// A maximum of 3 request_ids can be send.
@@ -61,10 +61,6 @@ namespace ElevenLabs.TextToSpeech
         /// <param name="languageCode">
         /// Optional, Language code (ISO 639-1) used to enforce a language for the model. Currently only <see cref="Model.TurboV2_5"/> supports language enforcement.
         /// For other models, an error will be returned if language code is provided.
-        /// </param>
-        /// <param name="cacheFormat">
-        /// The audio format to save the audio in.
-        /// Defaults to <see cref="CacheFormat.Wav"/>
         /// </param>
         /// <param name="withTimestamps">
         /// Generate speech from text with precise character-level timing information for audio-text synchronization.
@@ -74,12 +70,20 @@ namespace ElevenLabs.TextToSpeech
         /// such that repeated requests with the same seed and parameters should return the same result.
         /// Determinism is not guaranteed. Must be integer between 0 and 4294967295.
         /// </param>
+        /// <param name="pronunciationDictionaryLocators">
+        /// A list of pronunciation dictionary locators (id, version_id) to be applied to the text. They will be applied in order. You may have up to 3 locators per request
+        /// </param>
         /// <param name="applyTextNormalization">
-        /// This parameter controls text normalization with three modes: ‘auto’ (null), ‘on’ (true), and ‘off’ (false).
-        /// When set to ‘null’, the system will automatically decide whether to apply text normalization (e.g., spelling out numbers).
-        /// With ‘true’, text normalization will always be applied,
-        /// while with ‘false’, it will be skipped.
-        /// Cannot be turned on for ‘eleven_turbo_v2_5’ model.
+        /// This parameter controls text normalization with three modes: ‘auto’, ‘on’, and ‘off’.
+        /// When set to ‘auto’, the system will automatically decide whether to apply text normalization (e.g., spelling out numbers).
+        /// With ‘on’, text normalization will always be applied, while with ‘off’, it will be skipped.
+        /// For ‘eleven_turbo_v2_5’ and ‘eleven_flash_v2_5’ models, text normalization can only be enabled with Enterprise plans.
+        /// </param>
+        /// <param name="applyLanguageTextNormalization">
+        /// This parameter controls language text normalization.
+        /// This helps with proper pronunciation of text in some supported languages.
+        /// WARNING: This parameter can heavily increase the latency of the request.
+        /// Currently only supported for Japanese.
         /// </param>
         [Preserve]
         public TextToSpeechRequest(
@@ -97,7 +101,9 @@ namespace ElevenLabs.TextToSpeech
             string languageCode = null,
             bool withTimestamps = false,
             int? seed = null,
-            bool? applyTextNormalization = null)
+            List<PronunciationDictionaryLocator> pronunciationDictionaryLocators = null,
+            TextNormalization? applyTextNormalization = null,
+            bool? applyLanguageTextNormalization = null)
         {
             if (string.IsNullOrWhiteSpace(text))
             {
@@ -136,11 +142,7 @@ namespace ElevenLabs.TextToSpeech
             CacheFormat = cacheFormat;
             WithTimestamps = withTimestamps;
             Seed = seed;
-
-            if (applyTextNormalization.HasValue)
-            {
-                ApplyTextNormalization = applyTextNormalization.Value ? "on" : "off";
-            }
+            ApplyTextNormalization = applyTextNormalization;
         }
 
         [Preserve]
@@ -156,7 +158,7 @@ namespace ElevenLabs.TextToSpeech
         public Voice Voice { get; }
 
         [Preserve]
-        [JsonProperty("voice_settings")]
+        [JsonProperty("voice_settings", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public VoiceSettings VoiceSettings { get; internal set; }
 
         [Preserve]
@@ -168,23 +170,23 @@ namespace ElevenLabs.TextToSpeech
         public CacheFormat CacheFormat { get; internal set; }
 
         [Preserve]
-        [JsonProperty("previous_text")]
+        [JsonProperty("previous_text", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public string PreviousText { get; }
 
         [Preserve]
-        [JsonProperty("next_text")]
+        [JsonProperty("next_text", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public string NextText { get; }
 
         [Preserve]
-        [JsonProperty("previous_request_ids")]
+        [JsonProperty("previous_request_ids", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public string[] PreviousRequestIds { get; }
 
         [Preserve]
-        [JsonProperty("next_request_ids")]
+        [JsonProperty("next_request_ids", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public string[] NextRequestIds { get; }
 
         [Preserve]
-        [JsonProperty("language_code")]
+        [JsonProperty("language_code", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public string LanguageCode { get; }
 
         [Preserve]
@@ -192,11 +194,11 @@ namespace ElevenLabs.TextToSpeech
         public bool WithTimestamps { get; }
 
         [Preserve]
-        [JsonProperty("seed")]
+        [JsonProperty("seed", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public int? Seed { get; }
 
         [Preserve]
         [JsonProperty("apply_text_normalization", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public string ApplyTextNormalization { get; }
+        public TextNormalization? ApplyTextNormalization { get; }
     }
 }
