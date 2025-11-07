@@ -1,19 +1,14 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using ElevenLabs.Extensions;
-using ElevenLabs.Voices;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Unity.Collections;
 using UnityEngine;
-using Utilities.Audio;
-using Utilities.Encoding.OggVorbis;
-using Utilities.Encoding.Wav;
 using Utilities.WebRequestRest;
 
 namespace ElevenLabs.TextToSpeech
@@ -129,12 +124,13 @@ namespace ElevenLabs.TextToSpeech
                     audioData = new NativeArray<byte>(response.Data, Allocator.Persistent);
                 }
 
-                var cachedPath = await SaveAudioToCache(audioData, clipId, request.Voice, request.OutputFormat, request.CacheFormat, cancellationToken).ConfigureAwait(true);
-
-                return new VoiceClip(clipId, request.Text, request.Voice, audioData, frequency, cachedPath)
+                var voiceClip = new VoiceClip(clipId, request.Text, request.Voice, audioData, frequency)
                 {
                     TimestampedTranscriptCharacters = transcriptionCharacters?.ToArray() ?? Array.Empty<TimestampedTranscriptCharacter>()
                 };
+
+                await voiceClip.SaveAudioToCacheAsync(request.OutputFormat, request.CacheFormat, cancellationToken);
+                return voiceClip;
             }
             finally
             {
@@ -243,85 +239,6 @@ namespace ElevenLabs.TextToSpeech
                     Debug.LogWarning($"Failed to parse line as JSON: {e.Message}");
                 }
             }
-        }
-
-        private static async Task<string> SaveAudioToCache(NativeArray<byte> audioData, string clipId, Voice voice, OutputFormat outputFormat, CacheFormat cacheFormat, CancellationToken cancellationToken)
-        {
-#if PLATFORM_WEBGL
-            await Task.Yield();
-            return null;
-#else
-            if (cacheFormat == CacheFormat.None)
-            {
-                return null;
-            }
-
-            string extension;
-            AudioType audioType;
-
-            if (outputFormat is OutputFormat.MP3_44100_64 or OutputFormat.MP3_44100_96 or OutputFormat.MP3_44100_128 or OutputFormat.MP3_44100_128)
-            {
-                extension = "mp3";
-                audioType = AudioType.MPEG;
-            }
-            else
-            {
-                switch (cacheFormat)
-                {
-                    case CacheFormat.Wav:
-                        extension = "wav";
-                        audioType = AudioType.WAV;
-
-                        break;
-                    case CacheFormat.Ogg:
-                        extension = "ogg";
-                        audioType = AudioType.OGGVORBIS;
-
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException(nameof(cacheFormat), cacheFormat, null);
-                }
-            }
-
-            await Rest.ValidateCacheDirectoryAsync();
-
-            var downloadDirectory = Rest.DownloadCacheDirectory
-                .CreateNewDirectory(nameof(ElevenLabs))
-                .CreateNewDirectory(nameof(TextToSpeech))
-                .CreateNewDirectory(voice.Id);
-
-            var cachedPath = $"{downloadDirectory}/{clipId}.{extension}";
-
-            if (!File.Exists(cachedPath))
-            {
-                switch (audioType)
-                {
-                    case AudioType.MPEG:
-                        await File.WriteAllBytesAsync(cachedPath, audioData.ToArray(), cancellationToken).ConfigureAwait(false);
-                        break;
-                    case AudioType.OGGVORBIS:
-                        var pcmData = PCMEncoder.Decode(audioData);
-
-                        try
-                        {
-                            var oggBytes = await OggEncoder.ConvertToBytesAsync(pcmData.ToArray(), sampleRate: outputFormat.GetSampleRate(), channels: 1, cancellationToken: cancellationToken).ConfigureAwait(false);
-                            await File.WriteAllBytesAsync(cachedPath, oggBytes, cancellationToken).ConfigureAwait(false);
-                        }
-                        finally
-                        {
-                            pcmData.Dispose();
-                        }
-
-                        break;
-                    case AudioType.WAV:
-                        await WavEncoder.WriteToFileAsync(cachedPath, audioData, sampleRate: outputFormat.GetSampleRate(), channels: 1, cancellationToken: cancellationToken).ConfigureAwait(false);
-
-                        break;
-                }
-            }
-
-            return cachedPath;
-#endif // PLATFORM_WEBGL
         }
     }
 }
