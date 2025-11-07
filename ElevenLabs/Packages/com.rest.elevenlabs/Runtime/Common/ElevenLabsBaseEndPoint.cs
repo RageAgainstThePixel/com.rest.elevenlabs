@@ -1,6 +1,5 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using Utilities.WebRequestRest;
@@ -11,10 +10,10 @@ namespace ElevenLabs
     {
         protected ElevenLabsBaseEndPoint(ElevenLabsClient client) : base(client) { }
         protected override string GetUrl(string endpoint = "", Dictionary<string, string> queryParameters = null)
-            => GetEndpoint(client.Settings.Info.BaseRequestUrlFormat, endpoint, queryParameters);
+            => GetEndpoint(client.Settings.BaseRequestUrlFormat, endpoint, queryParameters);
 
         protected string GetWebsocketUri(string endpoint = "", Dictionary<string, string> queryParameters = null)
-            => GetEndpoint(client.Settings.Info.BaseWebSocketUrlFormat, endpoint, queryParameters);
+            => GetEndpoint(client.Settings.BaseWebSocketUrlFormat, endpoint, queryParameters);
 
         private string GetEndpoint(string baseUrlFormat, string endpoint = "", Dictionary<string, string> queryParameters = null)
         {

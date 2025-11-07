@@ -66,5 +66,7 @@ namespace ElevenLabs
         public ElevenLabsSettingsInfo Info { get; }
 
         public string BaseRequestUrlFormat => Info.BaseRequestUrlFormat;
+
+        public string BaseWebSocketUrlFormat => Info.BaseWebSocketUrlFormat;
     }
 }

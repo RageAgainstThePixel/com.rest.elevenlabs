@@ -252,7 +252,12 @@ namespace ElevenLabs.TextToSpeech
             }
         }
 
-
+        /// <summary>
+        /// Create a websocket <see cref="TextToSpeechSession"/>.
+        /// </summary>
+        /// <param name="configuration">The configuration for the text-to-speech session.</param>
+        /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
+        /// <returns><see cref="TextToSpeechSession"/>.</returns>
         public async Task<TextToSpeechSession> CreateTextToSpeechSessionAsync(TextToSpeechSessionConfiguration configuration, CancellationToken cancellationToken = default)
         {
             if (configuration == null)
