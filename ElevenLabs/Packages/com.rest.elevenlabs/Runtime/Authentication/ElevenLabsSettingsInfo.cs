@@ -1,6 +1,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using Utilities.WebRequestRest.Interfaces;
 
 namespace ElevenLabs
@@ -18,7 +19,7 @@ namespace ElevenLabs
         public ElevenLabsSettingsInfo()
         {
             BaseRequestUrlFormat = $"{Https}{ElevenLabsDomain}/{{0}}/{{1}}";
-            BaseWebsocketUrlFormat = $"{WSS}{ElevenLabsDomain}/{{0}}/{{1}}";
+            BaseWebSocketUrlFormat = $"{WSS}{ElevenLabsDomain}/{{0}}/{{1}}";
         }
 
         /// <summary>
@@ -53,13 +54,18 @@ namespace ElevenLabs
 
             Domain = $"{protocol}{domain}";
             BaseRequestUrlFormat = $"{Domain}/{{0}}/{{1}}";
-            BaseWebsocketUrlFormat = $"{WSS}{ElevenLabsDomain}/{{0}}/{{1}}";
+            BaseWebSocketUrlFormat = $"{WSS}{ElevenLabsDomain}/{{0}}/{{1}}";
         }
 
         public string Domain { get; }
 
         public string BaseRequestUrlFormat { get; }
 
-        public string BaseWebsocketUrlFormat { get; }
+        public string BaseWebSocketUrlFormat { get; }
+
+        // ReSharper disable once CollectionNeverUpdated.Local reserved for future use.
+        private readonly Dictionary<string, string> defaultQueryParameters = new();
+
+        internal IReadOnlyDictionary<string, string> DefaultQueryParameters => defaultQueryParameters;
     }
 }

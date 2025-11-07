@@ -9,7 +9,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Unity.Collections;
 using UnityEngine;
+using Utilities.Async;
 using Utilities.WebRequestRest;
+using Utilities.WebRequestRest.Interfaces;
+using Utilities.WebSockets;
 
 namespace ElevenLabs.TextToSpeech
 {
@@ -245,6 +248,56 @@ namespace ElevenLabs.TextToSpeech
                 catch (JsonReaderException e)
                 {
                     Debug.LogWarning($"Failed to parse line as JSON: {e.Message}");
+                }
+            }
+        }
+
+
+        public async Task<TextToSpeechSession> CreateTextToSpeechSessionAsync(TextToSpeechSessionConfiguration configuration, CancellationToken cancellationToken = default)
+        {
+            if (configuration == null)
+            {
+                throw new NullReferenceException(nameof(configuration));
+            }
+
+            var endpoint = GetWebsocketUri($"{configuration.Voice.Id}/stream-input", configuration.ToQueryParams());
+            var websocket = new WebSocket(endpoint, client.DefaultRequestHeaders);
+            var session = new TextToSpeechSession(websocket, EnableDebug);
+            var initializeSessionTcs = new TaskCompletionSource<bool>();
+
+            try
+            {
+                session.OnEventReceived += OnEventReceived;
+                session.OnError += OnError;
+                await session.ConnectAsync(cancellationToken).ConfigureAwait(false);
+                await initializeSessionTcs.Task.WithCancellation(cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                session.OnError -= OnError;
+                session.OnEventReceived -= OnEventReceived;
+            }
+
+            return session;
+
+            void OnError(Exception e)
+                => initializeSessionTcs.SetException(e);
+
+            void OnEventReceived(IServerSentEvent @event)
+            {
+                try
+                {
+                    switch (@event)
+                    {
+                        default:
+                            initializeSessionTcs.TrySetResult(true);
+                            break;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    initializeSessionTcs.TrySetException(e);
                 }
             }
         }
