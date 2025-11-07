@@ -139,7 +139,7 @@ namespace ElevenLabs.TextToSpeech
         /// <param name="sessionEvent">The event to receive updates for.</param>
         /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
         /// <returns><see cref="Task"/>.</returns>
-        /// <exception cref="Exception">If <see cref="ReceiveUpdatesAsync{T}(CancellationToken)"/> is already running.</exception>
+        /// <exception cref="Exception">If <see cref="ReceiveUpdatesAsync{T}"/> is already running.</exception>
         public async Task ReceiveUpdatesAsync<T>(Action<T> sessionEvent, CancellationToken cancellationToken) where T : IServerSentEvent
         {
             try
@@ -187,73 +187,6 @@ namespace ElevenLabs.TextToSpeech
                                 Console.WriteLine(e);
                                 break;
                         }
-                    }
-                } while (!cancellationToken.IsCancellationRequested && websocketClient.State == State.Open);
-            }
-            finally
-            {
-                lock (eventLock)
-                {
-                    isCollectingEvents = false;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Receive callback updates from the server
-        /// </summary>
-        /// <typeparam name="T"><see cref="IServerSentEvent"/> to subscribe for updates to.</typeparam>
-        /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
-        /// <returns><see cref="IAsyncEnumerable{T}"/>.</returns>
-        /// <exception cref="Exception">If <see cref="ReceiveUpdatesAsync{T}(CancellationToken)"/> is already running.</exception>
-        public async IAsyncEnumerable<T> ReceiveUpdatesAsync<T>([EnumeratorCancellation] CancellationToken cancellationToken) where T : IServerSentEvent
-        {
-            try
-            {
-                lock (eventLock)
-                {
-                    if (isCollectingEvents)
-                    {
-                        throw new Exception($"{nameof(ReceiveUpdatesAsync)} is already running!");
-                    }
-
-                    isCollectingEvents = true;
-                }
-
-                do
-                {
-                    T @event = default;
-
-                    try
-                    {
-
-                        lock (eventLock)
-                        {
-                            if (events.TryDequeue(out var dequeuedEvent) &&
-                                dequeuedEvent is T typedEvent)
-                            {
-                                @event = typedEvent;
-                            }
-                        }
-
-                        await Task.Yield();
-                    }
-                    catch (Exception e)
-                    {
-                        switch (e)
-                        {
-                            case TaskCanceledException:
-                            case OperationCanceledException:
-                                break;
-                            default:
-                                Console.WriteLine(e);
-                                break;
-                        }
-                    }
-
-                    if (@event != null)
-                    {
-                        yield return @event;
                     }
                 } while (!cancellationToken.IsCancellationRequested && websocketClient.State == State.Open);
             }
