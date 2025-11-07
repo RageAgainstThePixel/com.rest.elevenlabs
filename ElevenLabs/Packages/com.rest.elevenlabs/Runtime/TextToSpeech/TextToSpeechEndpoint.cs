@@ -129,7 +129,15 @@ namespace ElevenLabs.TextToSpeech
                     TimestampedTranscriptCharacters = transcriptionCharacters?.ToArray() ?? Array.Empty<TimestampedTranscriptCharacter>()
                 };
 
-                await voiceClip.SaveAudioToCacheAsync(request.OutputFormat, request.CacheFormat, cancellationToken);
+                try
+                {
+                    await voiceClip.SaveAudioToCacheAsync(request.OutputFormat, request.CacheFormat, cancellationToken);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
+
                 return voiceClip;
             }
             finally
