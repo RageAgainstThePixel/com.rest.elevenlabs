@@ -24,6 +24,14 @@ namespace ElevenLabs.TextToSpeech
         private const string HistoryItemId = "history-item-id";
         private const string OutputFormatParameter = "output_format";
         private const string OptimizeStreamingLatencyParameter = "optimize_streaming_latency";
+        private const string EnableLoggingParameter = "enable_logging";
+
+        /// <summary>
+        /// When set to <c>true</c>, zero retention mode will be used for the request.
+        /// This will mean history features are unavailable for this request, including request stitching.
+        /// Zero retention mode may only be used by enterprise customers.
+        /// </summary>
+        public bool? DisableRetention { get; set; }
 
         public TextToSpeechEndpoint(ElevenLabsClient client) : base(client) { }
 
@@ -44,6 +52,11 @@ namespace ElevenLabs.TextToSpeech
             {
                 { OutputFormatParameter, request.OutputFormat.ToString().ToLower() }
             };
+
+            if (DisableRetention.HasValue)
+            {
+                parameters.Add(EnableLoggingParameter, DisableRetention.GetValueOrDefault().ToString().ToLower());
+            }
 
             var endpoint = $"/{request.Voice.Id}";
 
