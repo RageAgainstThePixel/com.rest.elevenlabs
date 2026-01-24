@@ -53,6 +53,8 @@ obj/
 *.csproj
 *.pidb
 *.suo
+/*.slnx
+*.slnx
 /*.sln
 *.sln
 *.user
