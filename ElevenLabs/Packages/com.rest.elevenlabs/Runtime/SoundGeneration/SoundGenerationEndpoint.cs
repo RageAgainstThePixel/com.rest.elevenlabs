@@ -35,7 +35,7 @@ namespace ElevenLabs.SoundGeneration
                 jsonData: payload,
                 parameters: new RestParameters(client.DefaultRequestHeaders, debug: EnableDebug),
                 cancellationToken: cancellationToken);
-            Rest.TryGetDownloadCacheItem(clipId, out var cachedPath);
+            Rest.TryGetDownloadCacheItem(clipId, out string cachedPath);
             return new GeneratedClip(clipId, request.Text, audioClip, cachedPath);
         }
     }

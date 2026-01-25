@@ -40,8 +40,7 @@ namespace ElevenLabs
             SampleRate = sampleRate;
         }
 
-        ~GeneratedClip()
-            => Dispose();
+        ~GeneratedClip() => Dispose(false);
 
         [SerializeField]
         private string id;
@@ -158,10 +157,23 @@ namespace ElevenLabs
                 cancellationToken: cancellationToken);
         }
 
+        [Preserve]
+        private void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                clipData?.Dispose();
+                clipData = null;
+                clipSamples?.Dispose();
+                clipSamples = null;
+            }
+        }
+
+        [Preserve]
         public void Dispose()
         {
-            clipData?.Dispose();
-            clipSamples?.Dispose();
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
     }
 }
