@@ -147,6 +147,7 @@ namespace ElevenLabs.Tests
             var settings = new ElevenLabsSettings(domain: "api.your-custom-domain.com");
             var api = new ElevenLabsClient(auth, settings);
             Debug.Log(api.Settings.BaseRequestUrlFormat);
+            Debug.Log(api.Settings.BaseWebSocketUrlFormat);
         }
 
         [TearDown]

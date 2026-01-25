@@ -1,9 +1,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using ElevenLabs.VoiceGeneration;
 using ElevenLabs.Voices;
 using NUnit.Framework;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;

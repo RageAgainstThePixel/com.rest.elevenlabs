@@ -11,16 +11,6 @@ namespace ElevenLabs.Voices
     [Serializable]
     public sealed class VoiceSettings
     {
-        [Obsolete("use new .ctr overload")]
-        public VoiceSettings(
-            float stability,
-            float similarityBoost,
-            bool speakerBoost,
-            float style)
-            : this(stability, similarityBoost, style, speakerBoost)
-        {
-        }
-
         [Preserve]
         [JsonConstructor]
         public VoiceSettings(

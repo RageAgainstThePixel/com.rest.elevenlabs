@@ -157,9 +157,9 @@ namespace ElevenLabs.Tests
                 using var voiceClip = await ElevenLabsClient.TextToSpeechEndpoint.TextToSpeechAsync(request);
                 Assert.NotNull(voiceClip);
                 Debug.Log(voiceClip.Id);
-                Debug.Log(voiceClip.CachedPath);
                 Assert.NotNull(voiceClip.AudioClip);
                 Assert.AreEqual(voiceClip.AudioClip.length, voiceClip.Length, 0.01);
+                Debug.Log(voiceClip.CachedPath);
                 Assert.IsTrue(string.IsNullOrWhiteSpace(voiceClip.CachedPath));
             }
             catch (Exception e)

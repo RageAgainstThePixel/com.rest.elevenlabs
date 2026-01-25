@@ -82,12 +82,18 @@ namespace ElevenLabs
         /// </summary>
         internal static JsonSerializerSettings JsonSerializationOptions { get; } = new()
         {
+            NullValueHandling = NullValueHandling.Ignore,
             DefaultValueHandling = DefaultValueHandling.Ignore,
+            ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
             Converters = new List<JsonConverter>
             {
                 new StringEnumConverter()
             }
         };
+
+        internal static JsonSerializer JsonSerializer { get; } = JsonSerializer.Create(JsonSerializationOptions);
+
+        #region Endpoints
 
         public UserEndpoint UserEndpoint { get; }
 
@@ -108,5 +114,7 @@ namespace ElevenLabs
         public DubbingEndpoint DubbingEndpoint { get; }
 
         public SoundGenerationEndpoint SoundGenerationEndpoint { get; }
+
+        #endregion Endpoints
     }
 }

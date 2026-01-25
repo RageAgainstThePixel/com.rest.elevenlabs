@@ -64,7 +64,11 @@ namespace ElevenLabs
         private string cachedPath;
 
         [Preserve]
-        public string CachedPath => cachedPath;
+        public string CachedPath
+        {
+            get => cachedPath;
+            protected set => cachedPath = value;
+        }
 
         [Preserve]
         public NativeArray<byte> ClipData => clipData ??= new NativeArray<byte>(0, Allocator.Persistent);

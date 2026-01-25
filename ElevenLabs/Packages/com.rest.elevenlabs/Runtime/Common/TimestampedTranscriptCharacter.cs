@@ -9,7 +9,7 @@ namespace ElevenLabs
     /// Represents timing information for a single character in the transcript
     /// </summary>
     [Preserve]
-    public class TimestampedTranscriptCharacter
+    public sealed class TimestampedTranscriptCharacter
     {
         [Preserve]
         [JsonConstructor]
